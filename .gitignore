@@ -1,0 +1,45 @@
+# Environments and Virtualenv
+venv/
+env/
+.venv/
+ENV/
+
+# Python byte code and caches
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.pytest_cache/
+.coverage
+htmlcov/
+.mypy_cache/
+.ruff_cache/
+
+# Environment configurations and secrets
+.env
+.env.local
+.env.*.local
+
+# Databases and storage
+*.db
+*.sqlite
+*.sqlite3
+instance/
+
+# ML models and artifacts
+*.joblib
+*.pkl
+ml/models/*.joblib
+ml/models/*.pkl
+
+# IDE and OS files
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db
+
+# User and runtime uploads
+uploads/
+ml_runs/
+logs/
+*.log

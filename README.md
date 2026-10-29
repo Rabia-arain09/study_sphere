@@ -152,9 +152,47 @@ Update `.env` as required:
 - Leave `DATABASE_URL` blank or set to `sqlite:///instance/studysphere.db` for local SQLite development.
 - For Supabase/PostgreSQL production deployment, provide the connection string:
   ```env
-  DATABASE_URL=postgresql+psycopg2://postgres:YOUR_PASSWORD@db.YOUR_SUPABASE_HOST.supabase.co:5432/postgres
+  DATABASE_URL=postgresql+psycopg2://postgres.your-project-ref:your-url-encoded-password@aws-0-your-region.pooler.supabase.com:5432/postgres?sslmode=require
   ```
 - Configure `SECRET_KEY` and optional `LLM_API_KEY`.
+
+---
+
+## Supabase Setup for Teammates
+
+Follow these steps to connect your local development environment to the shared Supabase PostgreSQL instance:
+
+1. **Copy the Environment Template**:
+   ```bash
+   cp .env.example .env    # On Windows: copy .env.example .env
+   ```
+2. **Use the Session Pooler (IPv4 Compatible)**:
+   - In the Supabase Dashboard, navigate to **Project Settings &rarr; Database &rarr; Connection Pooling**.
+   - Select **Mode: Session** on port **5432**.
+   - **Do NOT use the direct connection string** (`db.<project-ref>.supabase.co`), because direct hosts only resolve to IPv6 on some ISPs/networks, causing DNS resolution failures (`Name or service not known`) on IPv4 connections.
+   - The connection format is:
+     ```env
+     DATABASE_URL=postgresql+psycopg2://postgres.<project-ref>:<password>@aws-0-<region>.pooler.supabase.com:5432/postgres?sslmode=require
+     ```
+3. **URL-Encode Special Characters in Your Password**:
+   - If your database password contains characters like `@`, `:`, `/`, `?`, `#`, `[`, `]`, `%`, `+`, or `&`, they **MUST** be percent-encoded (URL-encoded) before pasting into `.env`.
+   - Quick one-liner to encode your password:
+     ```bash
+     python -c "import urllib.parse; print(urllib.parse.quote_plus('your_password_here'))"
+     ```
+   - Common replacements: `@` &rarr; `%40`, `#` &rarr; `%23`, `+` &rarr; `%2B`, `%` &rarr; `%25`, `/` &rarr; `%2F`.
+4. **Never Commit Secrets**:
+   - Never commit `.env` or any file containing plaintext credentials. `.env` is listed in `.gitignore` and must remain strictly local.
+5. **Free Tier Inactivity Auto-Pause**:
+   - Supabase free-tier projects automatically pause after 7 consecutive days of inactivity.
+   - If `db-check` reports connection timeouts or refused connections, log in to [Supabase Dashboard](https://supabase.com/dashboard) and click **Restore project** (takes ~1-2 minutes).
+6. **Verify Connection**:
+   - Run the diagnostic probe to confirm connectivity, table inventory, and transactional rollback:
+     ```bash
+     flask --app run.py db-check
+     ```
+
+---
 
 ### 5. Apply Database Migrations
 Generate tables using Flask-Migrate:
@@ -213,3 +251,6 @@ To enable 3 developers to work concurrently on `main` without merge conflicts:
 - **Explicit Prerequisite Association Entity**: Modeled topic prerequisites via a dedicated `Prerequisite` model with `CASCADE` deletions and a `CHECK(topic_id != prerequisite_topic_id)` constraint to enable recursive DAG traversals during knowledge gap analysis.
 - **Flexible JSON Payload Storage**: Stored quiz question options (`Question.options`) and topic tags (`Topic.tags`) using standard SQLAlchemy `JSON` types to support polymorphic question structures (MCQ options vs theoretical rubrics) without requiring fragile schema alterations.
 - **Decoupled ML Lifecycles**: Isolated scikit-learn models and feature processing under `ml/` and `app/services/` so machine learning training artifacts remain decoupled from web request-response threads.
+- **Supabase Free Tier Connection Pooling & Recycling**: Configured SQLAlchemy engine options with `pool_pre_ping=True`, `pool_recycle=300`, and `pool_size=5` (with `max_overflow=2`) to prevent connection starvation on Supabase Session Poolers while avoiding incompatible pool options on SQLite.
+- **PostgreSQL Row Level Security (RLS) Isolation**: Implemented a dialect-guarded Alembic migration that enables RLS across all application tables (`users`, `topics`, `prerequisites`, `resources`, `questions`, `attempts`) to close unauthenticated access via Supabase's public Data API while allowing direct connection roles (`postgres`) full operational access.
+- **Diagnostic Database CLI Probe**: Created `flask --app run.py db-check` with masked credentials, version queries, table inventory checks, transactional write/read verification, and automated root-cause guidance for common network, SSL, and authentication failures.

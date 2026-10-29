@@ -35,6 +35,11 @@ def create_app(config_name: str | None = None) -> Flask:
     db.init_app(app)
     migrate.init_app(app, db)
 
+    # Register custom CLI commands
+    from app.cli import register_cli_commands
+
+    register_cli_commands(app)
+
     # Register blueprints
     from app.blueprints.auth import auth_bp
     from app.blueprints.topics import topics_bp

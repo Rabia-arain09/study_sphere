@@ -23,9 +23,10 @@ if TYPE_CHECKING:
 class MasteryLabel(str, enum.Enum):
     """Classification labels assigned to topic mastery by the Decision Tree classifier."""
 
-    STRONG = "Strong"
-    NEEDS_REVISION = "Needs Revision"
     WEAK = "Weak"
+    GOOD = "Good"
+    BETTER = "Better"
+    EXCELLENT = "Excellent"
 
 
 class Attempt(db.Model):
@@ -35,8 +36,8 @@ class Attempt(db.Model):
         Primary dataset table for the Decision Tree classification model.
         Numerical columns (score, total_questions, wrong_count, attempt_number) serve
         as raw input features for both real-time model inference and supervised offline
-        re-training. The 'label' column stores the resulting classification
-        (Strong / Needs Revision / Weak), which feeds directly into the knowledge gap
+        re-training. The 'label' column stores the resulting 4-tier classification
+        (Weak / Good / Better / Excellent), which feeds directly into the knowledge gap
         graph traversal algorithm and adaptive dashboard analytics.
     """
 
@@ -61,7 +62,12 @@ class Attempt(db.Model):
     wrong_count: Mapped[int] = mapped_column(Integer, nullable=False)
     attempt_number: Mapped[int] = mapped_column(Integer, nullable=False)
     label: Mapped[MasteryLabel | None] = mapped_column(
-        SQLEnum(MasteryLabel, native_enum=False, length=30),
+        SQLEnum(
+            MasteryLabel,
+            name="masterylabel",
+            values_callable=lambda obj: [e.value for e in obj],
+            length=30,
+        ),
         nullable=True,
     )
     created_at: Mapped[datetime] = mapped_column(

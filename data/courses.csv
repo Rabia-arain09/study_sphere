@@ -1,0 +1,45 @@
+﻿semester,course_code,title,domain,credit_hours,contact_hours,is_elective
+1,CS102,Programming Fundamentals,Computing Core,4,3-3,0
+1,GE101,Application of Information and Communication Technologies,General Education,3,2-3,0
+1,GE102,Islamic Studies / Ethics,General Education,2,2-0,0
+1,GE104,Discrete Structures,General Education,3,3-0,0
+1,GE105,Functional English,General Education,3,3-0,0
+2,CS150,Object Oriented Programming,Computing Core,4,3-3,0
+2,CS151,Database Systems,Computing Core,4,3-3,0
+2,GE150,Applied Physics,General Education,3,2-3,0
+2,GE151,Calculus and Analytic Geometry,General Education,3,3-0,0
+2,GE152,Expository Writing,General Education,3,3-0,0
+3,CS201,Data Structures,Computing Core,4,3-3,0
+3,MT201,Multivariate Calculus,Mathematics,3,3-0,0
+3,CS202,Digital Logic Design,Computing Core,3,2-3,0
+3,CS203,Computer Networks,Computing Core,3,2-3,0
+3,CS204,Software Engineering,Computing Core,3,3-0,0
+3,GE201,Ideology and Constitution of Pakistan,General Education,2,2-0,0
+4,CS250,Computer Organization and Assembly Language,Computing Core,3,2-3,0
+4,CS251,Theory of Automata,Domain Core,3,3-0,0
+4,CS252,Advanced Database Management Systems,Domain Core,3,2-3,0
+4,CS253,Artificial Intelligence,Computing Core,3,2-3,0
+4,CS254,Information Security,Computing Core,3,3-0,0
+4,MT250,Probability and Statistics,Mathematics,3,3-0,0
+5,CS301,Operating Systems,Computing Core,3,2-3,0
+5,CS302,Compiler Construction,Domain Core,3,2-3,0
+5,CS303,Computer Architecture,Domain Core,3,3-0,0
+5,CS3xx-E1,Web Engineering,Domain Elective,3,2-3,1
+5,CS3xx-E2,Machine Learning,Domain Elective,3,2-3,1
+5,MT301,Linear Algebra,Mathematics,3,3-0,0
+6,CS350,HCI and Computer Graphics,Domain Core,3,2-3,0
+6,CS351,Parallel and Distributed Computing,Domain Core,3,2-3,0
+6,CS3xx-E3,Elective III (Domain Elective),Domain Elective,3,2-3,1
+6,CS3xx-E4,Elective IV (Domain Elective),Domain Elective,3,2-3,1
+6,CS352,Analysis of Algorithms,Computing Core,3,3-0,0
+6,EN350,Technical and Business Writing,Mathematics and Supporting,3,3-0,0
+7,CS401,Final Year Project I,Computing Core,2,0-6,0
+7,CS4xx-E5,Elective V (Domain Elective),Domain Elective,3,2-3,1
+7,CS4xx-E6,Elective VI (Domain Elective),Domain Elective,3,2-3,1
+7,CS4xx-E7,Elective VII (Domain Elective),Domain Elective,3,2-3,1
+7,SS401,Elective Supporting Course (Social Science),Supporting Elective,3,3-0,1
+7,GE401,Entrepreneurship,General Education,2,2-0,0
+8,CS450,Final Year Project II,Computing Core,4,0-12,0
+8,GE450,Social Science (Introduction to Management),General Education,2,2-0,0
+8,GE451,Arts and Humanities (Professional Practices),General Education,2,2-0,0
+8,GE452,Civics and Community Engagement,General Education,2,2-0,0

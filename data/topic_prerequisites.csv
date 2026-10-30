@@ -1,0 +1,195 @@
+﻿subject,topic,prerequisite_subject,prerequisite_topic
+Machine Learning,Artificial Neurons and the Perceptron,Machine Learning,Introduction to Machine Learning
+Machine Learning,Adaptive Linear Neuron (Adaline),Machine Learning,Artificial Neurons and the Perceptron
+Machine Learning,"Python Basics: Data Types, Control Structures and Collections",Machine Learning,Python Setup for Machine Learning
+Machine Learning,NumPy Arrays,Machine Learning,"Python Basics: Data Types, Control Structures and Collections"
+Machine Learning,Reading and Writing Data with pandas,Machine Learning,NumPy Arrays
+Machine Learning,"Plotting with Matplotlib: Line, Bar and Scatter Graphs",Machine Learning,Reading and Writing Data with pandas
+Machine Learning,"Box Plots, Pie Charts and Dataset Visualization",Machine Learning,"Plotting with Matplotlib: Line, Bar and Scatter Graphs"
+Machine Learning,Choosing a Classification Algorithm,Machine Learning,Introduction to Machine Learning
+Machine Learning,First Steps with scikit-learn,Machine Learning,Choosing a Classification Algorithm
+Machine Learning,First Steps with scikit-learn,Machine Learning,Reading and Writing Data with pandas
+Machine Learning,Logistic Regression and Class Probabilities,Machine Learning,First Steps with scikit-learn
+Machine Learning,Support Vector Machines,Machine Learning,First Steps with scikit-learn
+Machine Learning,Decision Tree Learning,Machine Learning,First Steps with scikit-learn
+Machine Learning,K-Nearest Neighbors (KNN),Machine Learning,First Steps with scikit-learn
+Machine Learning,Dealing with Missing Data,Machine Learning,Reading and Writing Data with pandas
+Machine Learning,Handling Categorical Data,Machine Learning,Dealing with Missing Data
+Machine Learning,Partitioning a Dataset into Training and Test Sets,Machine Learning,Handling Categorical Data
+Machine Learning,Feature Scaling,Machine Learning,Partitioning a Dataset into Training and Test Sets
+Machine Learning,Selecting Meaningful Features,Machine Learning,Feature Scaling
+Machine Learning,Assessing Feature Importance with Random Forests,Machine Learning,Decision Tree Learning
+Machine Learning,Assessing Feature Importance with Random Forests,Machine Learning,Selecting Meaningful Features
+Machine Learning,Principal Component Analysis (PCA),Machine Learning,Feature Scaling
+Machine Learning,Linear Discriminant Analysis (LDA),Machine Learning,Principal Component Analysis (PCA)
+Machine Learning,Streamlining Workflows with Pipelines,Machine Learning,Feature Scaling
+Machine Learning,Streamlining Workflows with Pipelines,Machine Learning,Logistic Regression and Class Probabilities
+Machine Learning,K-Fold Cross-Validation,Machine Learning,Partitioning a Dataset into Training and Test Sets
+Machine Learning,Learning and Validation Curves,Machine Learning,K-Fold Cross-Validation
+Machine Learning,Hyperparameter Tuning with Grid Search,Machine Learning,K-Fold Cross-Validation
+Machine Learning,Hyperparameter Tuning with Grid Search,Machine Learning,Streamlining Workflows with Pipelines
+Machine Learning,Performance Evaluation Metrics,Machine Learning,Partitioning a Dataset into Training and Test Sets
+Machine Learning,Dealing with Class Imbalance,Machine Learning,Performance Evaluation Metrics
+Machine Learning,Preparing Text Data for Sentiment Analysis,Machine Learning,Reading and Writing Data with pandas
+Machine Learning,The Bag-of-Words Model,Machine Learning,Preparing Text Data for Sentiment Analysis
+Machine Learning,Document Classification with Logistic Regression,Machine Learning,The Bag-of-Words Model
+Machine Learning,Document Classification with Logistic Regression,Machine Learning,Logistic Regression and Class Probabilities
+Machine Learning,Topic Modeling with Latent Dirichlet Allocation,Machine Learning,The Bag-of-Words Model
+Machine Learning,Embedding ML Models in a Flask Web Application,Machine Learning,Document Classification with Logistic Regression
+Machine Learning,Introduction to Linear Regression,Machine Learning,Reading and Writing Data with pandas
+Machine Learning,Exploring the Housing Dataset,Machine Learning,Introduction to Linear Regression
+Machine Learning,Exploring the Housing Dataset,Machine Learning,"Box Plots, Pie Charts and Dataset Visualization"
+Machine Learning,Ordinary Least Squares Linear Regression,Machine Learning,Introduction to Linear Regression
+Machine Learning,Ordinary Least Squares Linear Regression,Machine Learning,Adaptive Linear Neuron (Adaline)
+Machine Learning,Robust Regression with RANSAC,Machine Learning,Ordinary Least Squares Linear Regression
+Machine Learning,Evaluating Regression Models,Machine Learning,Ordinary Least Squares Linear Regression
+Machine Learning,Evaluating Regression Models,Machine Learning,K-Fold Cross-Validation
+Machine Learning,K-Means Clustering,Machine Learning,Feature Scaling
+Machine Learning,Hierarchical Clustering,Machine Learning,K-Means Clustering
+Machine Learning,Density-Based Clustering with DBSCAN,Machine Learning,K-Means Clustering
+Machine Learning,NLP Overview and Preparing Text for Deep Learning,Machine Learning,The Bag-of-Words Model
+Machine Learning,Word Embeddings,Machine Learning,NLP Overview and Preparing Text for Deep Learning
+Machine Learning,"Recurrent Networks: RNN, LSTM and Bi-LSTM",Machine Learning,Word Embeddings
+Machine Learning,"Recurrent Networks: RNN, LSTM and Bi-LSTM",Machine Learning,Adaptive Linear Neuron (Adaline)
+Machine Learning,Introduction to Convolutional Neural Networks,Machine Learning,Adaptive Linear Neuron (Adaline)
+Machine Learning,Training Convnets on Small Datasets,Machine Learning,Introduction to Convolutional Neural Networks
+Machine Learning,Using Pre-trained Convnets,Machine Learning,Training Convnets on Small Datasets
+Operating Systems,Computer-System Organization,Operating Systems,What Operating Systems Do
+Operating Systems,Computer-System Architecture,Operating Systems,Computer-System Organization
+Operating Systems,Operating-System Operations and Resource Management,Operating Systems,Computer-System Organization
+Operating Systems,"Security, Protection and Virtualization",Operating Systems,Operating-System Operations and Resource Management
+Operating Systems,Kernel Data Structures and Computing Environments,Operating Systems,What Operating Systems Do
+Operating Systems,Operating-System Services and User Interface,Operating Systems,What Operating Systems Do
+Operating Systems,System Calls,Operating Systems,Operating-System Services and User Interface
+Operating Systems,Linkers and Loaders,Operating Systems,System Calls
+Operating Systems,Operating-System Design and Structure,Operating Systems,System Calls
+Operating Systems,Building and Booting an Operating System,Operating Systems,Operating-System Design and Structure
+Operating Systems,Process Concept,Operating Systems,System Calls
+Operating Systems,Process Scheduling and Operations on Processes,Operating Systems,Process Concept
+Operating Systems,Interprocess Communication,Operating Systems,Process Scheduling and Operations on Processes
+Operating Systems,Multicore Programming and Multithreading Models,Operating Systems,Process Concept
+Operating Systems,Thread Libraries and Implicit Threading,Operating Systems,Multicore Programming and Multithreading Models
+Operating Systems,Threading Issues,Operating Systems,Thread Libraries and Implicit Threading
+Operating Systems,CPU Scheduling: Criteria and Algorithms,Operating Systems,Process Scheduling and Operations on Processes
+Operating Systems,Thread and Multiprocessor Scheduling,Operating Systems,CPU Scheduling: Criteria and Algorithms
+Operating Systems,Thread and Multiprocessor Scheduling,Operating Systems,Multicore Programming and Multithreading Models
+Operating Systems,Real-Time CPU Scheduling,Operating Systems,CPU Scheduling: Criteria and Algorithms
+Operating Systems,Algorithm Evaluation and Operating-System Examples,Operating Systems,CPU Scheduling: Criteria and Algorithms
+Operating Systems,The Critical-Section Problem and Peterson's Solution,Operating Systems,Interprocess Communication
+Operating Systems,The Critical-Section Problem and Peterson's Solution,Operating Systems,Multicore Programming and Multithreading Models
+Operating Systems,Hardware Support for Synchronization,Operating Systems,The Critical-Section Problem and Peterson's Solution
+Operating Systems,Mutex Locks and Semaphores,Operating Systems,Hardware Support for Synchronization
+Operating Systems,Monitors,Operating Systems,Mutex Locks and Semaphores
+Operating Systems,Deadlock System Model and Characterization,Operating Systems,Mutex Locks and Semaphores
+Operating Systems,Methods for Handling Deadlocks and Deadlock Prevention,Operating Systems,Deadlock System Model and Characterization
+Operating Systems,Deadlock Avoidance,Operating Systems,Deadlock System Model and Characterization
+Operating Systems,Deadlock Detection and Recovery,Operating Systems,Deadlock Avoidance
+Operating Systems,Contiguous Memory Allocation,Operating Systems,Computer-System Organization
+Operating Systems,Contiguous Memory Allocation,Operating Systems,Process Concept
+Operating Systems,Paging,Operating Systems,Contiguous Memory Allocation
+Operating Systems,Structure of the Page Table,Operating Systems,Paging
+Operating Systems,Swapping,Operating Systems,Paging
+Operating Systems,Demand Paging,Operating Systems,Paging
+Operating Systems,Copy-on-Write,Operating Systems,Demand Paging
+Operating Systems,Page Replacement Algorithms,Operating Systems,Demand Paging
+Operating Systems,Allocation of Frames and Thrashing,Operating Systems,Page Replacement Algorithms
+Compiler Construction,Phases and Structure of a Compiler,Compiler Construction,Introduction to Compilers and Language Processors
+Compiler Construction,"Compiler Types, Assemblers, Loaders and Tools",Compiler Construction,Phases and Structure of a Compiler
+Compiler Construction,"Programming Language Basics: Names, Binding and Scope",Compiler Construction,Introduction to Compilers and Language Processors
+Compiler Construction,Parameter Passing and Aliasing,Compiler Construction,"Programming Language Basics: Names, Binding and Scope"
+Compiler Construction,Syntax Definition and Context-Free Grammars,Compiler Construction,Phases and Structure of a Compiler
+Compiler Construction,Parse Trees and Ambiguity,Compiler Construction,Syntax Definition and Context-Free Grammars
+Compiler Construction,Associativity and Precedence of Operators,Compiler Construction,Parse Trees and Ambiguity
+Compiler Construction,Syntax-Directed Translation Basics,Compiler Construction,Associativity and Precedence of Operators
+Compiler Construction,Symbol Tables,Compiler Construction,"Programming Language Basics: Names, Binding and Scope"
+Compiler Construction,Symbol Tables,Compiler Construction,Parse Trees and Ambiguity
+Compiler Construction,Role of the Lexical Analyzer and Input Buffering,Compiler Construction,Phases and Structure of a Compiler
+Compiler Construction,Specification and Recognition of Tokens,Compiler Construction,Role of the Lexical Analyzer and Input Buffering
+Compiler Construction,Regular Expressions for Lexical Analysis,Compiler Construction,Specification and Recognition of Tokens
+Compiler Construction,Finite Automata: NFA and DFA,Compiler Construction,Regular Expressions for Lexical Analysis
+Compiler Construction,From Regular Expressions to Automata,Compiler Construction,Finite Automata: NFA and DFA
+Compiler Construction,The Lex/Flex Lexical-Analyzer Generator,Compiler Construction,Regular Expressions for Lexical Analysis
+Compiler Construction,Role of the Parser and Syntax Error Handling,Compiler Construction,Syntax Definition and Context-Free Grammars
+Compiler Construction,Top-Down Parsing and Recursive Descent,Compiler Construction,Role of the Parser and Syntax Error Handling
+Compiler Construction,Left Recursion and Left Factoring,Compiler Construction,Top-Down Parsing and Recursive Descent
+Compiler Construction,FIRST and FOLLOW Sets,Compiler Construction,Left Recursion and Left Factoring
+Compiler Construction,LL(1) Grammars and Predictive Parsing,Compiler Construction,FIRST and FOLLOW Sets
+Compiler Construction,Bottom-Up Parsing and Shift-Reduce Parsing,Compiler Construction,Role of the Parser and Syntax Error Handling
+Compiler Construction,LR(0) Items and the LR(0) Automaton,Compiler Construction,Bottom-Up Parsing and Shift-Reduce Parsing
+Compiler Construction,LR(0) Items and the LR(0) Automaton,Compiler Construction,Finite Automata: NFA and DFA
+Compiler Construction,SLR Parsing Tables,Compiler Construction,LR(0) Items and the LR(0) Automaton
+Compiler Construction,SLR Parsing Tables,Compiler Construction,FIRST and FOLLOW Sets
+Compiler Construction,Ambiguous Grammars and Resolving Conflicts,Compiler Construction,SLR Parsing Tables
+Compiler Construction,Error Recovery in LR Parsing and Building a Parser,Compiler Construction,Ambiguous Grammars and Resolving Conflicts
+Compiler Construction,Syntax-Directed Definitions: Synthesized and Inherited Attributes,Compiler Construction,Syntax-Directed Translation Basics
+Compiler Construction,Syntax-Directed Definitions: Synthesized and Inherited Attributes,Compiler Construction,Parse Trees and Ambiguity
+Compiler Construction,"Dependency Graphs, S-Attributed and L-Attributed Definitions",Compiler Construction,Syntax-Directed Definitions: Synthesized and Inherited Attributes
+Compiler Construction,Syntax-Directed Translation with Flex and Bison,Compiler Construction,The Lex/Flex Lexical-Analyzer Generator
+Compiler Construction,Syntax-Directed Translation with Flex and Bison,Compiler Construction,Error Recovery in LR Parsing and Building a Parser
+Compiler Construction,Syntax-Directed Translation with Flex and Bison,Compiler Construction,Syntax-Directed Definitions: Synthesized and Inherited Attributes
+Compiler Construction,"Intermediate Code: Syntax Trees, DAGs and Three-Address Code",Compiler Construction,Syntax-Directed Definitions: Synthesized and Inherited Attributes
+Compiler Construction,Type Checking,Compiler Construction,Syntax-Directed Definitions: Synthesized and Inherited Attributes
+Compiler Construction,Type Checking,Compiler Construction,Symbol Tables
+Compiler Construction,Control Flow and Implementing Three-Address Code,Compiler Construction,"Intermediate Code: Syntax Trees, DAGs and Three-Address Code"
+Compiler Construction,Control Flow and Implementing Three-Address Code,Compiler Construction,Type Checking
+Web Engineering,The Internet and the World Wide Web,Web Engineering,Introduction to Web Engineering
+Web Engineering,Web Browsers,Web Engineering,The Internet and the World Wide Web
+Web Engineering,Web Servers and URLs,Web Engineering,The Internet and the World Wide Web
+Web Engineering,The HyperText Transfer Protocol (HTTP),Web Engineering,Web Servers and URLs
+Web Engineering,"IP Addresses, IPv4 and IPv6",Web Engineering,The Internet and the World Wide Web
+Web Engineering,Domain Name System,Web Engineering,"IP Addresses, IPv4 and IPv6"
+Web Engineering,Web Request-Response Cycle,Web Engineering,The HyperText Transfer Protocol (HTTP)
+Web Engineering,Web Request-Response Cycle,Web Engineering,Domain Name System
+Web Engineering,Web Request-Response Cycle,Web Engineering,Web Browsers
+Web Engineering,Website vs Web Application and Categories of Web Applications,Web Engineering,Web Request-Response Cycle
+Web Engineering,Web Application Architecture,Web Engineering,Website vs Web Application and Categories of Web Applications
+Web Engineering,HTML Document Structure and Elements,Web Engineering,Web Browsers
+Web Engineering,"HTML Text, Lists, Links and Tables",Web Engineering,HTML Document Structure and Elements
+Web Engineering,HTML Forms and Inputs,Web Engineering,"HTML Text, Lists, Links and Tables"
+Web Engineering,"HTML Layout, Multimedia and Inline vs Block Elements",Web Engineering,"HTML Text, Lists, Links and Tables"
+Web Engineering,"CSS Basics: Selectors, the Cascade and Specificity",Web Engineering,HTML Document Structure and Elements
+Web Engineering,"CSS Box Model, Units and Colors",Web Engineering,"CSS Basics: Selectors, the Cascade and Specificity"
+Web Engineering,"CSS Fonts, Element Flow, Float and Position",Web Engineering,"CSS Box Model, Units and Colors"
+Web Engineering,"CSS Fonts, Element Flow, Float and Position",Web Engineering,"HTML Layout, Multimedia and Inline vs Block Elements"
+Web Engineering,Bootstrap Introduction and Grid System,Web Engineering,"CSS Fonts, Element Flow, Float and Position"
+Web Engineering,Bootstrap Components,Web Engineering,Bootstrap Introduction and Grid System
+Web Engineering,Bootstrap Components,Web Engineering,HTML Forms and Inputs
+Web Engineering,Bootstrap Styling Utilities,Web Engineering,Bootstrap Introduction and Grid System
+Web Engineering,"JavaScript Variables, Data Types and Operators",Web Engineering,HTML Document Structure and Elements
+Web Engineering,JavaScript Control Flow and Loops,Web Engineering,"JavaScript Variables, Data Types and Operators"
+Web Engineering,JavaScript Arrays and Objects,Web Engineering,"JavaScript Variables, Data Types and Operators"
+Web Engineering,JavaScript Functions and Scope,Web Engineering,JavaScript Control Flow and Loops
+Web Engineering,JavaScript Errors and Exception Handling,Web Engineering,JavaScript Functions and Scope
+Web Engineering,"Higher-Order Functions, Closures and Array Iterators",Web Engineering,JavaScript Functions and Scope
+Web Engineering,"Higher-Order Functions, Closures and Array Iterators",Web Engineering,JavaScript Arrays and Objects
+Web Engineering,DOM Introduction and Selecting Elements,Web Engineering,JavaScript Arrays and Objects
+Web Engineering,DOM Introduction and Selecting Elements,Web Engineering,HTML Document Structure and Elements
+Web Engineering,DOM Manipulation,Web Engineering,DOM Introduction and Selecting Elements
+Web Engineering,Working with Events,Web Engineering,DOM Manipulation
+Web Engineering,Local Storage and Cookies,Web Engineering,Working with Events
+Web Engineering,Local Storage and Cookies,Web Engineering,Web Browsers
+Web Engineering,"ES6 Features: Template Literals, Arrow Functions and Destructuring",Web Engineering,JavaScript Functions and Scope
+Web Engineering,"ES6 Features: Template Literals, Arrow Functions and Destructuring",Web Engineering,JavaScript Arrays and Objects
+Web Engineering,ES6 Modules,Web Engineering,"ES6 Features: Template Literals, Arrow Functions and Destructuring"
+Web Engineering,Promises and Asynchronous JavaScript,Web Engineering,"ES6 Features: Template Literals, Arrow Functions and Destructuring"
+Web Engineering,Introduction to React and JSX,Web Engineering,ES6 Modules
+Web Engineering,Introduction to React and JSX,Web Engineering,DOM Manipulation
+Web Engineering,React Components and Props,Web Engineering,Introduction to React and JSX
+Web Engineering,React State and Component Architecture,Web Engineering,React Components and Props
+Web Engineering,"React Events, Forms and Refs",Web Engineering,React State and Component Architecture
+Web Engineering,"React Events, Forms and Refs",Web Engineering,Working with Events
+Web Engineering,Fetching Data from an API in React,Web Engineering,"React Events, Forms and Refs"
+Web Engineering,Fetching Data from an API in React,Web Engineering,Promises and Asynchronous JavaScript
+Web Engineering,Component Life Cycle and Hooks,Web Engineering,React State and Component Architecture
+Web Engineering,React Router and Single-Page Applications,Web Engineering,Component Life Cycle and Hooks
+Web Engineering,React Router and Single-Page Applications,Web Engineering,Fetching Data from an API in React
+Web Engineering,Introduction to Node.js,Web Engineering,Promises and Asynchronous JavaScript
+Web Engineering,Introduction to Node.js,Web Engineering,Web Servers and URLs
+Web Engineering,Node.js Modules and NPM,Web Engineering,Introduction to Node.js
+Web Engineering,Creating a Web Server and Handling HTTP Requests,Web Engineering,Node.js Modules and NPM
+Web Engineering,Creating a Web Server and Handling HTTP Requests,Web Engineering,The HyperText Transfer Protocol (HTTP)
+Web Engineering,Node.js Events and the EventEmitter Class,Web Engineering,Node.js Modules and NPM
+Web Engineering,Debugging Node.js Applications,Web Engineering,Node.js Modules and NPM
+Web Engineering,Express.js Routing,Web Engineering,Creating a Web Server and Handling HTTP Requests
+Web Engineering,Database Connectivity and CRUD Operations,Web Engineering,Express.js Routing
+Web Engineering,Template Engines (EJS),Web Engineering,Express.js Routing

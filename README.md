@@ -1,8 +1,8 @@
 # StudySphere 🎓
 
-StudySphere is a production-grade, adaptive ML-based personalized study platform. Students navigate through their curriculum hierarchically (**Semester &rarr; Subject &rarr; Topic**), complete topic-specific quizzes, and receive automated mastery assessments powered by a **scikit-learn Decision Tree classifier** that categorizes topic mastery into **Strong**, **Needs Revision**, or **Weak**.
+StudySphere is a production-grade, adaptive ML-based personalized study platform. Students navigate through their curriculum hierarchically (**Semester &rarr; Course &rarr; Topic**), complete topic-specific quizzes, and receive automated mastery assessments powered by a **scikit-learn Decision Tree classifier** that categorizes topic mastery into four performance tiers: **Weak**, **Good**, **Better**, or **Excellent**.
 
-When foundational deficits are detected, StudySphere performs **prerequisite-based knowledge gap analysis** across curriculum concept dependency graphs. Additionally, students can upload unstructured study materials (raw text, document images, or web URLs) to extract concepts via OCR and automatically synthesize summaries and calibrated questions via LLM pipelines.
+When foundational deficits are detected, StudySphere performs **prerequisite-based knowledge gap analysis** across curriculum concept dependency graphs. Additionally, students can upload unstructured study materials (raw text, document images, or web URLs) to extract concepts via OCR and automatically synthesize summaries and calibrated questions via LLM pipelines. Authoritative Markdown lecture notes stored directly on topics serve as the pedagogical ground truth.
 
 ---
 
@@ -23,38 +23,44 @@ flowchart TD
         Factory["create_app() Factory"]
         Extensions["Extensions (SQLAlchemy + Migrate)"]
         Config["Config (Dev / Test / Prod)"]
+        CLI["CLI Commands (db-check, load-curriculum)"]
     end
 
     subgraph Services["Service & Domain Logic (app/services/)"]
+        CurriculumLoader["Curriculum Loader & Validator (DAG)"]
         GapAnalysis["Knowledge Gap Graph Traversal (DAG)"]
         QuizEngine["Scoring & Evaluation Engine"]
         IngestionService["OCR & LLM Synthesis Pipeline"]
     end
 
     subgraph ML["Machine Learning Pipeline (ml/)"]
-        DTClassifier["Decision Tree Mastery Classifier"]
+        DTClassifier["Decision Tree Mastery Classifier (4-Level)"]
         FeatureExtractor["Feature Vector Preprocessor"]
         ModelStorage["Joblib Model Artifacts"]
     end
 
-    subgraph DB["Persistence Layer (SQLAlchemy ORM)"]
+    subgraph DB["Persistence Layer (SQLAlchemy ORM + Supabase PostgreSQL)"]
+        CoursesTbl[("courses")]
+        CoursePrereqsTbl[("course_prerequisites")]
         UsersTbl[("users")]
-        TopicsTbl[("topics")]
+        TopicsTbl[("topics (with notes & content)")]
         PrereqsTbl[("prerequisites")]
         ResourcesTbl[("resources")]
         QuestionsTbl[("questions")]
-        AttemptsTbl[("attempts")]
+        AttemptsTbl[("attempts (Weak / Good / Better / Excellent)")]
     end
 
     UI --> AuthBP & TopicsBP & QuizBP & UploadBP & DashBP
     AuthBP & TopicsBP & QuizBP & UploadBP & DashBP --> Factory
-    Factory --> Extensions & Config
+    Factory --> Extensions & Config & CLI
+    CLI --> CurriculumLoader
+    CurriculumLoader --> CoursesTbl & CoursePrereqsTbl & TopicsTbl & PrereqsTbl
     QuizBP --> QuizEngine
     UploadBP --> IngestionService
     DashBP --> GapAnalysis
     QuizEngine --> FeatureExtractor --> DTClassifier
     DTClassifier --> ModelStorage
-    GapAnalysis --> PrereqsTbl
+    GapAnalysis --> PrereqsTbl & CoursePrereqsTbl
     Extensions --> DB
     Services --> DB
 ```
@@ -67,40 +73,52 @@ flowchart TD
 study_sphere/
 ├── app/
 │   ├── __init__.py          # create_app application factory & route registration
+│   ├── cli.py               # Custom CLI commands (db-check, load-curriculum)
 │   ├── config.py            # Development, Testing, Production configurations & DB fallback
 │   ├── extensions.py        # SQLAlchemy & Flask-Migrate extension singletons
 │   ├── blueprints/          # Modular domain-driven route handlers
 │   │   ├── __init__.py      # Blueprint package exporter
 │   │   ├── auth/            # Authentication, session, and student registration
-│   │   ├── topics/          # Semester > Subject > Topic browsing & syllabus tree
+│   │   ├── topics/          # Semester > Course > Topic browsing & syllabus tree
 │   │   ├── quiz/            # Quiz sessions, answer evaluation, and attempt recording
 │   │   ├── upload/          # Multimodal ingestion (OCR text/image/URL)
 │   │   └── dashboard/       # Knowledge gap visualization & mastery analytics
 │   ├── models/              # Relational models with ML pipeline docstrings
 │   │   ├── __init__.py      # Model registry exporter
 │   │   ├── user.py          # User authentication and cohort profile
-│   │   ├── topic.py         # Curriculum nodes with difficulty check & composite uniqueness
+│   │   ├── course.py        # Course & CoursePrerequisite models with cascading constraints
+│   │   ├── topic.py         # Curriculum nodes with course_id, Markdown notes & difficulty
 │   │   ├── prerequisite.py  # Directed knowledge graph edges & self-reference checks
 │   │   ├── resource.py      # Targeted remediation media (notes, diagrams, links)
 │   │   ├── question.py      # Assessment bank items (curriculum & OCR/LLM generated)
-│   │   └── attempt.py       # Attempt logs, feature inputs & Decision Tree mastery labels
-│   ├── services/            # Domain logic (knowledge gap traversal, OCR/LLM integration)
-│   │   └── __init__.py
+│   │   └── attempt.py       # Attempt logs & 4-tier Decision Tree mastery labels
+│   ├── services/            # Domain logic (curriculum loader, DAG gap analysis)
+│   │   ├── __init__.py
+│   │   └── curriculum_loader.py # Multi-CSV validation, DAG cycle detection & upsert
 │   ├── static/              # Frontend static assets
 │   │   ├── css/main.css
 │   │   ├── js/main.js
 │   │   └── img/
 │   └── templates/           # Jinja2 presentation templates
 │       └── base.html
-├── data/                    # Dataset benchmarks, training datasets, and exports
+├── data/                    # Curriculum dataset benchmarks (courses, topics, prerequisites)
+│   ├── courses.csv              # 44 degree courses (code, title, domain, credits, contact)
+│   ├── course_prerequisites.csv # 12 course-level academic prerequisites
+│   ├── topics.csv               # 165 syllabus topics with tags, difficulty & week
+│   └── topic_prerequisites.csv  # 194 directed topic-level concept prerequisites
 ├── migrations/              # Alembic / Flask-Migrate migration scripts
 │   ├── versions/            # Versioned migration revision files
+│   │   ├── fe0300e0055e_initial_migration.py
+│   │   ├── 856dc8c30709_enable_row_level_security.py
+│   │   └── ea3d4269939c_course_model_notes_columns_4level_labels.py
 │   └── env.py
 ├── ml/                      # Scikit-learn pipelines, Decision Tree trainer & inference
 │   └── __init__.py
 ├── tests/                   # Pytest automated test suite
 │   ├── __init__.py
 │   ├── conftest.py          # App and test fixtures
+│   ├── test_config.py       # Configuration and URI masking tests
+│   ├── test_curriculum_loader.py # Loader validations, cycles, idempotency & real CSVs
 │   ├── test_factory.py      # App factory and health checks
 │   └── test_models.py       # Model constraints, foreign keys, and relationships
 ├── .env.example             # Environment variable template (no secrets)
@@ -194,22 +212,77 @@ Follow these steps to connect your local development environment to the shared S
 
 ---
 
-### 5. Apply Database Migrations
-Generate tables using Flask-Migrate:
+## Database Migrations & Curriculum Ingestion
+
+### 1. Apply Database Migrations
+Generate and upgrade tables using Flask-Migrate:
 ```bash
 flask --app run.py db upgrade
 ```
 
-### 6. Run the Application
+### 2. Curriculum Data Files (`data/`)
+StudySphere ingests curriculum content from four relational CSV files located in `data/` (encoded with `utf-8-sig`):
+- `courses.csv`: Defines accredited degree courses (`semester`, `course_code`, `title`, `domain`, `credit_hours`, `contact_hours`, `is_elective`).
+- `course_prerequisites.csv`: Declares macro course-level dependencies (`course_code`, `prerequisite_code`).
+- `topics.csv`: Contains topic syllabus concepts linked to courses by title (`semester`, `subject`, `course_code`, `week`, `topic`, `difficulty`, `tags`, `description`).
+- `topic_prerequisites.csv`: Maps directed topic concept dependencies (`subject`, `topic`, `prerequisite_subject`, `prerequisite_topic`).
+
+### 3. Curriculum Loader CLI
+Ingest curriculum datasets using the custom CLI command:
+```bash
+# Validate and ingest into the configured database (SQLite or Supabase PostgreSQL)
+flask --app run.py load-curriculum --data-dir data
+
+# Dry-run validation without writing to the database
+flask --app run.py load-curriculum --data-dir data --dry-run
+```
+
+**Key Features of the Curriculum Loader**:
+- **Strict Pre-Write Validation**: Verifies file existence, required column headers, integer difficulty ranges (1–5), no duplicate topic names within subjects, referential integrity across courses and topics, absence of self-dependencies, and directed acyclic graph (DAG) cycle detection using depth-first search.
+- **Fail-Fast Safety**: If any validation rule fails, detailed error messages are printed and the process terminates non-zero without writing any data.
+- **Transactional Idempotency**: Executes inside a single database transaction using natural keys (`Course.code`, `CoursePrerequisite.(course_id, prerequisite_course_id)`, `Topic.(semester, subject, name)`, `Prerequisite.(topic_id, prerequisite_topic_id)`). Running the loader repeatedly updates attributes without duplicating rows.
+- **Summary Reporting**: Displays an execution summary table detailing total rows processed per table.
+
+### 4. Run the Application
 ```bash
 python run.py
 ```
 The server will start at `http://127.0.0.1:5000/`. You can verify health at `http://127.0.0.1:5000/health`.
 
-### 7. Run Automated Tests
+### 5. Run Automated Tests
 ```bash
 pytest -v
 ```
+
+---
+
+## Database Schema & Models
+
+### 1. New & Updated Entities
+- **`Course`** (`courses`):
+  - `id`: Integer primary key, autoincrement.
+  - `code`: Unique course code (e.g., `CS102`, `CS3xx-E2`).
+  - `title`: Unique course title (e.g., `Programming Fundamentals`).
+  - `semester`: Integer academic semester (1–8).
+  - `domain`: Academic area (`Computing Core`, `General Education`, etc.).
+  - `credit_hours`: Integer credit weight (e.g., `3`, `4`).
+  - `contact_hours`: Lecture-lab contact string (e.g., `"3-3"`, `"3-0"`).
+  - `is_elective`: Boolean flag distinguishing core vs elective courses.
+- **`CoursePrerequisite`** (`course_prerequisites`):
+  - `course_id` & `prerequisite_course_id`: Foreign keys to `courses.id` (`ON DELETE CASCADE`).
+  - Composite primary key and unique constraint.
+  - `CHECK (course_id != prerequisite_course_id)` preventing self-prerequisites.
+- **`Topic`** (`topics`) updates:
+  - `course_id`: Foreign key to `courses.id` (`ON DELETE CASCADE`, not null, indexed).
+  - `week`: String representing academic week/schedule (e.g., `"1"`, `"2-3"`, `"11-13"`).
+  - `content`: Text holding authoritative study notes in Markdown format.
+  - `content_source`: Enum (`lecture`, `ai_generated`, nullable).
+  - `content_reviewed`: Boolean tracking instructor/teaching-assistant review.
+- **`Attempt.label`** (`attempts`) 4-Tier Enum:
+  - Replaced legacy 3-tier labels with: **`Weak`**, **`Good`**, **`Better`**, **`Excellent`**.
+  - Seamlessly handles PostgreSQL native enum type replacement (`masterylabel`) and SQLite portability.
+- **Row Level Security (RLS)**:
+  - Enabled on `courses` and `course_prerequisites` (alongside existing application tables) in PostgreSQL to guard against unauthenticated public REST access.
 
 ---
 
@@ -247,10 +320,14 @@ To enable 3 developers to work concurrently on `main` without merge conflicts:
 - **Application Factory Pattern**: Adopted `create_app()` factory with modular Blueprint separation (`auth`, `topics`, `quiz`, `upload`, `dashboard`) to isolate developer workflows and eliminate circular dependencies.
 - **Dynamic Database Adapter Switching**: Configured `app/config.py` to automatically normalize Supabase `postgres://` or `postgresql://` URIs to `postgresql+psycopg2://` while falling back to zero-config SQLite (`instance/studysphere.db`).
 - **Standardized Migration Naming Conventions**: Enforced explicit SQLAlchemy `MetaData` constraint naming convention (`ix_`, `uq_`, `ck_`, `fk_`, `pk_`) in `app/extensions.py` to prevent unnamed constraint errors during SQLite and PostgreSQL migrations.
-- **Portability of Enumerations**: Implemented `native_enum=False` on `ResourceType`, `QuestionType`, `QuestionSource`, and `MasteryLabel` to maintain identical schema definitions and validation between local SQLite development and Supabase PostgreSQL production.
+- **Portability of Enumerations**: Implemented `native_enum=False` on `ResourceType`, `QuestionType`, and `QuestionSource` to maintain identical schema definitions and validation between local SQLite development and Supabase PostgreSQL production.
+- **4-Level Mastery Classification**: Transitioned `MasteryLabel` from 3-tier to 4-tier (`Weak`, `Good`, `Better`, `Excellent`) using safe PostgreSQL native enum replacement and SQLite fallback.
+- **Hierarchical Course-Topic Relationship**: Introduced normalized `Course` and `CoursePrerequisite` entities to link topics under degree courses and enforce course-level academic prerequisite DAGs.
+- **Comprehensive Curriculum Ingestion Pipeline**: Built `curriculum_loader.py` with multi-tier validation, DFS cycle detection, and idempotent transactional upserts over natural keys.
+- **Markdown Study Note Content Grounding**: Added `week`, `content` (Markdown), `content_source`, and `content_reviewed` to `Topic` to store authoritative lecture notes for RAG and automated quiz generation.
 - **Explicit Prerequisite Association Entity**: Modeled topic prerequisites via a dedicated `Prerequisite` model with `CASCADE` deletions and a `CHECK(topic_id != prerequisite_topic_id)` constraint to enable recursive DAG traversals during knowledge gap analysis.
 - **Flexible JSON Payload Storage**: Stored quiz question options (`Question.options`) and topic tags (`Topic.tags`) using standard SQLAlchemy `JSON` types to support polymorphic question structures (MCQ options vs theoretical rubrics) without requiring fragile schema alterations.
 - **Decoupled ML Lifecycles**: Isolated scikit-learn models and feature processing under `ml/` and `app/services/` so machine learning training artifacts remain decoupled from web request-response threads.
 - **Supabase Free Tier Connection Pooling & Recycling**: Configured SQLAlchemy engine options with `pool_pre_ping=True`, `pool_recycle=300`, and `pool_size=5` (with `max_overflow=2`) to prevent connection starvation on Supabase Session Poolers while avoiding incompatible pool options on SQLite.
-- **PostgreSQL Row Level Security (RLS) Isolation**: Implemented a dialect-guarded Alembic migration that enables RLS across all application tables (`users`, `topics`, `prerequisites`, `resources`, `questions`, `attempts`) to close unauthenticated access via Supabase's public Data API while allowing direct connection roles (`postgres`) full operational access.
+- **PostgreSQL Row Level Security (RLS) Isolation**: Implemented dialect-guarded Alembic migrations that enable RLS across all application tables (`users`, `courses`, `course_prerequisites`, `topics`, `prerequisites`, `resources`, `questions`, `attempts`) to close unauthenticated access via Supabase's public Data API while allowing direct connection roles (`postgres`) full operational access.
 - **Diagnostic Database CLI Probe**: Created `flask --app run.py db-check` with masked credentials, version queries, table inventory checks, transactional write/read verification, and automated root-cause guidance for common network, SSL, and authentication failures.

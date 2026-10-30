@@ -15,7 +15,7 @@ class Prerequisite(db.Model):
 
     ML Pipeline Role:
         Forms the directed edges of the knowledge dependency Directed Acyclic Graph (DAG).
-        When the Decision Tree classifies a target topic as 'Weak' or 'Needs Revision',
+        When the Decision Tree classifies a target topic below proficiency ('Weak' or 'Good'),
         the Knowledge Gap Analysis service recursively traverses prerequisite relationships
         to identify foundational weak nodes, allowing the recommendation engine to suggest
         prerequisite revision prior to advancing in the target topic.

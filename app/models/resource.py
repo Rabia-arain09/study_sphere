@@ -25,7 +25,7 @@ class Resource(db.Model):
 
     ML Pipeline Role:
         Acts as the delivery payload in the adaptive remediation engine.
-        Once the Decision Tree flags a student's topic mastery as 'Weak' or 'Needs Revision',
+        Once the Decision Tree flags a student's topic mastery below proficiency ('Weak' or 'Good'),
         the recommendation pipeline surfaces prioritized resources matching the topic
         and its deficient prerequisites, guiding students directly to targeted learning aids.
     """

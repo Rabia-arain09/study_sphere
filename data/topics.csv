@@ -1,0 +1,166 @@
+﻿semester,subject,course_code,week,topic,difficulty,tags,description
+5,Machine Learning,CS3xx-E2,1,Introduction to Machine Learning,1,machine learning;supervised;unsupervised;reinforcement,"What machine learning is and the three types: supervised, unsupervised and reinforcement learning."
+5,Machine Learning,CS3xx-E2,1,Python Setup for Machine Learning,1,python;setup;anaconda;libraries,"Installing Python and the core libraries (NumPy, pandas, scikit-learn, Matplotlib) and setting up a working environment."
+5,Machine Learning,CS3xx-E2,1,Artificial Neurons and the Perceptron,2,perceptron;neuron;binary classification;learning rule,How an artificial neuron works and how the perceptron learning rule trains a simple binary classifier.
+5,Machine Learning,CS3xx-E2,1,Adaptive Linear Neuron (Adaline),3,adaline;gradient descent;cost function;convergence,"Gradient descent on a cost function, and why Adaline converges where the perceptron may not."
+5,Machine Learning,CS3xx-E2,2,"Python Basics: Data Types, Control Structures and Collections",1,python;datatypes;loops;lists;tuples;sets,"Python data types, operators, control structures, and lists, tuples and sets."
+5,Machine Learning,CS3xx-E2,2,NumPy Arrays,2,numpy;arrays;multi-dimensional;vectorization,Creating and manipulating one- and multi-dimensional arrays with NumPy.
+5,Machine Learning,CS3xx-E2,2,Reading and Writing Data with pandas,2,pandas;dataframe;csv;read write,"Loading, inspecting and saving datasets with pandas DataFrames."
+5,Machine Learning,CS3xx-E2,3,"Plotting with Matplotlib: Line, Bar and Scatter Graphs",2,matplotlib;line graph;bar graph;scatter;subplots,"Drawing line, bar and scatter graphs and arranging several plots with subplots."
+5,Machine Learning,CS3xx-E2,3,"Box Plots, Pie Charts and Dataset Visualization",2,box plot;pie chart;visualization;eda,"Using box plots and pie charts, and visualizing a dataset to understand its distribution."
+5,Machine Learning,CS3xx-E2,4-5,Choosing a Classification Algorithm,2,classification;algorithm selection;no free lunch,Why no single classifier fits every problem and how to compare candidate algorithms.
+5,Machine Learning,CS3xx-E2,4-5,First Steps with scikit-learn,2,scikit-learn;fit predict;train;classifier,Training a first classifier with scikit-learn using the fit and predict workflow.
+5,Machine Learning,CS3xx-E2,4-5,Logistic Regression and Class Probabilities,3,logistic regression;sigmoid;probability;regularization,Modeling class probabilities with the sigmoid function and controlling overfitting with regularization.
+5,Machine Learning,CS3xx-E2,4-5,Support Vector Machines,3,svm;margin;kernel;support vectors,Maximum-margin classification and the kernel trick for non-linear decision boundaries.
+5,Machine Learning,CS3xx-E2,4-5,Decision Tree Learning,3,decision tree;gini;entropy;information gain;overfitting,"Building trees by splitting on information gain or Gini impurity, and controlling tree depth."
+5,Machine Learning,CS3xx-E2,4-5,K-Nearest Neighbors (KNN),2,knn;distance;lazy learning;k value,A lazy learner that classifies a point by the majority class of its k closest neighbours.
+5,Machine Learning,CS3xx-E2,6-7,Dealing with Missing Data,2,missing data;imputation;nan;pandas,Finding missing values and either removing them or imputing replacements.
+5,Machine Learning,CS3xx-E2,6-7,Handling Categorical Data,2,categorical;ordinal;one-hot encoding;label encoding,"Encoding ordinal and nominal features as numbers, including one-hot encoding."
+5,Machine Learning,CS3xx-E2,6-7,Partitioning a Dataset into Training and Test Sets,1,train test split;holdout;generalization,Splitting data so a model is evaluated on examples it has never seen.
+5,Machine Learning,CS3xx-E2,6-7,Feature Scaling,2,normalization;standardization;min-max;scaling,Bringing features onto the same scale with normalization and standardization.
+5,Machine Learning,CS3xx-E2,6-7,Selecting Meaningful Features,3,feature selection;l1 regularization;sequential selection;overfitting,Reducing overfitting by choosing informative features with L1 regularization and sequential selection.
+5,Machine Learning,CS3xx-E2,6-7,Assessing Feature Importance with Random Forests,3,random forest;feature importance;ensemble,Using a random forest ensemble to rank how much each feature contributes.
+5,Machine Learning,CS3xx-E2,8-9,Principal Component Analysis (PCA),4,pca;variance;eigenvectors;dimensionality reduction;unsupervised,"Unsupervised dimensionality reduction that projects data onto directions of maximum variance, with the math and a Python implementation."
+5,Machine Learning,CS3xx-E2,8-9,Linear Discriminant Analysis (LDA),4,lda;class separability;scatter matrices;supervised,"Supervised dimensionality reduction that maximizes class separability, with the math and a Python implementation."
+5,Machine Learning,CS3xx-E2,10-11,Streamlining Workflows with Pipelines,2,pipeline;workflow;preprocessing;scikit-learn,Chaining preprocessing steps and a model into one pipeline object.
+5,Machine Learning,CS3xx-E2,10-11,K-Fold Cross-Validation,3,cross-validation;k-fold;stratified;model performance,Estimating model performance more reliably by rotating training and validation folds.
+5,Machine Learning,CS3xx-E2,10-11,Learning and Validation Curves,3,learning curve;validation curve;bias;variance,Diagnosing high bias and high variance by plotting performance against data size and parameter values.
+5,Machine Learning,CS3xx-E2,10-11,Hyperparameter Tuning with Grid Search,3,grid search;hyperparameters;tuning;randomized search,Systematically searching hyperparameter combinations to fine-tune a model.
+5,Machine Learning,CS3xx-E2,10-11,Performance Evaluation Metrics,3,confusion matrix;precision;recall;f1;roc;auc,"Reading a confusion matrix and choosing among accuracy, precision, recall, F1 and ROC AUC."
+5,Machine Learning,CS3xx-E2,10-11,Dealing with Class Imbalance,3,class imbalance;resampling;smote;class weights,Handling skewed class distributions with class weights and resampling.
+5,Machine Learning,CS3xx-E2,12,Preparing Text Data for Sentiment Analysis,2,nlp;imdb;text preprocessing;cleaning;tokenization,Cleaning and tokenizing IMDb movie reviews so a model can learn from them.
+5,Machine Learning,CS3xx-E2,12,The Bag-of-Words Model,2,bag of words;tf-idf;vectorization;vocabulary,Turning documents into word-count vectors and weighting them with TF-IDF.
+5,Machine Learning,CS3xx-E2,12,Document Classification with Logistic Regression,3,sentiment analysis;document classification;logistic regression,Training a logistic regression model to classify reviews as positive or negative.
+5,Machine Learning,CS3xx-E2,12,Topic Modeling with Latent Dirichlet Allocation,4,lda;topic modeling;unsupervised;text,Discovering hidden topics in a collection of documents.
+5,Machine Learning,CS3xx-E2,13,Embedding ML Models in a Flask Web Application,3,flask;sqlite;web app;deployment;sentiment analyzer,Serving a trained sentiment classifier from a Flask website backed by SQLite.
+5,Machine Learning,CS3xx-E2,14,Introduction to Linear Regression,2,linear regression;regression;least squares;continuous target,Modeling a continuous target as a linear function of features.
+5,Machine Learning,CS3xx-E2,14,Exploring the Housing Dataset,2,housing dataset;eda;correlation;scatterplot matrix,Visualizing a real dataset and checking feature correlations before modeling.
+5,Machine Learning,CS3xx-E2,14,Ordinary Least Squares Linear Regression,3,ols;gradient descent;normal equation;sklearn,Fitting a regression line by minimizing squared error with gradient descent or the normal equation.
+5,Machine Learning,CS3xx-E2,14,Robust Regression with RANSAC,4,ransac;outliers;robust regression,Fitting a model to inliers so outliers do not distort the result.
+5,Machine Learning,CS3xx-E2,14,Evaluating Regression Models,3,mse;r2;residual plot;regression metrics,"Judging regression quality with residual plots, MSE and R-squared."
+5,Machine Learning,CS3xx-E2,15,K-Means Clustering,3,k-means;clustering;centroid;elbow method;unsupervised,Grouping unlabeled data by assigning points to the nearest of k centroids and choosing k with the elbow method.
+5,Machine Learning,CS3xx-E2,15,Hierarchical Clustering,3,hierarchical clustering;dendrogram;agglomerative;linkage,Building a tree of clusters (a dendrogram) by repeatedly merging the closest groups.
+5,Machine Learning,CS3xx-E2,15,Density-Based Clustering with DBSCAN,3,dbscan;density;noise;epsilon,Finding clusters of arbitrary shape from dense regions and labeling the rest as noise.
+5,Machine Learning,CS3xx-E2,16,NLP Overview and Preparing Text for Deep Learning,2,nlp;tokenization;sequences;text vectorization,A bird's-eye view of NLP and turning raw text into numeric sequences for neural networks.
+5,Machine Learning,CS3xx-E2,16,Word Embeddings,4,word2vec;glove;fasttext;bert;embeddings,"Dense vector representations of words (Word2Vec, GloVe, FastText) and contextual models like BERT."
+5,Machine Learning,CS3xx-E2,16,"Recurrent Networks: RNN, LSTM and Bi-LSTM",5,rnn;lstm;bi-lstm;sequence;vanishing gradient,"Sequence models that keep memory across time steps, and how LSTM gates address vanishing gradients."
+5,Machine Learning,CS3xx-E2,17,Introduction to Convolutional Neural Networks,4,cnn;convolution;pooling;filters;computer vision,How convolution and pooling layers detect visual patterns in images.
+5,Machine Learning,CS3xx-E2,17,Training Convnets on Small Datasets,4,data augmentation;overfitting;cnn;keras,Fighting overfitting on small image datasets with data augmentation and dropout.
+5,Machine Learning,CS3xx-E2,17,Using Pre-trained Convnets,4,transfer learning;feature extraction;fine-tuning;pretrained,Reusing a network trained on a large dataset through feature extraction or fine-tuning.
+5,Operating Systems,CS301,1,What Operating Systems Do,1,operating system;kernel;user view;system view,"The role of an OS as a resource manager and a layer between users, applications and hardware."
+5,Operating Systems,CS301,1,Computer-System Organization,2,interrupts;storage structure;i/o;bootstrap,"How the CPU, memory, devices and interrupts work together at the hardware level."
+5,Operating Systems,CS301,1,Computer-System Architecture,2,multiprocessor;multicore;clustered;single processor,"Single-processor, multiprocessor, multicore and clustered system architectures."
+5,Operating Systems,CS301,1,Operating-System Operations and Resource Management,2,dual mode;timer;process management;memory management;resource management,"Dual-mode operation, timers, and how the OS manages processes, memory, storage and I/O."
+5,Operating Systems,CS301,1,"Security, Protection and Virtualization",2,security;protection;virtualization;virtual machine,How an OS protects resources and how virtualization runs several operating systems on one machine.
+5,Operating Systems,CS301,1,Kernel Data Structures and Computing Environments,2,kernel data structures;lists;trees;hash maps;distributed systems;cloud,"Data structures the kernel relies on and the traditional, mobile, client-server, peer-to-peer and cloud environments."
+5,Operating Systems,CS301,2-3,Operating-System Services and User Interface,1,os services;cli;gui;user interface,"What services an OS offers and how users interact with it through CLI, GUI and touch interfaces."
+5,Operating Systems,CS301,2-3,System Calls,2,system calls;api;parameter passing;types of system calls,"How programs request kernel services, the types of system calls and how parameters are passed."
+5,Operating Systems,CS301,2-3,Linkers and Loaders,3,linker;loader;object file;executable;relocation,How compiled object files are linked and loaded into memory to run.
+5,Operating Systems,CS301,2-3,Operating-System Design and Structure,3,monolithic;layered;microkernel;modules;hybrid,"Design goals and structures: monolithic, layered, microkernel, modular and hybrid kernels."
+5,Operating Systems,CS301,2-3,Building and Booting an Operating System,2,boot;bootstrap loader;kernel build;debugging,Generating an OS for a machine and the steps that start it at power-on.
+5,Operating Systems,CS301,4-5,Process Concept,2,process;pcb;process states;memory layout,"What a process is: its memory layout, states and process control block."
+5,Operating Systems,CS301,4-5,Process Scheduling and Operations on Processes,3,scheduling queues;context switch;fork;exec;process creation;termination,"Scheduling queues, context switching, and creating and terminating processes."
+5,Operating Systems,CS301,4-5,Interprocess Communication,3,ipc;shared memory;message passing;pipes;sockets;client-server,"How processes exchange data using shared memory and message passing, including pipes and sockets."
+5,Operating Systems,CS301,6-7,Multicore Programming and Multithreading Models,3,thread;multicore;parallelism;many-to-one;one-to-one,"Threads, why multicore needs them, and how user threads map to kernel threads."
+5,Operating Systems,CS301,6-7,Thread Libraries and Implicit Threading,3,pthreads;java threads;thread pool;openmp;fork-join,Creating threads with libraries and letting the system manage them with thread pools and fork-join.
+5,Operating Systems,CS301,6-7,Threading Issues,3,fork exec threads;signal handling;thread cancellation;thread-local storage,"Issues such as fork/exec semantics, signals, cancellation and thread-local storage."
+5,Operating Systems,CS301,8,CPU Scheduling: Criteria and Algorithms,3,fcfs;sjf;round robin;priority;turnaround time;waiting time,"Scheduling criteria and the FCFS, SJF, priority, round-robin and multilevel queue algorithms."
+5,Operating Systems,CS301,8,Thread and Multiprocessor Scheduling,4,multiprocessor scheduling;load balancing;processor affinity;smp,"Scheduling threads on several processors, with load balancing and processor affinity."
+5,Operating Systems,CS301,10,Real-Time CPU Scheduling,4,real-time;rate monotonic;edf;deadlines,"Hard and soft real-time scheduling, including rate-monotonic and earliest-deadline-first."
+5,Operating Systems,CS301,10,Algorithm Evaluation and Operating-System Examples,3,deterministic modeling;queueing;simulation;linux scheduler;windows scheduler,"Comparing scheduling algorithms by modeling and simulation, with Linux and Windows examples."
+5,Operating Systems,CS301,11,The Critical-Section Problem and Peterson's Solution,4,race condition;critical section;mutual exclusion;peterson,"Race conditions, the critical-section requirements and Peterson's software solution."
+5,Operating Systems,CS301,11,Hardware Support for Synchronization,4,test and set;compare and swap;atomic;memory barriers,Atomic instructions and memory barriers that make synchronization possible.
+5,Operating Systems,CS301,11,Mutex Locks and Semaphores,4,mutex;semaphore;busy waiting;binary semaphore;counting semaphore,Mutex locks and semaphores for mutual exclusion and ordering.
+5,Operating Systems,CS301,11,Monitors,4,monitor;condition variables;synchronization,A high-level synchronization construct that uses condition variables.
+5,Operating Systems,CS301,13-14,Deadlock System Model and Characterization,3,deadlock;necessary conditions;resource allocation graph;circular wait,"Why deadlocks occur, the four necessary conditions and resource-allocation graphs."
+5,Operating Systems,CS301,13-14,Methods for Handling Deadlocks and Deadlock Prevention,4,deadlock prevention;ignore deadlock;lock ordering,"Preventing deadlock by denying one of the necessary conditions, and the options for handling it."
+5,Operating Systems,CS301,13-14,Deadlock Avoidance,4,safe state;banker's algorithm;resource allocation graph,Staying in safe states with the banker's algorithm.
+5,Operating Systems,CS301,13-14,Deadlock Detection and Recovery,4,detection algorithm;wait-for graph;recovery;process termination,Detecting deadlock with wait-for graphs and recovering by terminating processes or preempting resources.
+5,Operating Systems,CS301,15,Contiguous Memory Allocation,3,contiguous allocation;fragmentation;first fit;best fit;worst fit,"Allocating memory in contiguous blocks, and external and internal fragmentation."
+5,Operating Systems,CS301,15,Paging,3,paging;frames;pages;page table;tlb;address translation,"Dividing memory into frames and pages, address translation and the TLB."
+5,Operating Systems,CS301,15,Structure of the Page Table,4,hierarchical paging;hashed page table;inverted page table,"Hierarchical, hashed and inverted page tables for large address spaces."
+5,Operating Systems,CS301,15,Swapping,2,swapping;backing store;standard swapping;mobile,Moving processes or pages between memory and a backing store.
+5,Operating Systems,CS301,16,Demand Paging,4,demand paging;page fault;valid invalid bit;effective access time,"Loading pages only when needed, page faults and effective access time."
+5,Operating Systems,CS301,16,Copy-on-Write,3,copy on write;fork;shared pages,Sharing pages between parent and child until one of them writes.
+5,Operating Systems,CS301,16,Page Replacement Algorithms,4,fifo;optimal;lru;belady anomaly;page replacement,"Choosing a victim page with the FIFO, optimal and LRU algorithms."
+5,Operating Systems,CS301,16,Allocation of Frames and Thrashing,4,frame allocation;thrashing;working set;page fault frequency,Dividing frames among processes and avoiding thrashing with working sets.
+5,Compiler Construction,CS302,1,Introduction to Compilers and Language Processors,1,compiler;interpreter;language processor;translator,What a compiler does and how it differs from an interpreter and other language processors.
+5,Compiler Construction,CS302,1,Phases and Structure of a Compiler,2,phases;lexical;syntax;semantic;code generation;front end;back end,The phases from lexical analysis to code generation and the front-end/back-end split.
+5,Compiler Construction,CS302,1,"Compiler Types, Assemblers, Loaders and Tools",2,single pass;multi-pass;preprocessor;assembler;linker;lex;yacc,"Single- and multi-pass compilers, preprocessors, assemblers, loaders and construction tools."
+5,Compiler Construction,CS302,1,"Programming Language Basics: Names, Binding and Scope",2,binding;scope;static scoping;dynamic scoping;shadowing;macro,"Names, identifiers and variables, static versus dynamic binding and scope, and shadowing."
+5,Compiler Construction,CS302,1,Parameter Passing and Aliasing,3,pass by value;pass by reference;pass by name;aliasing,How arguments are passed to procedures and how aliasing arises.
+5,Compiler Construction,CS302,1,Syntax Definition and Context-Free Grammars,3,cfg;grammar;productions;terminals;non-terminals;bnf,Defining language syntax with context-free grammars.
+5,Compiler Construction,CS302,1,Parse Trees and Ambiguity,3,parse tree;derivation;ambiguity;ambiguous grammar,How derivations form parse trees and why ambiguous grammars are a problem.
+5,Compiler Construction,CS302,1,Associativity and Precedence of Operators,3,associativity;precedence;operators;grammar design,Encoding operator associativity and precedence in a grammar.
+5,Compiler Construction,CS302,1,Syntax-Directed Translation Basics,3,syntax-directed translation;postfix;translation scheme;semantic actions,Attaching actions to grammar rules to translate infix expressions into postfix.
+5,Compiler Construction,CS302,1,Symbol Tables,3,symbol table;scope;identifiers;hash table,Storing names and their attributes during compilation.
+5,Compiler Construction,CS302,2,Role of the Lexical Analyzer and Input Buffering,2,lexical analysis;lexeme;token;pattern;buffering,"What a lexer does: lexemes, tokens, patterns and buffered input."
+5,Compiler Construction,CS302,2,Specification and Recognition of Tokens,3,tokens;regular definitions;transition diagrams,Specifying tokens with regular definitions and recognizing them with transition diagrams.
+5,Compiler Construction,CS302,2,Regular Expressions for Lexical Analysis,3,regular expression;regex;operators;lexer,"Writing regular expressions for identifiers, numbers and keywords."
+5,Compiler Construction,CS302,2,Finite Automata: NFA and DFA,4,nfa;dfa;finite automata;state;transition;epsilon,Nondeterministic and deterministic finite automata that recognize regular languages.
+5,Compiler Construction,CS302,2,From Regular Expressions to Automata,4,thompson construction;subset construction;dfa minimization,"Converting a regular expression to an NFA, then a DFA, and minimizing it."
+5,Compiler Construction,CS302,2,The Lex/Flex Lexical-Analyzer Generator,3,lex;flex;lexer generator;patterns actions,Generating a lexical analyzer from regular-expression rules with Lex/Flex.
+5,Compiler Construction,CS302,3,Role of the Parser and Syntax Error Handling,3,parser;syntax error;error recovery;panic mode,What a parser does and the strategies for recovering from syntax errors.
+5,Compiler Construction,CS302,3,Top-Down Parsing and Recursive Descent,3,top-down;recursive descent;backtracking;leftmost derivation,Building a parse tree from the root using recursive-descent procedures.
+5,Compiler Construction,CS302,3,Left Recursion and Left Factoring,4,left recursion;left factoring;grammar transformation,Rewriting grammars so they can be parsed top-down.
+5,Compiler Construction,CS302,3,FIRST and FOLLOW Sets,4,first;follow;nullable;predictive,Computing the FIRST and FOLLOW sets used to build predictive parsers.
+5,Compiler Construction,CS302,3,LL(1) Grammars and Predictive Parsing,4,ll(1);predictive parser;parsing table;stack,"Building an LL(1) parsing table and parsing with a stack, including error recovery."
+5,Compiler Construction,CS302,5,Bottom-Up Parsing and Shift-Reduce Parsing,4,bottom-up;shift-reduce;handle;reductions;conflicts,"Reducing the input to the start symbol with shift and reduce actions, and the conflicts that can arise."
+5,Compiler Construction,CS302,5,LR(0) Items and the LR(0) Automaton,5,lr(0);items;closure;goto;automaton,"Items, closure and goto operations that build the LR(0) automaton."
+5,Compiler Construction,CS302,5,SLR Parsing Tables,5,slr;lr parsing;action table;goto table;follow,Constructing SLR action and goto tables and running the LR parsing algorithm.
+5,Compiler Construction,CS302,5,Ambiguous Grammars and Resolving Conflicts,4,shift-reduce conflict;reduce-reduce;dangling else;precedence,"Resolving parsing conflicts with precedence and associativity, including the dangling else."
+5,Compiler Construction,CS302,5,Error Recovery in LR Parsing and Building a Parser,4,error recovery;lr parser;yacc;bison;full parser,Recovering from errors in LR parsers and putting the pieces together into a full parser.
+5,Compiler Construction,CS302,6,Syntax-Directed Definitions: Synthesized and Inherited Attributes,4,sdd;synthesized attributes;inherited attributes;annotated parse tree,Attaching attributes to grammar symbols and evaluating them on a parse tree.
+5,Compiler Construction,CS302,6,"Dependency Graphs, S-Attributed and L-Attributed Definitions",4,dependency graph;evaluation order;s-attributed;l-attributed,"Ordering attribute evaluation with dependency graphs, and the S- and L-attributed classes."
+5,Compiler Construction,CS302,6,Syntax-Directed Translation with Flex and Bison,4,flex;bison;yacc;semantic actions;translator,Building a working translator by combining a Flex lexer and a Bison parser.
+5,Compiler Construction,CS302,6,"Intermediate Code: Syntax Trees, DAGs and Three-Address Code",4,intermediate code;syntax tree;dag;three-address code;quadruples,"Intermediate representations: syntax trees, DAGs and three-address code."
+5,Compiler Construction,CS302,6,Type Checking,4,type checking;type system;type conversion;coercion,Checking and converting types during semantic analysis.
+5,Compiler Construction,CS302,6,Control Flow and Implementing Three-Address Code,5,control flow;boolean expressions;backpatching;three-address code,Translating boolean expressions and control-flow statements into three-address code.
+5,Web Engineering,CS3xx-E1,1,Introduction to Web Engineering,1,web engineering;process;quality;scalability,"Applying engineering principles (planning, methodology, quality control) to large-scale web applications."
+5,Web Engineering,CS3xx-E1,1,The Internet and the World Wide Web,1,internet;www;web vs internet;hypertext;tim berners-lee,"What the Internet and the Web are, how they differ, and how the Web began."
+5,Web Engineering,CS3xx-E1,1,Web Browsers,1,browser;rendering engine;cookies;add-ons;plugins,"What a browser does, its main components, add-ons versus plugins, and cookies."
+5,Web Engineering,CS3xx-E1,1,Web Servers and URLs,2,web server;url;uniform resource locator;hypertext,How web servers deliver resources and how a URL addresses them.
+5,Web Engineering,CS3xx-E1,1,The HyperText Transfer Protocol (HTTP),2,http;https;methods;status codes;request response,"The request/response protocol of the Web: methods, headers and status codes."
+5,Web Engineering,CS3xx-E1,1,"IP Addresses, IPv4 and IPv6",2,ip address;ipv4;ipv6;addressing,How devices are addressed on a network and the differences between IPv4 and IPv6.
+5,Web Engineering,CS3xx-E1,1,Domain Name System,2,dns;domain name;resolver;name server,The structure of a domain name and how DNS resolves it to an IP address.
+5,Web Engineering,CS3xx-E1,1,Web Request-Response Cycle,2,request response cycle;client server;dns lookup;rendering,What happens from typing a URL to the page being rendered.
+5,Web Engineering,CS3xx-E1,1,Website vs Web Application and Categories of Web Applications,2,website;web application;document centric;transactional;portal,"The difference between a website and a web application, and the main categories of web application."
+5,Web Engineering,CS3xx-E1,1,Web Application Architecture,3,single tier;two tier;three tier;client server;architecture,"Single-tier, two-tier client-server and three-tier architectures."
+5,Web Engineering,CS3xx-E1,1,HTML Document Structure and Elements,1,html;elements;nesting;head;body;doctype,"Creating an HTML document, nesting elements, and using the head, scripts and headings."
+5,Web Engineering,CS3xx-E1,1,"HTML Text, Lists, Links and Tables",1,paragraphs;text formatting;lists;navbar;links;tables,"Text formatting, lists, navigation bars, page linking and tables."
+5,Web Engineering,CS3xx-E1,1,HTML Forms and Inputs,2,form;input;submit;validation,Collecting user data with forms and input types.
+5,Web Engineering,CS3xx-E1,1,"HTML Layout, Multimedia and Inline vs Block Elements",2,layout elements;semantic html;audio;video;inline;block,"Semantic layout elements, embedding audio and video, and block versus inline behavior."
+5,Web Engineering,CS3xx-E1,2-3,"CSS Basics: Selectors, the Cascade and Specificity",2,css;selectors;classes;ids;specificity;cascade,"Linking CSS, selectors, classes and IDs, and how specificity decides which rule wins."
+5,Web Engineering,CS3xx-E1,2-3,"CSS Box Model, Units and Colors",2,box model;padding;margin;border;units;colors,"The box model, setting widths and heights, length units and color formats."
+5,Web Engineering,CS3xx-E1,2-3,"CSS Fonts, Element Flow, Float and Position",3,fonts;float;position;display;flow;pseudo classes,"Fonts, normal flow, float layout, the position property and pseudo-classes."
+5,Web Engineering,CS3xx-E1,2-3,Bootstrap Introduction and Grid System,2,bootstrap;grid;breakpoints;responsive;screen sizes,Using Bootstrap's responsive grid and breakpoints for different screen sizes.
+5,Web Engineering,CS3xx-E1,2-3,Bootstrap Components,2,alerts;cards;carousel;modal;navbar;forms;accordion,"Using ready-made components: alerts, cards, carousel, modals, navbars, forms and more."
+5,Web Engineering,CS3xx-E1,2-3,Bootstrap Styling Utilities,2,flex;typography;borders;shadows;alignment;utilities,"Typography, flexbox, alignment, borders, shadows and position utilities."
+5,Web Engineering,CS3xx-E1,4-5,"JavaScript Variables, Data Types and Operators",1,javascript;variables;const;let;strings;numbers;booleans;operators,"Declaring variables and working with numbers, strings, booleans, type conversion and operators."
+5,Web Engineering,CS3xx-E1,4-5,JavaScript Control Flow and Loops,1,if else;switch;for;while;for of;for in,"Decisions and loops: if/else, switch, for, while, do-while, for...of and for...in."
+5,Web Engineering,CS3xx-E1,4-5,JavaScript Arrays and Objects,2,arrays;objects;properties;methods,Storing collections in arrays and structured data in objects.
+5,Web Engineering,CS3xx-E1,4-5,JavaScript Functions and Scope,2,functions;arrow functions;anonymous functions;scope,"Declaring functions, arrow and anonymous functions, and variable scope."
+5,Web Engineering,CS3xx-E1,4-5,JavaScript Errors and Exception Handling,2,errors;try catch;throw;exception handling,Error types and handling them with try/catch/finally.
+5,Web Engineering,CS3xx-E1,4-5,"Higher-Order Functions, Closures and Array Iterators",3,higher-order functions;closures;map;filter;reduce;foreach,"Functions as values, closures, and iterating arrays with map, filter, reduce and similar methods."
+5,Web Engineering,CS3xx-E1,4-5,DOM Introduction and Selecting Elements,2,dom;queryselector;getelementbyid;console,"The DOM tree and selecting elements with querySelector, getElementById and similar methods."
+5,Web Engineering,CS3xx-E1,4-5,DOM Manipulation,3,dom manipulation;create elements;attributes;traversal,"Changing attributes and content, traversing the DOM, and adding or removing elements."
+5,Web Engineering,CS3xx-E1,4-5,Working with Events,3,events;addeventlistener;event object;target;domcontentloaded,Handling browser events with listeners and the event object.
+5,Web Engineering,CS3xx-E1,4-5,Local Storage and Cookies,2,localstorage;cookies;session;browser storage,Saving small amounts of data in the browser with Local Storage and cookies.
+5,Web Engineering,CS3xx-E1,6-8,"ES6 Features: Template Literals, Arrow Functions and Destructuring",2,es6;template literals;arrow functions;destructuring;enhanced object literals,"Modern JavaScript syntax: template literals, arrow functions, destructuring and enhanced object literals."
+5,Web Engineering,CS3xx-E1,6-8,ES6 Modules,3,es6 modules;import;export;code organization,Splitting code into files with import and export.
+5,Web Engineering,CS3xx-E1,6-8,Promises and Asynchronous JavaScript,4,promises;async;then catch;asynchronous,Handling asynchronous operations with promises.
+5,Web Engineering,CS3xx-E1,6-8,Introduction to React and JSX,3,react;jsx;babel;reactdom;components,"Why React is used and how JSX, Babel and ReactDOM render components."
+5,Web Engineering,CS3xx-E1,9-10,React Components and Props,3,components;props;proptypes;defaultprops;conditional jsx,Building custom components and passing data in with props.
+5,Web Engineering,CS3xx-E1,9-10,React State and Component Architecture,4,state;setstate;virtual dom;component hierarchy;declarative,"Managing state, passing it between components, and the virtual DOM."
+5,Web Engineering,CS3xx-E1,9-10,"React Events, Forms and Refs",3,react events;controlled components;forms;refs,Handling events and building forms in React.
+5,Web Engineering,CS3xx-E1,9-10,Fetching Data from an API in React,3,fetch;api;axios;useeffect;json,Calling an API from a component and displaying the result.
+5,Web Engineering,CS3xx-E1,9-10,Component Life Cycle and Hooks,4,lifecycle;hooks;usestate;useeffect,The component life cycle and how hooks replace class life-cycle methods.
+5,Web Engineering,CS3xx-E1,9-10,React Router and Single-Page Applications,4,react router;spa;routing;to-do app,Client-side routing and building a single-page app.
+5,Web Engineering,CS3xx-E1,11-13,Introduction to Node.js,2,node.js;event loop;non-blocking;process model,What Node.js is and how its non-blocking process model differs from the traditional web server model.
+5,Web Engineering,CS3xx-E1,11-13,Node.js Modules and NPM,2,modules;npm;package.json;require;exports,"Core, local and exported modules, and managing dependencies with NPM and package.json."
+5,Web Engineering,CS3xx-E1,14-15,Creating a Web Server and Handling HTTP Requests,3,http module;server;request;response;routing,Creating a server with Node and handling HTTP requests and responses.
+5,Web Engineering,CS3xx-E1,14-15,Node.js Events and the EventEmitter Class,3,events;eventemitter;emit;listeners,Event-driven programming with EventEmitter.
+5,Web Engineering,CS3xx-E1,14-15,Debugging Node.js Applications,3,debugging;node inspect;vs code;breakpoints,Debugging with the core debugger and VS Code.
+5,Web Engineering,CS3xx-E1,14-15,Express.js Routing,3,express;routes;middleware;rest,Configuring routes and handling requests with Express.
+5,Web Engineering,CS3xx-E1,14-15,Database Connectivity and CRUD Operations,4,mongodb;mysql;crud;connection string,"Connecting Express to a database and performing create, read, update and delete operations."
+5,Web Engineering,CS3xx-E1,14-15,Template Engines (EJS),3,ejs;template engine;views;server-side rendering,Rendering dynamic HTML on the server with EJS templates.

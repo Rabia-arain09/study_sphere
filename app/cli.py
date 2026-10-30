@@ -216,6 +216,42 @@ def db_check_command() -> None:
         sys.exit(1)
 
 
+@click.command("load-curriculum")
+@click.option(
+    "--data-dir",
+    default="data",
+    help="Directory containing the 4 curriculum CSV files (default: data).",
+)
+@click.option(
+    "--dry-run",
+    is_flag=True,
+    default=False,
+    help="Validate and stage data in a rolled-back transaction without saving.",
+)
+@with_appcontext
+def load_curriculum_command(data_dir: str, dry_run: bool) -> None:
+    """Validate, parse, and idempotently ingest curriculum CSV files."""
+    from app.services.curriculum_loader import (
+        CurriculumLoader,
+        CurriculumValidationError,
+        MissingDataFileError,
+    )
+
+    try:
+        loader = CurriculumLoader(data_dir=data_dir)
+        summary = loader.load(dry_run=dry_run)
+        click.echo(summary.format_cli_output())
+    except MissingDataFileError as err:
+        click.echo(f"Error: {err}", err=True)
+        sys.exit(1)
+    except CurriculumValidationError as err:
+        click.echo(f"Error: {err}", err=True)
+        sys.exit(1)
+    except Exception as exc:
+        click.echo(f"Curriculum ingestion failed unexpectedly: {exc}", err=True)
+        sys.exit(1)
+
+
 def register_cli_commands(app: Flask) -> None:
     """Register custom CLI commands with the Flask application.
 
@@ -223,3 +259,4 @@ def register_cli_commands(app: Flask) -> None:
         app: Target Flask application instance.
     """
     app.cli.add_command(db_check_command)
+    app.cli.add_command(load_curriculum_command)

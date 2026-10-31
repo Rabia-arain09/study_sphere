@@ -427,25 +427,27 @@ def test_endpoint_unknown_id(auth_client: FlaskClient, seeded_db_curriculum: dic
 
 
 def test_topic_page_shows_related_section(auth_client: FlaskClient, seeded_db_curriculum: dict):
-    """Verify /topics/<id> renders the Related Topics section with cards and links."""
+    """Verify /topics/<id> renders exactly one Related Topics section in the sidebar with links."""
     t1_id = seeded_db_curriculum["t1_id"]
     response = auth_client.get(f"/topics/{t1_id}")
     assert response.status_code == 200
 
     html = response.get_data(as_text=True)
-    assert "Related Topics" in html
-    assert "related-topics-section" in html
-    assert "related-topic-card" in html
-    # Check that similar ML topic title appears in related section
+    assert html.count("Related Topics") == 1
+    assert "related-topics-section" not in html
+    assert "related-topic-card" not in html
+    # Check that similar ML topic title, course name, and match percentage appear in the sidebar
     assert "Linear Regression Analysis" in html or "Logistic Classification Models" in html
+    assert "Machine Learning" in html
+    assert "%" in html
 
 
 def test_topic_page_shows_empty_message_when_no_recommendations(auth_client: FlaskClient, seeded_db_curriculum: dict):
-    """Verify /topics/<id> displays friendly empty message when no related topics exist."""
+    """Verify /topics/<id> displays friendly empty message when no related topics exist and appears once."""
     isolated_id = seeded_db_curriculum["isolated_id"]
     response = auth_client.get(f"/topics/{isolated_id}")
     assert response.status_code == 200
 
     html = response.get_data(as_text=True)
-    assert "Related Topics" in html
+    assert html.count("Related Topics") == 1
     assert "No related topics found" in html

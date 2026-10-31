@@ -1,0 +1,142 @@
+{% extends "base.html" %}
+
+{% block title %}{{ topic.name }} - StudySphere Notes{% endblock %}
+
+{% block content %}
+<div class="topic-page-container">
+    <!-- Breadcrumb trail -->
+    <div class="breadcrumb-nav">
+        <a href="{{ url_for('topics.semester_picker') }}">Curriculum</a>
+        <span class="breadcrumb-separator">/</span>
+        <a href="{{ url_for('topics.semester_view', semester=topic.semester) }}">Semester {{ topic.semester }}</a>
+        <span class="breadcrumb-separator">/</span>
+        <a href="{{ url_for('topics.course_topics', course_id=topic.course_id) }}">{{ topic.course.code }}</a>
+        <span class="breadcrumb-separator">/</span>
+        <span class="breadcrumb-current">{{ topic.name }}</span>
+    </div>
+
+    <!-- Topic Hero Header -->
+    <header class="topic-header">
+        <div class="topic-header-meta">
+            <span class="badge badge-primary">{{ topic.course.code }}: {{ topic.course.title }}</span>
+            {% if topic.week %}
+                <span class="badge badge-subtle">Week {{ topic.week }}</span>
+            {% endif %}
+            <span class="badge badge-subtle">Semester {{ topic.semester }}</span>
+
+            <!-- Provenance Review Badge (Requirement 3) -->
+            {% if not topic.content_reviewed %}
+                <span class="badge badge-warning" title="Authored via AI extraction, awaiting instructor review">
+                    AI-generated, not yet reviewed
+                </span>
+            {% else %}
+                <span class="badge badge-success" title="Verified by academic instructor">
+                    Reviewed
+                </span>
+            {% endif %}
+        </div>
+
+        <h1 class="topic-title">{{ topic.name }}</h1>
+
+        <div class="topic-stats-bar">
+            <div class="stat-item">
+                <span class="stat-label">Difficulty:</span>
+                <span class="difficulty-meter diff-{{ topic.difficulty }}">Level {{ topic.difficulty }} / 5</span>
+            </div>
+            {% if topic.content_source %}
+                <div class="stat-item">
+                    <span class="stat-label">Source:</span>
+                    <span class="text-capitalize">{{ topic.content_source.value if topic.content_source.value is defined else topic.content_source }}</span>
+                </div>
+            {% endif %}
+        </div>
+    </header>
+
+    <div class="topic-body-layout">
+        <!-- Main Notes Reader (Requirement 3 & 4) -->
+        <div class="notes-reader-wrapper">
+            <div class="notes-reader-card">
+                <div class="notes-reader-header">
+                    <h2 class="reader-heading">📖 Study Notes</h2>
+                    <span class="reader-note-indicator">Pedagogical Ground Truth</span>
+                </div>
+
+                <div class="notes-content">
+                    {% if rendered_notes %}
+                        <article class="markdown-body">
+                            {{ rendered_notes | safe }}
+                        </article>
+                    {% else %}
+                        <!-- Friendly empty content message (Requirement 4) -->
+                        <div class="empty-notes-card">
+                            <div class="empty-notes-icon">📝</div>
+                            <h3 class="empty-notes-title">No study notes available yet</h3>
+                            <p class="empty-notes-text">
+                                Study notes for <strong>{{ topic.name }}</strong> have not been generated or uploaded yet. Check back soon as our curriculum database is updated.
+                            </p>
+                        </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+
+        <!-- Sidebar: Prerequisites & Resources (Requirement 3) -->
+        <aside class="topic-sidebar">
+            <!-- Concept Prerequisites Box -->
+            <div class="sidebar-card">
+                <h3 class="sidebar-card-title">🔗 Concept Prerequisites</h3>
+                <p class="sidebar-card-desc">Concepts recommended to master before studying this topic:</p>
+
+                {% if prerequisites %}
+                    <ul class="prereq-list">
+                        {% for prereq in prerequisites %}
+                            <li class="prereq-list-item">
+                                <a href="{{ url_for('topics.topic_detail', topic_id=prereq.id) }}" class="prereq-link">
+                                    <div class="prereq-link-name">{{ prereq.name }}</div>
+                                    <div class="prereq-link-course">{{ prereq.subject }} (Sem {{ prereq.semester }})</div>
+                                </a>
+                            </li>
+                        {% endfor %}
+                    </ul>
+                {% else %}
+                    <div class="sidebar-empty-state">
+                        <span>🌱 Foundational concept (no prior topic prerequisites required).</span>
+                    </div>
+                {% endif %}
+            </div>
+
+            <!-- Learning Resources Box -->
+            <div class="sidebar-card">
+                <h3 class="sidebar-card-title">📁 Attached Resources</h3>
+                <p class="sidebar-card-desc">Supplementary materials, diagrams, and external references:</p>
+
+                {% if resources %}
+                    <ul class="resource-list">
+                        {% for res in resources %}
+                            <li class="resource-item">
+                                <span class="resource-type-badge type-{{ res.type.value if res.type.value is defined else res.type }}">
+                                    {{ res.type.value if res.type.value is defined else res.type }}
+                                </span>
+                                <a href="{{ res.url }}" target="_blank" rel="noopener noreferrer" class="resource-link">
+                                    {{ res.title }} &nearr;
+                                </a>
+                            </li>
+                        {% endfor %}
+                    </ul>
+                {% else %}
+                    <div class="sidebar-empty-state">
+                        <span>No external reference files attached to this topic yet.</span>
+                    </div>
+                {% endif %}
+            </div>
+
+            <!-- Back to Course Link -->
+            <div class="sidebar-card back-card">
+                <a href="{{ url_for('topics.course_topics', course_id=topic.course_id) }}" class="btn btn-outline btn-block">
+                    &larr; Back to {{ topic.course.code }} Topics
+                </a>
+            </div>
+        </aside>
+    </div>
+</div>
+{% endblock %}

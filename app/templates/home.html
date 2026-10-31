@@ -1,0 +1,57 @@
+{% extends "base.html" %}
+
+{% block title %}StudySphere - Adaptive ML Study Platform{% endblock %}
+
+{% block content %}
+<div class="hero-section">
+    <div class="hero-badge">Curriculum-Aligned Learning</div>
+    <h1 class="hero-title">Master Your Computer Science Curriculum with Precision</h1>
+    <p class="hero-subtitle">
+        StudySphere bridges accredited course syllabi and personalized mastery. Navigate concepts hierarchically across semesters, study comprehensive lecture notes, and track prerequisite knowledge graphs.
+    </p>
+
+    <div class="hero-actions">
+        {% if current_user.is_authenticated %}
+            <a href="{{ url_for('topics.semester_picker') }}" class="btn btn-primary btn-lg">
+                Browse Semester {{ current_user.semester }} Notes &rarr;
+            </a>
+            <a href="{{ url_for('topics.semester_view', semester=current_user.semester) }}" class="btn btn-secondary btn-lg">
+                View My Subjects
+            </a>
+        {% else %}
+            <a href="{{ url_for('auth.signup') }}" class="btn btn-primary btn-lg">
+                Get Started Free &rarr;
+            </a>
+            <a href="{{ url_for('auth.login') }}" class="btn btn-outline btn-lg">
+                Sign In to Account
+            </a>
+        {% endif %}
+    </div>
+</div>
+
+<div class="features-grid">
+    <div class="feature-card">
+        <div class="feature-icon">📚</div>
+        <h3 class="feature-title">Structured Curriculum</h3>
+        <p class="feature-desc">
+            Explore 44 degree courses and 165+ topics mapped week-by-week with difficulty ratings and domain categorizations.
+        </p>
+    </div>
+
+    <div class="feature-card">
+        <div class="feature-icon">🔍</div>
+        <h3 class="feature-title">Concept Dependency Graph</h3>
+        <p class="feature-desc">
+            Direct links to prerequisite concepts prevent foundational learning gaps before advancing to complex topics.
+        </p>
+    </div>
+
+    <div class="feature-card">
+        <div class="feature-icon">📖</div>
+        <h3 class="feature-title">Rich Notes Reader</h3>
+        <p class="feature-desc">
+            Distraction-free Markdown study notes with clear provenance badges distinguishing vetted lecture material from AI-synthesized drafts.
+        </p>
+    </div>
+</div>
+{% endblock %}

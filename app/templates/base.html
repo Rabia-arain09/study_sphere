@@ -5,16 +5,58 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>{% block title %}StudySphere - Adaptive Learning Platform{% endblock %}</title>
     <link rel="stylesheet" href="{{ url_for('static', filename='css/main.css') }}">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
 </head>
 <body>
-    <header>
-        <nav>
-            <a href="{{ url_for('dashboard.index') if 'dashboard.index' in endpoints else '/' }}">StudySphere</a>
-        </nav>
+    <header class="site-header">
+        <div class="nav-container">
+            <a href="{{ url_for('index') }}" class="brand-logo">
+                <span class="brand-icon">🎓</span>
+                <span class="brand-name">StudySphere</span>
+            </a>
+            <nav class="nav-links">
+                <a href="{{ url_for('index') }}" class="nav-link {% if request.endpoint == 'index' %}active{% endif %}">Home</a>
+                <a href="{{ url_for('topics.semester_picker') }}" class="nav-link {% if request.blueprint == 'topics' %}active{% endif %}">Browse</a>
+                
+                {% if current_user.is_authenticated %}
+                    <div class="nav-user-info">
+                        <span class="badge badge-subtle">Sem {{ current_user.semester }}</span>
+                        <span class="user-greeting">{{ current_user.name }}</span>
+                    </div>
+                    <a href="{{ url_for('auth.logout') }}" class="btn btn-outline btn-sm">Logout</a>
+                {% else %}
+                    <a href="{{ url_for('auth.login') }}" class="nav-link {% if request.endpoint == 'auth.login' %}active{% endif %}">Log In</a>
+                    <a href="{{ url_for('auth.signup') }}" class="btn btn-primary btn-sm">Sign Up</a>
+                {% endif %}
+            </nav>
+        </div>
     </header>
-    <main>
+
+    <main class="main-container">
+        <!-- Flash Notification Banners -->
+        {% with messages = get_flashed_messages(with_categories=true) %}
+            {% if messages %}
+                <div class="flash-container">
+                    {% for category, message in messages %}
+                        <div class="alert alert-{{ category if category != 'error' else 'danger' }}">
+                            <span class="alert-message">{{ message }}</span>
+                        </div>
+                    {% endfor %}
+                </div>
+            {% endif %}
+        {% endwith %}
+
         {% block content %}{% endblock %}
     </main>
+
+    <footer class="site-footer">
+        <div class="footer-container">
+            <p>&copy; 2026 StudySphere. Adaptive ML-based Personalized Study Platform.</p>
+        </div>
+    </footer>
+
     <script src="{{ url_for('static', filename='js/main.js') }}"></script>
 </body>
 </html>

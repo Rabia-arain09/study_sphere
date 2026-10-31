@@ -1,0 +1,138 @@
+{% extends "base.html" %}
+
+{% block title %}{{ course.title }} ({{ course.code }}) - StudySphere{% endblock %}
+
+{% block content %}
+<div class="course-header-container">
+    <div class="breadcrumb-nav">
+        <a href="{{ url_for('topics.semester_picker') }}">Curriculum</a>
+        <span class="breadcrumb-separator">/</span>
+        <a href="{{ url_for('topics.semester_view', semester=course.semester) }}">Semester {{ course.semester }}</a>
+        <span class="breadcrumb-separator">/</span>
+        <span class="breadcrumb-current">{{ course.code }}</span>
+    </div>
+
+    <div class="course-hero">
+        <div class="course-hero-badge">
+            <span class="badge badge-primary">{{ course.code }}</span>
+            <span class="badge badge-subtle">{{ course.domain }}</span>
+            <span class="badge badge-subtle">Semester {{ course.semester }}</span>
+        </div>
+        <h1 class="course-hero-title">{{ course.title }}</h1>
+        <p class="course-hero-meta">
+            <span>⏱️ <strong>{{ course.credit_hours }}</strong> Credit Hours</span>
+            <span class="dot-separator">•</span>
+            <span>📅 <strong>{{ course.contact_hours }}</strong> Contact Hours</span>
+            <span class="dot-separator">•</span>
+            <span>📖 <strong>{{ topics|length }}</strong> Topics</span>
+        </p>
+
+        {% if course.prerequisites_required %}
+            <div class="course-prereqs-box">
+                <span class="prereqs-label">Required Course Prerequisites:</span>
+                <div class="prereq-tags">
+                    {% for cp in course.prerequisites_required %}
+                        <a href="{{ url_for('topics.course_topics', course_id=cp.prerequisite_course.id) }}" class="prereq-tag">
+                            {{ cp.prerequisite_course.code }}: {{ cp.prerequisite_course.title }}
+                        </a>
+                    {% endfor %}
+                </div>
+            </div>
+        {% endif %}
+    </div>
+</div>
+
+<div class="topics-container">
+    <div class="topics-heading-bar">
+        <h2 class="section-title">Subject Syllabus & Topics</h2>
+        <span class="text-muted">Chronologically ordered by academic week</span>
+    </div>
+
+    {% if topics %}
+        <div class="topics-list">
+            {% for topic in topics %}
+                <div class="topic-row-card">
+                    <div class="topic-week-badge">
+                        {% if topic.week %}
+                            <span class="week-label">WEEK</span>
+                            <span class="week-number">{{ topic.week }}</span>
+                        {% else %}
+                            <span class="week-label">TOPIC</span>
+                            <span class="week-number">#{{ loop.index }}</span>
+                        {% endif %}
+                    </div>
+
+                    <div class="topic-main-info">
+                        <div class="topic-title-line">
+                            <h3 class="topic-name">
+                                <a href="{{ url_for('topics.topic_detail', topic_id=topic.id) }}">
+                                    {{ topic.name }}
+                                </a>
+                            </h3>
+
+                            <!-- Review Provenance Badge (Requirement 3) -->
+                            {% if not topic.content_reviewed %}
+                                <span class="badge badge-warning" title="Authored via AI extraction, awaiting instructor verification">
+                                    AI-generated, not yet reviewed
+                                </span>
+                            {% else %}
+                                <span class="badge badge-success" title="Verified by academic faculty">
+                                    Reviewed
+                                </span>
+                            {% endif %}
+                        </div>
+
+                        {% if topic.description %}
+                            <p class="topic-snippet">{{ topic.description }}</p>
+                        {% endif %}
+
+                        <div class="topic-footer-meta">
+                            <!-- Difficulty display (Requirement 3) -->
+                            <div class="difficulty-indicator">
+                                <span class="difficulty-label">Difficulty:</span>
+                                <span class="difficulty-meter diff-{{ topic.difficulty }}">
+                                    Level {{ topic.difficulty }}/5
+                                </span>
+                            </div>
+
+                            {% if topic.prerequisites_required %}
+                                <span class="dot-separator">•</span>
+                                <span class="meta-subtext">
+                                    🔗 {{ topic.prerequisites_required|length }} Prerequisite{{ 's' if topic.prerequisites_required|length != 1 else '' }}
+                                </span>
+                            {% endif %}
+
+                            {% if topic.resources %}
+                                <span class="dot-separator">•</span>
+                                <span class="meta-subtext">
+                                    📁 {{ topic.resources|length }} Resource{{ 's' if topic.resources|length != 1 else '' }}
+                                </span>
+                            {% endif %}
+                        </div>
+                    </div>
+
+                    <div class="topic-action-col">
+                        <a href="{{ url_for('topics.topic_detail', topic_id=topic.id) }}" class="btn btn-primary btn-sm">
+                            Read Notes &rarr;
+                        </a>
+                    </div>
+                </div>
+            {% endfor %}
+        </div>
+    {% else %}
+        <!-- Friendly notes coming soon message (Requirement 6) -->
+        <div class="coming-soon-card">
+            <div class="coming-soon-icon">⏳</div>
+            <h3 class="coming-soon-title">Notes coming soon</h3>
+            <p class="coming-soon-text">
+                Topics and lecture notes for <strong>{{ course.title }}</strong> are currently being prepared. Check back shortly for complete curriculum materials.
+            </p>
+            <div style="margin-top: 1rem;">
+                <a href="{{ url_for('topics.semester_view', semester=course.semester) }}" class="btn btn-outline">
+                    &larr; Back to Semester {{ course.semester }}
+                </a>
+            </div>
+        </div>
+    {% endif %}
+</div>
+{% endblock %}

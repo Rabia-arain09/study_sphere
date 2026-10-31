@@ -1,10 +1,12 @@
 """Application factory module for StudySphere."""
 
+from __future__ import annotations
 import os
 from pathlib import Path
-from flask import Flask, jsonify
+from flask import Flask, jsonify, render_template, request
 from app.config import config_by_name, Config
-from app.extensions import db, migrate
+from app.extensions import db, migrate, login_manager, csrf
+from app.services.markdown_renderer import render_markdown
 import app.models  # noqa: F401 - Register models with SQLAlchemy metadata
 
 
@@ -34,6 +36,24 @@ def create_app(config_name: str | None = None) -> Flask:
     # Initialize extensions
     db.init_app(app)
     migrate.init_app(app, db)
+    login_manager.init_app(app)
+    csrf.init_app(app)
+
+    # Configure authentication manager
+    login_manager.login_view = "auth.login"
+    login_manager.login_message = "Please sign in to access this page."
+    login_manager.login_message_category = "info"
+
+    @login_manager.user_loader
+    def load_user(user_id: str) -> app.models.User | None:
+        """Load user entity by primary key for session management."""
+        try:
+            return db.session.get(app.models.User, int(user_id))
+        except (ValueError, TypeError):
+            return None
+
+    # Register custom template filters
+    app.jinja_env.filters["render_markdown"] = render_markdown
 
     # Register custom CLI commands
     from app.cli import register_cli_commands
@@ -61,13 +81,16 @@ def create_app(config_name: str | None = None) -> Flask:
 
     @app.route("/", methods=["GET"])
     def index():
-        """Service root welcome endpoint."""
-        return jsonify(
-            {
-                "message": "Welcome to StudySphere API",
-                "status": "online",
-                "docs": "/dashboard",
-            }
-        ), 200
+        """Service root welcome endpoint, serving landing page or JSON metadata."""
+        best_match = request.accept_mimetypes.best_match(["text/html", "application/json"])
+        if best_match == "application/json" and request.accept_mimetypes["application/json"] > request.accept_mimetypes["text/html"]:
+            return jsonify(
+                {
+                    "message": "Welcome to StudySphere API",
+                    "status": "online",
+                    "docs": "/dashboard",
+                }
+            ), 200
+        return render_template("home.html")
 
     return app

@@ -1,0 +1,59 @@
+{% extends "base.html" %}
+
+{% block title %}Create Account - StudySphere{% endblock %}
+
+{% block content %}
+<div class="auth-wrapper">
+    <div class="auth-card">
+        <div class="auth-header">
+            <h2 class="auth-title">Join StudySphere</h2>
+            <p class="auth-subtitle">Create your student profile to access adaptive notes and curriculum tracking.</p>
+        </div>
+
+        <form method="POST" action="{{ url_for('auth.signup', next=request.args.get('next')) }}" class="auth-form" novalidate>
+            {{ form.hidden_tag() }}
+
+            <div class="form-group">
+                {{ form.name.label(class="form-label") }}
+                {{ form.name(class="form-input" + (" is-invalid" if form.name.errors else ""), placeholder="e.g. Alex Johnson", autocomplete="name") }}
+                {% for error in form.name.errors %}
+                    <div class="form-feedback">{{ error }}</div>
+                {% endfor %}
+            </div>
+
+            <div class="form-group">
+                {{ form.email.label(class="form-label") }}
+                {{ form.email(class="form-input" + (" is-invalid" if form.email.errors else ""), placeholder="alex@university.edu", autocomplete="email") }}
+                {% for error in form.email.errors %}
+                    <div class="form-feedback">{{ error }}</div>
+                {% endfor %}
+            </div>
+
+            <div class="form-group">
+                {{ form.password.label(class="form-label") }}
+                {{ form.password(class="form-input" + (" is-invalid" if form.password.errors else ""), placeholder="At least 6 characters", autocomplete="new-password") }}
+                {% for error in form.password.errors %}
+                    <div class="form-feedback">{{ error }}</div>
+                {% endfor %}
+            </div>
+
+            <div class="form-group">
+                {{ form.semester.label(class="form-label") }}
+                {{ form.semester(class="form-select" + (" is-invalid" if form.semester.errors else "")) }}
+                {% for error in form.semester.errors %}
+                    <div class="form-feedback">{{ error }}</div>
+                {% endfor %}
+                <small class="form-hint">Used to prioritize course notes relevant to your current degree progression.</small>
+            </div>
+
+            <div class="form-actions">
+                {{ form.submit(class="btn btn-primary btn-block") }}
+            </div>
+        </form>
+
+        <div class="auth-footer">
+            <p>Already have an account? <a href="{{ url_for('auth.login') }}" class="text-link">Sign in here</a>.</p>
+        </div>
+    </div>
+</div>
+{% endblock %}

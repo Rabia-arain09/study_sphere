@@ -3,8 +3,10 @@
 from __future__ import annotations
 from datetime import datetime, timezone
 from typing import TYPE_CHECKING
+from flask_login import UserMixin
 from sqlalchemy import Integer, String, DateTime
 from sqlalchemy.orm import Mapped, mapped_column, relationship
+from werkzeug.security import generate_password_hash, check_password_hash
 from app.extensions import db
 
 if TYPE_CHECKING:
@@ -12,7 +14,7 @@ if TYPE_CHECKING:
     from app.models.question import Question
 
 
-class User(db.Model):
+class User(UserMixin, db.Model):
     """User entity representing students and instructors in StudySphere.
 
     ML Pipeline Role:
@@ -50,6 +52,21 @@ class User(db.Model):
         back_populates="creator",
         foreign_keys="Question.created_by",
     )
+
+    def set_password(self, password: str) -> None:
+        """Hash and set the user's password using werkzeug security helpers."""
+        self.password_hash = generate_password_hash(password)
+
+    def check_password(self, password: str) -> bool:
+        """Verify the plain text password against the stored password hash.
+
+        Args:
+            password: Plain text password candidate.
+
+        Returns:
+            bool: True if password matches hash, False otherwise.
+        """
+        return check_password_hash(self.password_hash, password)
 
     def __repr__(self) -> str:
         return f"<User id={self.id} email='{self.email}' semester={self.semester}>"

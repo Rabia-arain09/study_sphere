@@ -1,0 +1,92 @@
+{% extends "base.html" %}
+
+{% block title %}Curriculum Navigation - StudySphere{% endblock %}
+
+{% block content %}
+<div class="browse-header">
+    <div class="browse-title-group">
+        <h1 class="page-title">Curriculum Subjects</h1>
+        <p class="page-subtitle">Select an academic semester to explore subjects, study notes, and concept prerequisites.</p>
+    </div>
+
+    <!-- Semester Picker (1-8), defaulting to user's semester -->
+    <div class="semester-picker-card">
+        <div class="picker-label">Choose Semester:</div>
+        <div class="semester-pills">
+            {% for sem in semesters %}
+                <a href="{{ url_for('topics.semester_view', semester=sem) }}"
+                   class="semester-pill {% if sem == selected_semester %}active{% endif %}">
+                    Semester {{ sem }}
+                    {% if current_user.semester == sem %}
+                        <span class="pill-badge">Your Sem</span>
+                    {% endif %}
+                </a>
+            {% endfor %}
+        </div>
+    </div>
+</div>
+
+<div class="semester-content">
+    <div class="semester-heading-bar">
+        <div class="heading-left">
+            <h2 class="section-title">Semester {{ selected_semester }} Subjects</h2>
+            <span class="text-muted">
+                {{ courses|length }} subject{{ 's' if courses|length != 1 else '' }} in curriculum
+            </span>
+        </div>
+        <div class="heading-right">
+            {% if topic_count > 0 %}
+                <span class="badge badge-success">{{ topic_count }} topic notes available</span>
+            {% else %}
+                <span class="badge badge-warning">Notes coming soon</span>
+            {% endif %}
+        </div>
+    </div>
+
+    {% if topic_count == 0 %}
+        <!-- Friendly notes coming soon banner (Requirement 6) -->
+        <div class="coming-soon-card">
+            <div class="coming-soon-icon">⏳</div>
+            <h3 class="coming-soon-title">Notes coming soon</h3>
+            <p class="coming-soon-text">
+                Comprehensive lecture notes and topic guides for Semester {{ selected_semester }} are currently being curated by our academic faculty. Check back soon or select another semester above.
+            </p>
+        </div>
+    {% endif %}
+
+    {% if courses %}
+        <div class="courses-grid">
+            {% for course in courses %}
+                <div class="course-card">
+                    <div class="course-card-header">
+                        <span class="course-code">{{ course.code }}</span>
+                        <span class="course-domain badge badge-subtle">{{ course.domain }}</span>
+                    </div>
+
+                    <h3 class="course-title">{{ course.title }}</h3>
+
+                    <div class="course-meta">
+                        <span class="meta-item">⏱️ {{ course.credit_hours }} Credits ({{ course.contact_hours }} hrs)</span>
+                        {% set count = course_topic_counts.get(course.id, 0) %}
+                        {% if count > 0 %}
+                            <span class="meta-item text-primary">📖 {{ count }} Topics</span>
+                        {% else %}
+                            <span class="meta-item text-muted">Notes coming soon</span>
+                        {% endif %}
+                    </div>
+
+                    <div class="course-card-footer">
+                        <a href="{{ url_for('topics.course_topics', course_id=course.id) }}" class="btn btn-outline btn-block">
+                            Browse Subject Topics &rarr;
+                        </a>
+                    </div>
+                </div>
+            {% endfor %}
+        </div>
+    {% else %}
+        <div class="empty-state-card">
+            <p>No subjects found for Semester {{ selected_semester }}.</p>
+        </div>
+    {% endif %}
+</div>
+{% endblock %}

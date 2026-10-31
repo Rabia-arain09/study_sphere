@@ -1,9 +1,12 @@
 """Unit tests for the authentication blueprint (registration, login, logout, security)."""
 
 from __future__ import annotations
+from flask import g
 from flask.testing import FlaskClient
 from app.extensions import db
 from app.models.user import User
+from app.models.course import Course
+from app.models.topic import Topic
 
 
 def test_signup_page_renders(client: FlaskClient):
@@ -173,3 +176,123 @@ def test_authenticated_user_redirected_from_login_signup(auth_client: FlaskClien
     signup_resp = auth_client.get("/auth/signup", follow_redirects=False)
     assert signup_resp.status_code == 302
     assert "/topics" in signup_resp.headers["Location"]
+
+
+def test_regression_user_loader_session_routes(client: FlaskClient, app):
+    """Regression test: signup, login, and verify /, /topics/, and topic page with same client."""
+    with app.app_context():
+        course = Course(
+            code="CS301",
+            title="Operating Systems",
+            semester=5,
+            domain="Computing Core",
+            credit_hours=3,
+            contact_hours="3-0",
+        )
+        db.session.add(course)
+        db.session.commit()
+
+        topic = Topic(
+            course_id=course.id,
+            semester=5,
+            subject="Operating Systems",
+            name="Virtual Memory",
+            difficulty=3,
+            content="# Virtual Memory\n\nPaging architecture.",
+        )
+        db.session.add(topic)
+        db.session.commit()
+        topic_id = topic.id
+
+    # 1. Sign up a new user with client
+    signup_payload = {
+        "name": "Session Tester",
+        "email": "session.tester@example.com",
+        "password": "Password123!",
+        "semester": 5,
+    }
+    signup_resp = client.post("/auth/signup", data=signup_payload, follow_redirects=True)
+    assert signup_resp.status_code == 200
+
+    # 2. Log in with the same client
+    login_payload = {
+        "email": "session.tester@example.com",
+        "password": "Password123!",
+    }
+    login_resp = client.post("/auth/login", data=login_payload, follow_redirects=True)
+    assert login_resp.status_code == 200
+
+    # Ensure g._login_user cache is cleared so subsequent requests actively exercise load_user
+    g.pop("_login_user", None)
+
+    # 3. Request '/', '/topics/', and topic page using the SAME client (session cookie kept)
+    resp_home = client.get("/")
+    assert resp_home.status_code == 200
+    assert b"Browse Semester 5 Notes" in resp_home.data
+
+    g.pop("_login_user", None)
+    resp_topics = client.get("/topics/")
+    assert resp_topics.status_code == 200
+    assert b"Semester 5 Subjects" in resp_topics.data
+
+    g.pop("_login_user", None)
+    resp_topic = client.get(f"/topics/{topic_id}")
+    assert resp_topic.status_code == 200
+    assert b"Virtual Memory" in resp_topic.data
+    assert b"Paging architecture." in resp_topic.data
+
+
+def test_user_loader_deleted_or_invalid_user_session(client: FlaskClient, app):
+    """Regression test: invalid or deleted user in session cookie does not crash and is treated as logged out."""
+    with app.app_context():
+        temp_user = User(
+            name="Disposable User",
+            email="disposable@example.com",
+            semester=3,
+        )
+        temp_user.set_password("TempPassword123!")
+        db.session.add(temp_user)
+        db.session.commit()
+        temp_user_id = temp_user.id
+
+    # Log in so session cookie is set
+    login_resp = client.post(
+        "/auth/login",
+        data={
+            "email": "disposable@example.com",
+            "password": "TempPassword123!",
+        },
+        follow_redirects=True,
+    )
+    assert login_resp.status_code == 200
+
+    # Delete the user from the database while session cookie remains in client
+    with app.app_context():
+        user_to_delete = db.session.get(User, temp_user_id)
+        assert user_to_delete is not None
+        db.session.delete(user_to_delete)
+        db.session.commit()
+
+    # Clear request/app context cache so load_user executes against DB for the deleted user
+    g.pop("_login_user", None)
+
+    # Protected page should not crash with 500 or AttributeError, but safely redirect to login
+    resp_protected = client.get("/topics/")
+    assert resp_protected.status_code == 302
+    assert "/auth/login" in resp_protected.headers["Location"]
+
+    # Public page should return 200 and treat user as anonymous/logged-out
+    g.pop("_login_user", None)
+    resp_home = client.get("/")
+    assert resp_home.status_code == 200
+    assert b"Sign In to Account" in resp_home.data
+
+    # Also test completely malformed non-integer user_id in session cookie
+    with client.session_transaction() as sess:
+        sess["_user_id"] = "invalid_non_numeric_id"
+
+    g.pop("_login_user", None)
+    resp_malformed = client.get("/topics/")
+    assert resp_malformed.status_code == 302
+    assert "/auth/login" in resp_malformed.headers["Location"]
+

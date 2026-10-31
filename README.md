@@ -432,3 +432,4 @@ To enable 3 developers to work concurrently on `main` without merge conflicts:
 - **Session Authentication & CSRF Protection**: Integrated Flask-Login, Flask-WTF CSRF protection, and Werkzeug password hashing on the `User` model with safe internal redirect validation (`is_safe_url`) to secure student workflows.
 - **Sanitized Markdown Notes Reader**: Engineered `render_markdown` using Python-Markdown extensions and `nh3` (Ammonia Rust sanitizer) to safely render AI-generated and lecture notes without XSS vulnerabilities.
 - **Hierarchical Curriculum Browsing & Empty States**: Structured student navigation across `/topics/`, `/topics/semester/<n>`, `/topics/course/<id>`, and `/topics/<id>` with week-based ordering, review status badges, prerequisite linking, and friendly 'notes coming soon' empty states.
+- **Flask-Login User Loader Scope Isolation**: Explicitly bound the `User` model in `load_user` to eliminate factory instance closure shadowing on `app.models`.

@@ -8,6 +8,7 @@ from app.config import config_by_name, Config
 from app.extensions import db, migrate, login_manager, csrf
 from app.services.markdown_renderer import render_markdown
 import app.models  # noqa: F401 - Register models with SQLAlchemy metadata
+from app.models.user import User
 
 
 def create_app(config_name: str | None = None) -> Flask:
@@ -45,10 +46,10 @@ def create_app(config_name: str | None = None) -> Flask:
     login_manager.login_message_category = "info"
 
     @login_manager.user_loader
-    def load_user(user_id: str) -> app.models.User | None:
+    def load_user(user_id: str) -> User | None:
         """Load user entity by primary key for session management."""
         try:
-            return db.session.get(app.models.User, int(user_id))
+            return db.session.get(User, int(user_id))
         except (ValueError, TypeError):
             return None
 

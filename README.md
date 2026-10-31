@@ -73,7 +73,7 @@ flowchart TD
 study_sphere/
 ├── app/
 │   ├── __init__.py          # create_app application factory & route registration
-│   ├── cli.py               # Custom CLI commands (db-check, load-curriculum, load-notes, notes-status)
+│   ├── cli.py               # Custom CLI commands (db-check, load-curriculum, load-notes, notes-status, setup-local-db)
 │   ├── config.py            # Development, Testing, Production configurations & DB fallback
 │   ├── extensions.py        # SQLAlchemy & Flask-Migrate extension singletons
 │   ├── blueprints/          # Modular domain-driven route handlers
@@ -123,7 +123,8 @@ study_sphere/
 │   ├── test_curriculum_loader.py # Loader validations, cycles, idempotency & real CSVs
 │   ├── test_factory.py      # App factory and health checks
 │   ├── test_models.py       # Model constraints, foreign keys, and relationships
-│   └── test_notes_loader.py # Notes parser, validation rules, idempotency & CLI tests
+│   ├── test_notes_loader.py # Notes parser, validation rules, idempotency & CLI tests
+│   └── test_setup_local_db.py # Local SQLite setup CLI, idempotency & PostgreSQL guard tests
 ├── .env.example             # Environment variable template (no secrets)
 ├── .gitignore               # Strict ignore rules for Python, venv, caches, DBs, and models
 ├── requirements.txt         # Pinned production and development dependencies
@@ -212,6 +213,92 @@ Follow these steps to connect your local development environment to the shared S
      ```bash
      flask --app run.py db-check
      ```
+
+---
+
+## Local SQLite Development Setup (Fast Local Workflow)
+
+Supabase PostgreSQL queries from regions with high network latency (e.g., Pakistan) can incur ~400 ms per round trip, which slows down iterative feature development. For high-speed local development, StudySphere supports an automated local SQLite workflow where queries execute in sub-millisecond time and all browsing routes respond in under 120 ms.
+
+### 1. Initialize Local SQLite Database (`setup-local-db`)
+
+The `setup-local-db` command prepares the schema (applying migrations or `create_all`), ingests the entire curriculum dataset, and populates all study notes so your local database has the exact same **44 courses**, **165 topics**, and **165 notes** as Supabase. It is strictly idempotent and refuses to run against PostgreSQL databases.
+
+Run in PowerShell:
+```powershell
+# Option A: In-session environment override (recommended; leaves .env untouched)
+$env:DATABASE_URL = "sqlite:///instance/studysphere.db"
+flask --app run.py setup-local-db
+
+# Option B: Using .env configuration (when DATABASE_URL is set to SQLite in .env)
+flask --app run.py setup-local-db
+```
+
+Example output:
+```text
+============================================================
+ StudySphere Local SQLite Database Setup
+============================================================
+> Target Database : sqlite:///.../instance/studysphere.db
+------------------------------------------------------------
+[1/3] Preparing database schema... OK
+[2/3] Ingesting curriculum (courses, topics, prerequisites)...
+      Processed 44 courses, 165 topics, 12 course prerequisites, 194 topic prerequisites.
+[3/3] Ingesting study notes...
+      Processed 165 note files (165 updated, 0 unchanged, 0 skipped).
+============================================================
+ Local SQLite database setup completed successfully!
+> Total Courses : 44 (expected: 44)
+> Total Topics  : 165 (expected: 165)
+> Total Notes   : 165 (expected: 165)
+============================================================
+```
+
+### 2. Running the App Locally on SQLite
+
+#### Method 1: Using PowerShell Environment Variable (Session-Scoped)
+Run with an in-session override without modifying `.env`:
+```powershell
+# Set SQLite database URL for current PowerShell session
+$env:DATABASE_URL = "sqlite:///instance/studysphere.db"
+
+# Start the Flask development server
+python run.py
+```
+
+#### Method 2: Using `.env` (Persistent)
+Edit `.env` and set `DATABASE_URL` to local SQLite:
+```env
+DATABASE_URL=sqlite:///instance/studysphere.db
+```
+Then start the server:
+```powershell
+python run.py
+```
+
+### 3. Switching Back to Supabase
+
+To switch back to Supabase PostgreSQL:
+
+#### If using PowerShell session override:
+Clear the environment variable to revert to `.env`:
+```powershell
+# Remove the environment variable override to revert to .env
+Remove-Item Env:\DATABASE_URL
+
+# Verify connection to Supabase
+flask --app run.py db-check
+```
+
+#### If using `.env`:
+Restore your Supabase connection string in `.env`:
+```env
+DATABASE_URL=postgresql+psycopg2://postgres.<project-ref>:<url-encoded-password>@aws-0-<region>.pooler.supabase.com:5432/postgres?sslmode=require
+```
+Verify connectivity:
+```powershell
+flask --app run.py db-check
+```
 
 ---
 
@@ -438,3 +525,5 @@ To enable 3 developers to work concurrently on `main` without merge conflicts:
 - **Sanitized Markdown Notes Reader**: Engineered `render_markdown` using Python-Markdown extensions and `nh3` (Ammonia Rust sanitizer) to safely render AI-generated and lecture notes without XSS vulnerabilities.
 - **Hierarchical Curriculum Browsing & Empty States**: Structured student navigation across `/topics/`, `/topics/semester/<n>`, `/topics/course/<id>`, and `/topics/<id>` with week-based ordering, review status badges, prerequisite linking, and friendly 'notes coming soon' empty states.
 - **Flask-Login User Loader Scope Isolation**: Explicitly bound the `User` model in `load_user` to eliminate factory instance closure shadowing on `app.models`.
+- **Local SQLite Environment & Safe Migration Pipeline**: Built `setup-local-db` CLI command that validates SQLite dialect, runs migrations with `create_all` fallback, loads curriculum CSVs and Markdown notes idempotently (44 courses, 165 topics, 165 notes), and strictly refuses execution against PostgreSQL.
+- **Instance-Relative Path Normalization**: Resolved relative `sqlite:///instance/` URIs in `create_app` against repository root to prevent Flask-SQLAlchemy 3.x from double-nesting paths into `instance/instance/studysphere.db`.

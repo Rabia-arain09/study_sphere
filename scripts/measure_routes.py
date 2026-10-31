@@ -101,8 +101,13 @@ def measure_supabase_routes() -> list[dict[str, Any]]:
                 )
                 assert post_login.status_code == 200, "Authentication failed"
 
+                backend_label = (
+                    "SQLite"
+                    if db.engine.dialect.name == "sqlite"
+                    else "Supabase (PostgreSQL)"
+                )
                 print("\n================================================================================")
-                print(" MEASURING ROUTES AGAINST SUPABASE (DATABASE_URL)")
+                print(f" MEASURING ROUTES AGAINST {backend_label.upper()} (DATABASE_URL)")
                 print("================================================================================")
 
                 for path, desc in routes_to_measure:
@@ -135,11 +140,16 @@ def measure_supabase_routes() -> list[dict[str, Any]]:
         finally:
             # Clean up temporary user
             _collecting = False
+            backend_name = (
+                "SQLite"
+                if db.engine.dialect.name == "sqlite"
+                else "Supabase"
+            )
             user_cleanup = User.query.filter_by(email=test_email).first()
             if user_cleanup:
                 db.session.delete(user_cleanup)
                 db.session.commit()
-                print("[OK] Temporary measurement user cleanly deleted from Supabase.")
+                print(f"[OK] Temporary measurement user cleanly deleted from {backend_name}.")
 
     return results
 

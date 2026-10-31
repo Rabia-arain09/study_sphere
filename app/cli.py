@@ -308,6 +308,131 @@ def notes_status_command() -> None:
         sys.exit(1)
 
 
+@click.command("setup-local-db")
+@click.option(
+    "--data-dir",
+    default="data",
+    help="Directory containing the 4 curriculum CSV files (default: data).",
+)
+@click.option(
+    "--notes-dir",
+    default="data/notes",
+    help="Directory containing markdown study notes organized by subject (default: data/notes).",
+)
+@click.option(
+    "--force",
+    is_flag=True,
+    default=False,
+    help="Force overwrite of topic study notes even if content_reviewed is True in database.",
+)
+@with_appcontext
+def setup_local_db_command(data_dir: str, notes_dir: str, force: bool) -> None:
+    """Initialize local SQLite database, prepare schema, and ingest curriculum and study notes."""
+    uri: str = current_app.config.get("SQLALCHEMY_DATABASE_URI", "")
+    dialect_name: str = db.engine.dialect.name
+
+    if dialect_name != "sqlite" or not uri.startswith("sqlite"):
+        if dialect_name == "postgresql" or uri.startswith(("postgresql", "postgres")):
+            click.echo(
+                "Error: setup-local-db is restricted to local SQLite databases. "
+                "Refusing to run against PostgreSQL database.",
+                err=True,
+            )
+        else:
+            click.echo(
+                "Error: setup-local-db is restricted to local SQLite databases. "
+                f"Active database is '{mask_database_uri(uri)}'. Refusing to run.",
+                err=True,
+            )
+        sys.exit(1)
+
+    click.echo("=" * 60)
+    click.echo(" StudySphere Local SQLite Database Setup")
+    click.echo("=" * 60)
+    click.echo(f"> Target Database : {mask_database_uri(uri)}")
+    click.echo("-" * 60)
+
+    # 1. Schema preparation via migrations or create_all fallback
+    click.echo("[1/3] Preparing database schema...", nl=False)
+    try:
+        inspector = inspect(db.engine)
+        table_names = set(inspector.get_table_names())
+        if "alembic_version" in table_names or not table_names:
+            from flask_migrate import upgrade
+            upgrade()
+        else:
+            db.create_all()
+        click.echo(" OK")
+    except Exception as exc:
+        click.echo(" FAILED")
+        click.echo(f"Error: Failed to prepare database schema: {exc}", err=True)
+        sys.exit(1)
+
+    # 2. Ingest curriculum dataset
+    click.echo("[2/3] Ingesting curriculum (courses, topics, prerequisites)...")
+    from app.services.curriculum_loader import (
+        CurriculumLoader,
+        CurriculumValidationError,
+        MissingDataFileError,
+    )
+
+    try:
+        curriculum_loader = CurriculumLoader(data_dir=data_dir)
+        curriculum_summary = curriculum_loader.load(dry_run=False)
+        click.echo(
+            f"      Processed {curriculum_summary.courses_count} courses, "
+            f"{curriculum_summary.topics_count} topics, "
+            f"{curriculum_summary.course_prerequisites_count} course prerequisites, "
+            f"{curriculum_summary.topic_prerequisites_count} topic prerequisites."
+        )
+    except (MissingDataFileError, CurriculumValidationError) as err:
+        click.echo(f"Error: {err}", err=True)
+        sys.exit(1)
+    except Exception as exc:
+        click.echo(f"Curriculum ingestion failed unexpectedly: {exc}", err=True)
+        sys.exit(1)
+
+    # 3. Ingest study notes
+    click.echo("[3/3] Ingesting study notes...")
+    from app.services.notes_loader import (
+        NotesLoader,
+        NotesValidationError,
+        MissingNotesDirectoryError,
+    )
+
+    try:
+        notes_loader = NotesLoader(notes_dir=notes_dir, force=force)
+        notes_summary = notes_loader.load(dry_run=False)
+        click.echo(
+            f"      Processed {notes_summary.total_files} note files "
+            f"({notes_summary.updated} updated, {notes_summary.unchanged} unchanged, "
+            f"{notes_summary.skipped} skipped)."
+        )
+    except (MissingNotesDirectoryError, NotesValidationError) as err:
+        click.echo(f"Error: {err}", err=True)
+        sys.exit(1)
+    except Exception as exc:
+        click.echo(f"Notes ingestion failed unexpectedly: {exc}", err=True)
+        sys.exit(1)
+
+    # 4. Verify entities
+    from app.models.course import Course
+    from app.models.topic import Topic
+
+    courses_count: int = Course.query.count()
+    topics_count: int = Topic.query.count()
+    notes_count: int = Topic.query.filter(
+        Topic.content.isnot(None), Topic.content != ""
+    ).count()
+
+    click.echo("=" * 60)
+    click.echo(" Local SQLite database setup completed successfully!")
+    click.echo(f"> Total Courses : {courses_count} (expected: 44)")
+    click.echo(f"> Total Topics  : {topics_count} (expected: 165)")
+    click.echo(f"> Total Notes   : {notes_count} (expected: 165)")
+    click.echo("=" * 60)
+
+
 def register_cli_commands(app: Flask) -> None:
     """Register custom CLI commands with the Flask application.
 
@@ -318,3 +443,4 @@ def register_cli_commands(app: Flask) -> None:
     app.cli.add_command(load_curriculum_command)
     app.cli.add_command(load_notes_command)
     app.cli.add_command(notes_status_command)
+    app.cli.add_command(setup_local_db_command)

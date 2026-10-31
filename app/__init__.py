@@ -31,6 +31,14 @@ def create_app(config_name: str | None = None) -> Flask:
     )
     app.config.from_object(config_class)
 
+    # Normalize relative sqlite:///instance/ paths to prevent Flask-SQLAlchemy 3.x
+    # from double-prepending instance_path (e.g. instance/instance/studysphere.db)
+    raw_db_uri: str = app.config.get("SQLALCHEMY_DATABASE_URI", "")
+    if raw_db_uri and raw_db_uri.startswith("sqlite:///instance/"):
+        rel_subpath = raw_db_uri[len("sqlite:///"):]
+        abs_db_file = (Path(__file__).resolve().parent.parent / rel_subpath).resolve()
+        app.config["SQLALCHEMY_DATABASE_URI"] = f"sqlite:///{abs_db_file.as_posix()}"
+
     # Ensure instance folder exists
     instance_path = Path(app.instance_path)
     instance_path.mkdir(parents=True, exist_ok=True)

@@ -16,6 +16,18 @@ from app.services.curriculum_loader import (
     MissingDataFileError,
     load_curriculum,
 )
+from app.services.notes_loader import (
+    NotesLoader,
+    NotesSummary,
+    NotesLoaderError,
+    NotesValidationError,
+    MissingNotesDirectoryError,
+    ParsedNote,
+    SubjectNotesStatus,
+    OverallNotesStatus,
+    load_notes,
+    get_notes_status,
+)
 
 __all__: list[str] = [
     "CurriculumLoader",
@@ -24,4 +36,14 @@ __all__: list[str] = [
     "CurriculumValidationError",
     "MissingDataFileError",
     "load_curriculum",
+    "NotesLoader",
+    "NotesSummary",
+    "NotesLoaderError",
+    "NotesValidationError",
+    "MissingNotesDirectoryError",
+    "ParsedNote",
+    "SubjectNotesStatus",
+    "OverallNotesStatus",
+    "load_notes",
+    "get_notes_status",
 ]

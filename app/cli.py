@@ -252,6 +252,62 @@ def load_curriculum_command(data_dir: str, dry_run: bool) -> None:
         sys.exit(1)
 
 
+@click.command("load-notes")
+@click.option(
+    "--notes-dir",
+    default="data/notes",
+    help="Directory containing markdown study notes organized by subject (default: data/notes).",
+)
+@click.option(
+    "--dry-run",
+    is_flag=True,
+    default=False,
+    help="Validate and stage note contents without committing to the database.",
+)
+@click.option(
+    "--force",
+    is_flag=True,
+    default=False,
+    help="Force overwrite of topic study notes even if content_reviewed is True in database.",
+)
+@with_appcontext
+def load_notes_command(notes_dir: str, dry_run: bool, force: bool) -> None:
+    """Validate, parse, and idempotently ingest Markdown study notes."""
+    from app.services.notes_loader import (
+        NotesLoader,
+        NotesValidationError,
+        MissingNotesDirectoryError,
+    )
+
+    try:
+        loader = NotesLoader(notes_dir=notes_dir, force=force)
+        summary = loader.load(dry_run=dry_run)
+        click.echo(summary.format_cli_output())
+    except MissingNotesDirectoryError as err:
+        click.echo(f"Error: {err}", err=True)
+        sys.exit(1)
+    except NotesValidationError as err:
+        click.echo(f"Error: {err}", err=True)
+        sys.exit(1)
+    except Exception as exc:
+        click.echo(f"Notes ingestion failed unexpectedly: {exc}", err=True)
+        sys.exit(1)
+
+
+@click.command("notes-status")
+@with_appcontext
+def notes_status_command() -> None:
+    """Display curriculum study notes inventory, review progress, and authoring source distribution."""
+    from app.services.notes_loader import get_notes_status
+
+    try:
+        status = get_notes_status()
+        click.echo(status.format_cli_output())
+    except Exception as exc:
+        click.echo(f"Failed to query notes status: {exc}", err=True)
+        sys.exit(1)
+
+
 def register_cli_commands(app: Flask) -> None:
     """Register custom CLI commands with the Flask application.
 
@@ -260,3 +316,5 @@ def register_cli_commands(app: Flask) -> None:
     """
     app.cli.add_command(db_check_command)
     app.cli.add_command(load_curriculum_command)
+    app.cli.add_command(load_notes_command)
+    app.cli.add_command(notes_status_command)

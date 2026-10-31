@@ -1,0 +1,132 @@
+{% extends "base.html" %}
+
+{% block title %}Quiz Results: {{ topic.name }} - StudySphere{% endblock %}
+
+{% block content %}
+<div class="quiz-container">
+    <!-- Breadcrumb navigation -->
+    <div class="breadcrumb-nav">
+        <a href="{{ url_for('topics.semester_picker') }}">Curriculum</a>
+        <span class="breadcrumb-separator">/</span>
+        <a href="{{ url_for('topics.semester_view', semester=topic.semester) }}">Semester {{ topic.semester }}</a>
+        <span class="breadcrumb-separator">/</span>
+        <a href="{{ url_for('topics.course_topics', course_id=topic.course_id) }}">{{ topic.course.title }}</a>
+        <span class="breadcrumb-separator">/</span>
+        <a href="{{ url_for('topics.topic_detail', topic_id=topic.id) }}">{{ topic.name }}</a>
+        <span class="breadcrumb-separator">/</span>
+        <span class="breadcrumb-current">Attempt #{{ attempt.attempt_number }} Results</span>
+    </div>
+
+    <!-- Results Score Card -->
+    <header class="quiz-result-hero">
+        <div class="result-hero-meta">
+            <span class="badge badge-primary">{{ topic.course.title }}</span>
+            <span class="badge badge-subtle">Semester {{ topic.semester }}</span>
+            <span class="badge badge-subtle">Attempt #{{ attempt.attempt_number }}</span>
+            <span class="badge badge-subtle">{{ attempt.created_at.strftime('%b %d, %Y %H:%M') }}</span>
+        </div>
+
+        <h1 class="result-title">Quiz Results: {{ topic.name }}</h1>
+
+        <div class="result-score-grid">
+            <div class="score-card">
+                <span class="score-label">Score</span>
+                <span class="score-value">{{ attempt.score | int }} <span class="score-denominator">/ {{ attempt.total_questions }}</span></span>
+            </div>
+
+            <div class="score-card">
+                <span class="score-label">Percentage</span>
+                <span class="score-value">{{ percentage }}<span class="score-percent-symbol">%</span></span>
+            </div>
+
+            <div class="score-card">
+                <span class="score-label">Incorrect</span>
+                <span class="score-value">{{ attempt.wrong_count }}</span>
+            </div>
+
+            <div class="score-card">
+                <span class="score-label">Evaluation Tier</span>
+                <span class="score-tier">
+                    {% if percentage >= 85 %}
+                        <span class="badge badge-success">Strong</span>
+                    {% elif percentage >= 65 %}
+                        <span class="badge badge-primary">Good</span>
+                    {% elif percentage >= 45 %}
+                        <span class="badge badge-warning">Needs Practice</span>
+                    {% else %}
+                        <span class="badge badge-danger">Needs Revision</span>
+                    {% endif %}
+                </span>
+            </div>
+        </div>
+    </header>
+
+    <!-- Question by Question Review -->
+    <section class="quiz-review-section">
+        <div class="review-header">
+            <h2 class="review-title">Detailed Question Review</h2>
+            <p class="review-desc">Review your answers alongside the ground-truth and instructor reference models:</p>
+        </div>
+
+        <div class="quiz-questions-list">
+            {% for item in details %}
+                <div class="quiz-question-card {% if item.is_correct is true %}result-card-correct{% elif item.is_correct is false %}result-card-wrong{% else %}result-card-theory{% endif %}">
+                    <div class="quiz-card-top">
+                        <span class="quiz-q-num">Question {{ loop.index }} of {{ details | length }}</span>
+                        
+                        {% if item.is_correct is true %}
+                            <span class="badge badge-success">✓ Correct</span>
+                        {% elif item.is_correct is false %}
+                            <span class="badge badge-danger">✗ Incorrect</span>
+                        {% else %}
+                            <span class="badge badge-warning">📖 Theory Model Answer</span>
+                        {% endif %}
+                    </div>
+
+                    <div class="quiz-q-body">
+                        <p class="quiz-question-text">{{ item.question_text }}</p>
+                    </div>
+
+                    <div class="result-answers-comparison">
+                        <!-- Student Answer -->
+                        <div class="result-answer-block {% if item.is_correct is true %}answer-block-correct{% elif item.is_correct is false %}answer-block-wrong{% else %}answer-block-student{% endif %}">
+                            <span class="answer-block-label">Your Submitted Answer:</span>
+                            <div class="answer-block-text">
+                                {% if item.student_answer %}
+                                    {{ item.student_answer }}
+                                {% else %}
+                                    <em class="text-muted">(No answer submitted)</em>
+                                {% endif %}
+                            </div>
+                        </div>
+
+                        <!-- Correct / Model Answer -->
+                        <div class="result-answer-block answer-block-groundtruth">
+                            <span class="answer-block-label">
+                                {% if item.is_correct is none %}
+                                    Instructor Model Answer:
+                                {% else %}
+                                    Correct Answer:
+                                {% endif %}
+                            </span>
+                            <div class="answer-block-text">
+                                {{ item.correct_answer }}
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            {% endfor %}
+        </div>
+
+        <!-- Result Action Bar -->
+        <div class="quiz-submit-bar">
+            <a href="{{ url_for('quiz.topic_quiz', topic_id=topic.id) }}" class="btn btn-primary btn-lg">
+                Retake Quiz
+            </a>
+            <a href="{{ url_for('topics.topic_detail', topic_id=topic.id) }}" class="btn btn-outline">
+                Back to {{ topic.name }} Notes
+            </a>
+        </div>
+    </section>
+</div>
+{% endblock %}

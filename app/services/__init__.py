@@ -42,6 +42,21 @@ from app.services.recommendation_service import (
     get_related_topics,
     get_db_state_key,
 )
+from app.services.quiz_engine import (
+    QuestionResultDetail,
+    QuizScoreResult,
+    evaluate_single_answer,
+    score_quiz,
+    get_topic_quiz_questions,
+)
+from app.services.question_loader import (
+    QuestionLoader,
+    QuestionsSummary,
+    QuestionLoaderError,
+    QuestionsValidationError,
+    MissingQuestionsFileError,
+    load_questions,
+)
 
 __all__: list[str] = [
     "CurriculumLoader",
@@ -70,4 +85,15 @@ __all__: list[str] = [
     "get_recommendations",
     "get_related_topics",
     "get_db_state_key",
+    "QuestionResultDetail",
+    "QuizScoreResult",
+    "evaluate_single_answer",
+    "score_quiz",
+    "get_topic_quiz_questions",
+    "QuestionLoader",
+    "QuestionsSummary",
+    "QuestionLoaderError",
+    "QuestionsValidationError",
+    "MissingQuestionsFileError",
+    "load_questions",
 ]

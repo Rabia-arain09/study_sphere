@@ -433,6 +433,43 @@ def setup_local_db_command(data_dir: str, notes_dir: str, force: bool) -> None:
     click.echo("=" * 60)
 
 
+@click.command("load-questions")
+@click.option(
+    "--file",
+    "csv_file",
+    default="data/questions.csv",
+    help="Path to questions CSV file (default: data/questions.csv).",
+)
+@click.option(
+    "--dry-run",
+    is_flag=True,
+    default=False,
+    help="Validate and stage data in a rolled-back transaction without saving.",
+)
+@with_appcontext
+def load_questions_command(csv_file: str, dry_run: bool) -> None:
+    """Validate, parse, and idempotently ingest assessment questions from CSV."""
+    from app.services.question_loader import (
+        QuestionLoader,
+        QuestionsValidationError,
+        MissingQuestionsFileError,
+    )
+
+    try:
+        loader = QuestionLoader(file_path=csv_file)
+        summary = loader.load(dry_run=dry_run)
+        click.echo(summary.format_cli_output())
+    except MissingQuestionsFileError as err:
+        click.echo(f"Error: {err}", err=True)
+        sys.exit(1)
+    except QuestionsValidationError as err:
+        click.echo(f"Error: {err}", err=True)
+        sys.exit(1)
+    except Exception as exc:
+        click.echo(f"Questions ingestion failed unexpectedly: {exc}", err=True)
+        sys.exit(1)
+
+
 def register_cli_commands(app: Flask) -> None:
     """Register custom CLI commands with the Flask application.
 
@@ -444,3 +481,4 @@ def register_cli_commands(app: Flask) -> None:
     app.cli.add_command(load_notes_command)
     app.cli.add_command(notes_status_command)
     app.cli.add_command(setup_local_db_command)
+    app.cli.add_command(load_questions_command)

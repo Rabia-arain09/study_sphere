@@ -1,0 +1,40 @@
+{% extends "base.html" %}
+
+{% block title %}Quiz Coming Soon: {{ topic.name }} - StudySphere{% endblock %}
+
+{% block content %}
+<div class="quiz-container">
+    <!-- Breadcrumb navigation -->
+    <div class="breadcrumb-nav">
+        <a href="{{ url_for('topics.semester_picker') }}">Curriculum</a>
+        <span class="breadcrumb-separator">/</span>
+        <a href="{{ url_for('topics.semester_view', semester=topic.semester) }}">Semester {{ topic.semester }}</a>
+        <span class="breadcrumb-separator">/</span>
+        <a href="{{ url_for('topics.course_topics', course_id=topic.course_id) }}">{{ topic.course.title }}</a>
+        <span class="breadcrumb-separator">/</span>
+        <a href="{{ url_for('topics.topic_detail', topic_id=topic.id) }}">{{ topic.name }}</a>
+        <span class="breadcrumb-separator">/</span>
+        <span class="breadcrumb-current">Quiz</span>
+    </div>
+
+    <!-- Friendly Empty State Card -->
+    <div class="quiz-empty-state-card">
+        <div class="empty-state-icon">📝</div>
+        <h1 class="empty-state-title">Quiz Coming Soon</h1>
+        <p class="empty-state-text">
+            Assessment questions for <strong>{{ topic.name }}</strong> are currently being curated and calibrated by instructors.
+        </p>
+        <p class="empty-state-subtext">
+            In the meantime, feel free to review the lecture notes or explore related curriculum concepts.
+        </p>
+        <div class="empty-state-actions">
+            <a href="{{ url_for('topics.topic_detail', topic_id=topic.id) }}" class="btn btn-primary">
+                Return to {{ topic.name }} Notes
+            </a>
+            <a href="{{ url_for('topics.course_topics', course_id=topic.course_id) }}" class="btn btn-outline">
+                Browse {{ topic.course.title }} Topics
+            </a>
+        </div>
+    </div>
+</div>
+{% endblock %}

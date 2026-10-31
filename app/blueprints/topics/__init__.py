@@ -11,6 +11,7 @@ from app.extensions import db
 from app.models.course import Course, CoursePrerequisite
 from app.models.prerequisite import Prerequisite
 from app.models.topic import Topic
+from app.models.attempt import Attempt
 from app.services.markdown_renderer import (
     calculate_reading_time,
     render_topic_markdown,
@@ -245,6 +246,15 @@ def topic_detail(topic_id: int):
 
     related_topics = get_related_topics(topic.id, k=5)
 
+    # Fetch user's quiz attempt history for this topic in a single indexed query (no N+1)
+    user_attempts = (
+        Attempt.query.filter_by(user_id=current_user.id, topic_id=topic.id)
+        .order_by(Attempt.created_at.desc(), Attempt.id.desc())
+        .all()
+    )
+    last_attempt = user_attempts[0] if user_attempts else None
+    attempt_count = len(user_attempts)
+
     return render_template(
         "topics/topic.html",
         topic=topic,
@@ -253,6 +263,8 @@ def topic_detail(topic_id: int):
         resources=topic.resources,
         related_topics=related_topics,
         reading_time=reading_time,
+        last_attempt=last_attempt,
+        attempt_count=attempt_count,
     )
 
 

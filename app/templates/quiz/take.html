@@ -1,0 +1,134 @@
+{% extends "base.html" %}
+
+{% block title %}Quiz: {{ topic.name }} - StudySphere{% endblock %}
+
+{% block content %}
+<div class="quiz-container">
+    <!-- Breadcrumb navigation -->
+    <div class="breadcrumb-nav">
+        <a href="{{ url_for('topics.semester_picker') }}">Curriculum</a>
+        <span class="breadcrumb-separator">/</span>
+        <a href="{{ url_for('topics.semester_view', semester=topic.semester) }}">Semester {{ topic.semester }}</a>
+        <span class="breadcrumb-separator">/</span>
+        <a href="{{ url_for('topics.course_topics', course_id=topic.course_id) }}">{{ topic.course.title }}</a>
+        <span class="breadcrumb-separator">/</span>
+        <a href="{{ url_for('topics.topic_detail', topic_id=topic.id) }}">{{ topic.name }}</a>
+        <span class="breadcrumb-separator">/</span>
+        <span class="breadcrumb-current">Quiz</span>
+    </div>
+
+    <!-- Quiz Header -->
+    <header class="quiz-header">
+        <div class="quiz-header-meta">
+            <span class="badge badge-primary">{{ topic.course.title }}</span>
+            <span class="badge badge-subtle">Semester {{ topic.semester }}</span>
+            <span class="badge badge-subtle">{{ questions | length }} Questions</span>
+        </div>
+        <h1 class="quiz-title">Knowledge Assessment: {{ topic.name }}</h1>
+        <p class="quiz-subtitle">
+            Answer the questions below to test your understanding. Theory questions will reveal model reference answers upon completion and are excluded from the numerical score.
+        </p>
+    </header>
+
+    <!-- Quiz Form -->
+    <form method="POST" action="{{ url_for('quiz.submit_quiz', topic_id=topic.id) }}" class="quiz-form" novalidate>
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+
+        <div class="quiz-questions-list">
+            {% for q in questions %}
+                {% set q_type = q.type.value if q.type.value is defined else q.type %}
+                <div class="quiz-question-card" id="question-card-{{ q.id }}">
+                    <div class="quiz-card-top">
+                        <span class="quiz-q-num">Question {{ loop.index }} of {{ questions | length }}</span>
+                        {% if q_type == 'mcq' %}
+                            <span class="badge badge-subtle">Multiple Choice</span>
+                        {% elif q_type == 'tf' %}
+                            <span class="badge badge-subtle">True / False</span>
+                        {% elif q_type == 'short' %}
+                            <span class="badge badge-subtle">Short Answer</span>
+                        {% elif q_type == 'theory' %}
+                            <span class="badge badge-warning">Theory &bull; Self-Evaluated</span>
+                        {% endif %}
+                    </div>
+
+                    <div class="quiz-q-body">
+                        <p class="quiz-question-text">{{ q.question_text }}</p>
+                    </div>
+
+                    <div class="quiz-q-answers">
+                        {% if q_type == 'mcq' %}
+                            <div class="quiz-options-group">
+                                {% if q.options and q.options is mapping %}
+                                    {% for opt_key, opt_val in q.options.items() %}
+                                        <label class="quiz-radio-option" for="q{{ q.id }}_{{ opt_key }}">
+                                            <input type="radio" id="q{{ q.id }}_{{ opt_key }}" name="question_{{ q.id }}" value="{{ opt_key }}">
+                                            <span class="quiz-radio-custom"></span>
+                                            <span class="quiz-opt-key">{{ opt_key }}.</span>
+                                            <span class="quiz-opt-text">{{ opt_val }}</span>
+                                        </label>
+                                    {% endfor %}
+                                {% elif q.options and q.options is iterable %}
+                                    {% for opt_val in q.options %}
+                                        <label class="quiz-radio-option" for="q{{ q.id }}_{{ loop.index }}">
+                                            <input type="radio" id="q{{ q.id }}_{{ loop.index }}" name="question_{{ q.id }}" value="{{ opt_val }}">
+                                            <span class="quiz-radio-custom"></span>
+                                            <span class="quiz-opt-text">{{ opt_val }}</span>
+                                        </label>
+                                    {% endfor %}
+                                {% endif %}
+                            </div>
+
+                        {% elif q_type == 'tf' %}
+                            <div class="quiz-options-group quiz-tf-group">
+                                <label class="quiz-radio-option" for="q{{ q.id }}_true">
+                                    <input type="radio" id="q{{ q.id }}_true" name="question_{{ q.id }}" value="True">
+                                    <span class="quiz-radio-custom"></span>
+                                    <span class="quiz-opt-text">True</span>
+                                </label>
+                                <label class="quiz-radio-option" for="q{{ q.id }}_false">
+                                    <input type="radio" id="q{{ q.id }}_false" name="question_{{ q.id }}" value="False">
+                                    <span class="quiz-radio-custom"></span>
+                                    <span class="quiz-opt-text">False</span>
+                                </label>
+                            </div>
+
+                        {% elif q_type == 'short' %}
+                            <div class="quiz-text-group">
+                                <input type="text"
+                                       name="question_{{ q.id }}"
+                                       id="q_{{ q.id }}"
+                                       class="form-input"
+                                       placeholder="Enter concise answer..."
+                                       maxlength="500"
+                                       autocomplete="off">
+                                <span class="quiz-input-hint">Case-insensitive match. Keep it concise.</span>
+                            </div>
+
+                        {% elif q_type == 'theory' %}
+                            <div class="quiz-text-group">
+                                <textarea name="question_{{ q.id }}"
+                                          id="q_{{ q.id }}"
+                                          class="form-input quiz-textarea"
+                                          rows="4"
+                                          placeholder="Write your explanation or analysis..."
+                                          maxlength="5000"></textarea>
+                                <span class="quiz-input-hint">Your explanation will be compared against an instructor model answer.</span>
+                            </div>
+                        {% endif %}
+                    </div>
+                </div>
+            {% endfor %}
+        </div>
+
+        <!-- Form Actions -->
+        <div class="quiz-submit-bar">
+            <button type="submit" class="btn btn-primary btn-lg">
+                Submit Quiz
+            </button>
+            <a href="{{ url_for('topics.topic_detail', topic_id=topic.id) }}" class="btn btn-outline">
+                Cancel
+            </a>
+        </div>
+    </form>
+</div>
+{% endblock %}

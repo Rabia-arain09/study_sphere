@@ -107,6 +107,7 @@ study_sphere/
 │   ├── course_prerequisites.csv # 12 course-level academic prerequisites
 │   ├── topics.csv               # 165 syllabus topics with tags, difficulty & week
 │   ├── topic_prerequisites.csv  # 194 directed topic-level concept prerequisites
+│   ├── questions.csv            # Calibrated assessment items (mcq, tf, short, theory)
 │   └── notes/                   # Markdown study notes organized by subject-slug/NN-topic-slug.md
 ├── migrations/              # Alembic / Flask-Migrate migration scripts
 │   ├── versions/            # Versioned migration revision files
@@ -425,13 +426,50 @@ Total                                 165         165          0           157  
 ====================================================================================
 ```
 
-### 5. Run the Application
+### 5. Assessment Questions & Question Loader CLI (`data/questions.csv`)
+
+StudySphere supports calibrated topic assessments evaluating student mastery across four question formats: Multiple Choice (`mcq`), True/False (`tf`), Short Answer (`short`), and Conceptual/Theory (`theory`).
+
+#### Questions CSV Schema
+Question assessment banks are stored in CSV format (encoded with `utf-8-sig`) with the following column structure:
+
+| Column | Type | Description |
+| :--- | :--- | :--- |
+| `semester` | Integer | Enrolled academic semester (1–8). |
+| `subject` | String | Academic subject/course title matching curriculum (e.g., `Machine Learning`). |
+| `topic` | String | Specific syllabus topic name matching natural key (e.g., `Introduction to Machine Learning`). |
+| `type` | String | Question format: `mcq` (multiple-choice), `tf` (true/false), `short` (text match), or `theory` (conceptual explanation). |
+| `question_text`| Text | The prompt or problem statement presented to the learner. |
+| `option_a` | Text | Option A text (required for `mcq`; "True" for `tf`; empty for others). |
+| `option_b` | Text | Option B text (required for `mcq`; "False" for `tf`; empty for others). |
+| `option_c` | Text | Option C text (optional for `mcq`; empty for others). |
+| `option_d` | Text | Option D text (optional for `mcq`; empty for others). |
+| `correct_answer` | Text | Ground truth: option key (`A`/`B`/`C`/`D`) for `mcq`; `True`/`False` for `tf`; pipe-delimited variants (e.g., `supervised\|supervised learning`) for `short`; instructor reference model answer for `theory`. |
+| `source` | String | Provenance origin: `curriculum` (curated) or `generated` (LLM/active learning). |
+
+#### Question Ingestion Commands
+Ingest or stage question banks using the custom CLI command:
+```bash
+# Validate and ingest questions into database
+flask --app run.py load-questions --file data/questions.csv
+
+# Dry-run validation (verifies syntax, types, and referential integrity without persisting)
+flask --app run.py load-questions --file data/questions.csv --dry-run
+```
+
+**Key Features of the Question Loader**:
+- **Pre-Write Referential Validation**: Resolves each row's `(semester, subject, topic)` against existing curriculum `Topic` entities before any write operations occur.
+- **Fail-Fast Error Reporting**: Accumulates and prints all syntax and referential errors with exact CSV row numbers, terminating immediately on invalid input without partial database writes.
+- **Idempotency Guarantee**: Matches existing questions by compound key `(topic_id, type, question_text)`. Re-running the loader updates modified attributes without generating duplicate rows.
+- **Scoring Engine Integration**: Multiple-choice matches option keys or values case-insensitively, True/False evaluates case-insensitively, Short Answer matches any `|`-delimited variant after trimming, and Theory questions display instructor model answers while remaining excluded from numerical attempt scoring.
+
+### 6. Run the Application
 ```bash
 python run.py
 ```
 The server will start at `http://127.0.0.1:5000/`. You can verify health at `http://127.0.0.1:5000/health`.
 
-### 6. Run Automated Tests
+### 7. Run Automated Tests
 ```bash
 pytest -v
 ```
@@ -568,3 +606,5 @@ StudySphere features a content-based recommendation engine (`ml/recommender.py` 
 - **Course Title Fallback for Related Topics**: In `GET /topics/<id>/related` and UI cards, resolved the `course` property from `topic.course.title` falling back to `topic.subject` to provide clear academic subject titles.
 - **RESTful 404 on Missing Target in Related Endpoint**: Handled unknown topic IDs in `GET /topics/<id>/related` with HTTP 404 to match `/topics/<id>`, while returning an empty JSON array `[]` for valid topics with zero matching recommendations.
 - **Study Notes Reading Time Metric**: Replaced the static 'Pedagogical Ground Truth' header badge with dynamic reading time ('X min read') computed via `calculate_reading_time` at 200 words per minute using `max(1, math.ceil(words / 200))` with a 1-minute minimum for non-empty content and omitting the badge for empty notes.
+- **Quiz Engine Attempt Review & Model Reuse**: Reused existing `Question` and `Attempt` database schemas without migrations, persisting student responses in the signed session and recording numeric features (`score`, `total_questions`, `wrong_count`, `attempt_number`, `label=None`) for the Phase 5 Decision Tree.
+- **Assessment Ingestion Pipeline and Idempotency**: Built `load-questions` CLI validating CSV headers, natural topic keys, and question type rubrics before transactions, guaranteeing idempotency via `(topic_id, type, question_text)` compound keys.

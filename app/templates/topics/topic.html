@@ -85,6 +85,49 @@
 
         <!-- Sidebar: Prerequisites & Resources (Requirement 3) -->
         <aside class="topic-sidebar">
+            <!-- Quiz Assessment Card (Requirement 5) -->
+            <div class="sidebar-card quiz-sidebar-card">
+                <h3 class="sidebar-card-title">📝 Topic Quiz</h3>
+                <p class="sidebar-card-desc">Evaluate your mastery of this concept:</p>
+
+                {% if last_attempt %}
+                    <div class="sidebar-quiz-stats">
+                        <div class="quiz-stat-row">
+                            <span class="quiz-stat-label">Total Attempts:</span>
+                            <span class="quiz-stat-value font-bold">{{ attempt_count }}</span>
+                        </div>
+                        <div class="quiz-stat-row">
+                            <span class="quiz-stat-label">Last Score:</span>
+                            <span class="quiz-stat-value">
+                                {{ last_attempt.score | int }} / {{ last_attempt.total_questions }}
+                                {% if last_attempt.total_questions > 0 %}
+                                    ({{ ((last_attempt.score / last_attempt.total_questions * 100)) | round(0) | int }}%)
+                                {% endif %}
+                            </span>
+                        </div>
+                        <div class="quiz-stat-row">
+                            <span class="quiz-stat-label">Last Taken:</span>
+                            <span class="quiz-stat-value text-muted">{{ last_attempt.created_at.strftime('%b %d, %Y') }}</span>
+                        </div>
+                        <div class="quiz-last-link">
+                            <a href="{{ url_for('quiz.attempt_result', attempt_id=last_attempt.id) }}" class="text-link small">
+                                View last attempt result &rarr;
+                            </a>
+                        </div>
+                    </div>
+                {% else %}
+                    <div class="sidebar-empty-state">
+                        <span>No attempts yet. Test your knowledge!</span>
+                    </div>
+                {% endif %}
+
+                <div class="sidebar-quiz-actions">
+                    <a href="{{ url_for('quiz.topic_quiz', topic_id=topic.id) }}" class="btn btn-primary btn-block">
+                        Take Quiz
+                    </a>
+                </div>
+            </div>
+
             <!-- Sidebar Recommendations Box -->
             <div class="sidebar-card">
                 <h3 class="sidebar-card-title">💡 Related Topics</h3>

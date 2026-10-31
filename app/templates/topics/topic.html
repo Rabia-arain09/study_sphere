@@ -78,10 +78,68 @@
                     {% endif %}
                 </div>
             </div>
+
+            <!-- Related Topics Section (Phase 3 Recommender) -->
+            <section class="related-topics-section" id="related-topics">
+                <div class="related-topics-header">
+                    <div>
+                        <h2 class="related-topics-heading">💡 Related Topics</h2>
+                        <span class="related-topics-subtitle">Curriculum concepts recommended based on content similarity</span>
+                    </div>
+                </div>
+
+                {% if related_topics %}
+                    <div class="related-topics-grid">
+                        {% for item in related_topics %}
+                            <a href="{{ url_for('topics.topic_detail', topic_id=item.id) }}" class="related-topic-card">
+                                <div class="related-topic-top">
+                                    <span class="badge badge-primary">{{ item.course }}</span>
+                                    {% if item.week %}
+                                        <span class="badge badge-subtle">Week {{ item.week }}</span>
+                                    {% endif %}
+                                    <span class="match-badge">{{ (item.score * 100) | round(1) }}% match</span>
+                                </div>
+                                <h3 class="related-topic-name">{{ item.name }}</h3>
+                                <div class="related-topic-bottom">
+                                    <span class="difficulty-meter diff-{{ item.difficulty }}">Level {{ item.difficulty }} / 5</span>
+                                    <span class="view-link">Explore &rarr;</span>
+                                </div>
+                            </a>
+                        {% endfor %}
+                    </div>
+                {% else %}
+                    <div class="related-topics-empty">
+                        <span class="related-empty-icon">🔍</span>
+                        <p class="related-empty-text">No related topics found for this concept yet.</p>
+                    </div>
+                {% endif %}
+            </section>
         </div>
 
         <!-- Sidebar: Prerequisites & Resources (Requirement 3) -->
         <aside class="topic-sidebar">
+            <!-- Related Topics Quick Links Box -->
+            <div class="sidebar-card">
+                <h3 class="sidebar-card-title">💡 Related Topics</h3>
+                <p class="sidebar-card-desc">Concepts closely connected by content similarity:</p>
+
+                {% if related_topics %}
+                    <ul class="prereq-list">
+                        {% for rel in related_topics %}
+                            <li class="prereq-list-item">
+                                <a href="{{ url_for('topics.topic_detail', topic_id=rel.id) }}" class="prereq-link">
+                                    <div class="prereq-link-name">{{ rel.name }}</div>
+                                    <div class="prereq-link-course">{{ rel.course }}{% if rel.week %} &bull; Wk {{ rel.week }}{% endif %} &bull; {{ (rel.score * 100) | round(0) | int }}%</div>
+                                </a>
+                            </li>
+                        {% endfor %}
+                    </ul>
+                {% else %}
+                    <div class="sidebar-empty-state">
+                        <span>No related topics found.</span>
+                    </div>
+                {% endif %}
+            </div>
             <!-- Concept Prerequisites Box -->
             <div class="sidebar-card">
                 <h3 class="sidebar-card-title">🔗 Concept Prerequisites</h3>

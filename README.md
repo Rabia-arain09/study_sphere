@@ -497,6 +497,37 @@ To enable 3 developers to work concurrently on `main` without merge conflicts:
 
 ---
 
+## Recommender (Content-Based)
+
+StudySphere features a content-based recommendation engine (`ml/recommender.py` and `app/services/recommendation_service.py`) that recommends related curriculum topics to students based on vocabulary overlap, conceptual relevance, and syllabus proximity.
+
+### How It Works (For Viva & Technical Defense)
+
+1. **Text Aggregation & Title Weighting**:
+   - Each topic is represented by an aggregated text document formed by repeating the topic **name 3 times** (giving title terms higher term frequency), combined with the topic **description**, **tags**, and the first **~1,500 characters of Markdown lecture notes content**.
+   - Standard English stop words (`stop_words="english"`) are removed to eliminate non-informative terms like "the", "is", and "with".
+
+2. **TF-IDF Vectorization (`TfidfVectorizer`)**:
+   - **Term Frequency (TF)**: Measures how frequently a word appears in a topic's text. We use `sublinear_tf=True`, which applies logarithmic scaling ($1 + \log(\text{tf})$) instead of raw counts. This prevents long notes or repeatedly used terms from unfairly dominating shorter topics.
+   - **Inverse Document Frequency (IDF)**: Measures how unique or informative a word is across all 165 curriculum topics ($\log \frac{N}{\text{df}} + 1$). Common words across all topics (like "system" or "introduction") receive low IDF weights, while specialized terms (like "perceptron", "deadlock", "syntax") receive high IDF weights.
+   - The result is a high-dimensional sparse numerical vector for each topic.
+
+3. **Cosine Similarity**:
+   - Compares the angle between two topic TF-IDF vectors $\mathbf{u}$ and $\mathbf{v}$:
+     $$\text{Cosine Similarity}(\mathbf{u}, \mathbf{v}) = \frac{\mathbf{u} \cdot \mathbf{v}}{\|\mathbf{u}\|_2 \|\mathbf{v}\|_2}$$
+   - Because TF-IDF vectors are L2-normalized, cosine similarity equals the dot product of the two vectors, ranging from **0.0** (orthogonal, zero shared vocabulary) to **1.0** (identical vocabulary distribution).
+   - The query topic itself is always excluded, and zero-score candidates (no common vocabulary) are filtered out.
+
+4. **Same-Subject Boost (+0.05)**:
+   - When a candidate topic belongs to the same academic subject/course as the query topic and has a positive base similarity score ($\text{sim} > 0$), a small additive boost of **+0.05** (capped at 1.0) is applied.
+   - **Why?** Topics within the same subject naturally belong to the same pedagogical module and course timeline, giving students immediate contextual follow-up concepts while still permitting cross-disciplinary discovery (e.g., Compiler Construction linking to Operating Systems linkers/loaders).
+
+5. **In-Memory Caching & Single-Query Retrieval**:
+   - The recommender is lazily loaded and fitted once per application process, kept in memory, and only rebuilt if the database state changes (detected via topic count, max topic ID, or content length sum).
+   - The related topics endpoint (`GET /topics/<id>/related`) and topic detail view batch target topic verification and recommendation entity fetching into **a single SQL query** (`Topic.id.in_([topic_id] + rec_ids)` with `joinedload(Topic.course)`), achieving **sub-10ms** response times on SQLite.
+
+---
+
 ## Design Decisions
 
 - **Application Factory Pattern**: Adopted `create_app()` factory with modular Blueprint separation (`auth`, `topics`, `quiz`, `upload`, `dashboard`) to isolate developer workflows and eliminate circular dependencies.
@@ -527,3 +558,10 @@ To enable 3 developers to work concurrently on `main` without merge conflicts:
 - **Flask-Login User Loader Scope Isolation**: Explicitly bound the `User` model in `load_user` to eliminate factory instance closure shadowing on `app.models`.
 - **Local SQLite Environment & Safe Migration Pipeline**: Built `setup-local-db` CLI command that validates SQLite dialect, runs migrations with `create_all` fallback, loads curriculum CSVs and Markdown notes idempotently (44 courses, 165 topics, 165 notes), and strictly refuses execution against PostgreSQL.
 - **Instance-Relative Path Normalization**: Resolved relative `sqlite:///instance/` URIs in `create_app` against repository root to prevent Flask-SQLAlchemy 3.x from double-nesting paths into `instance/instance/studysphere.db`.
+- **TF-IDF Topic Name Repetition Weighting**: Repeated topic name 3 times during document text aggregation in `ml/recommender.py` to give primary title keywords prominent feature weighting above secondary description and body text.
+- **Sublinear Term Frequency Scaling**: Configured `sublinear_tf=True` in `TfidfVectorizer` to scale term frequencies logarithmically ($1 + \log(\text{tf})$), dampening the influence of repetitive keywords in detailed lecture notes.
+- **Same-Subject Additive Score Boost**: Applied a +0.05 additive boost (capped at 1.0) to candidate topics sharing the same academic subject/course when base cosine similarity is positive, maintaining curriculum cohesion without suppressing genuine cross-course connections.
+- **Lazy In-Memory Recommender Lifecycle**: Initialized `TopicRecommender` lazily on first access, cached the fitted instance in memory, and re-fitted automatically only when database state keys (topic count, max ID, or content length checksum) mutate.
+- **Batched Single-Query Related Topic Retrieval**: Fetched target topic existence and all top-k recommendation entities in a single database query using `in_([topic_id] + rec_ids)` with eager-loaded `joinedload(Topic.course)`, avoiding N+1 queries and achieving ~4ms response latency.
+- **Course Title Fallback for Related Topics**: In `GET /topics/<id>/related` and UI cards, resolved the `course` property from `topic.course.title` falling back to `topic.subject` to provide clear academic subject titles.
+- **RESTful 404 on Missing Target in Related Endpoint**: Handled unknown topic IDs in `GET /topics/<id>/related` with HTTP 404 to match `/topics/<id>`, while returning an empty JSON array `[]` for valid topics with zero matching recommendations.

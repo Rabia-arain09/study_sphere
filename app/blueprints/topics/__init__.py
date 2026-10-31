@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 import re
-from flask import Blueprint, render_template, abort
+from flask import Blueprint, render_template, abort, jsonify
 from flask_login import login_required, current_user
 from sqlalchemy import func
 from sqlalchemy.orm import defer, joinedload, selectinload
@@ -11,6 +11,10 @@ from app.models.course import Course, CoursePrerequisite
 from app.models.prerequisite import Prerequisite
 from app.models.topic import Topic
 from app.services.markdown_renderer import render_topic_markdown
+from app.services.recommendation_service import (
+    get_recommendations,
+    get_related_topics,
+)
 
 topics_bp: Blueprint = Blueprint("topics", __name__)
 
@@ -163,13 +167,56 @@ def topic_detail(topic_id: int):
         if prereq.prerequisite_topic is not None
     ]
 
+    related_topics = get_related_topics(topic.id, k=5)
+
     return render_template(
         "topics/topic.html",
         topic=topic,
         rendered_notes=rendered_notes,
         prerequisites=prerequisites,
         resources=topic.resources,
+        related_topics=related_topics,
     )
+
+
+@topics_bp.route("/<int:topic_id>/related", methods=["GET"])
+@login_required
+def related_topics(topic_id: int):
+    """Return JSON list of top-5 related topics for a given topic.
+
+    Uses a single database query to fetch target topic existence and all
+    recommended topic entities with eager-loaded course relationships.
+    """
+    recs = get_recommendations(topic_id=topic_id, k=5)
+    rec_ids = [item[0] for item in recs]
+
+    # Fetch target topic and all recommendation candidates in a single SQL query
+    all_needed_ids = [topic_id] + rec_ids
+    topics = (
+        Topic.query.options(joinedload(Topic.course))
+        .filter(Topic.id.in_(all_needed_ids))
+        .all()
+    )
+    topic_map = {t.id: t for t in topics}
+
+    if topic_id not in topic_map:
+        abort(404)
+
+    results: list[dict[str, Any]] = []
+    for rec_id, score in recs:
+        t = topic_map.get(rec_id)
+        if t is not None:
+            course_title = t.course.title if t.course else t.subject
+            results.append({
+                "id": t.id,
+                "name": t.name,
+                "course": course_title,
+                "week": t.week,
+                "difficulty": t.difficulty,
+                "score": round(score, 4),
+            })
+
+    return jsonify(results)
 
 
 # Alias endpoint for consistency

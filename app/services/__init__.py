@@ -34,6 +34,13 @@ from app.services.markdown_renderer import (
     get_cached_topic_markdown,
     clear_topic_markdown_cache,
 )
+from app.services.recommendation_service import (
+    get_recommender,
+    reset_recommender,
+    get_recommendations,
+    get_related_topics,
+    get_db_state_key,
+)
 
 __all__: list[str] = [
     "CurriculumLoader",
@@ -56,4 +63,9 @@ __all__: list[str] = [
     "render_topic_markdown",
     "get_cached_topic_markdown",
     "clear_topic_markdown_cache",
+    "get_recommender",
+    "reset_recommender",
+    "get_recommendations",
+    "get_related_topics",
+    "get_db_state_key",
 ]

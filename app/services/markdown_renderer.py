@@ -1,6 +1,8 @@
 """Markdown rendering and HTML sanitization service for StudySphere study notes."""
 
 from __future__ import annotations
+import functools
+import hashlib
 import markdown
 import nh3
 
@@ -65,6 +67,8 @@ ALLOWED_ATTRIBUTES: dict[str, set[str]] = {
     "td": {"colspan", "rowspan", "align"},
 }
 
+_CONTENT_CACHE_STORE: dict[str, str] = {}
+
 
 def render_markdown(content: str | None) -> str:
     """Render Markdown string to sanitized HTML.
@@ -103,3 +107,47 @@ def render_markdown(content: str | None) -> str:
     )
 
     return sanitized_html
+
+
+@functools.lru_cache(maxsize=1024)
+def get_cached_topic_markdown(topic_id: int, content_hash: str) -> str:
+    """Retrieve or compute rendered markdown HTML keyed strictly by topic ID and content hash.
+
+    Args:
+        topic_id: Primary key of the topic.
+        content_hash: SHA-256 hash digest of the raw markdown text.
+
+    Returns:
+        str: Sanitized HTML rendered from the stored content matching the content hash.
+    """
+    raw_content = _CONTENT_CACHE_STORE.get(content_hash, "")
+    return render_markdown(raw_content)
+
+
+def render_topic_markdown(topic_id: int, content: str | None) -> str:
+    """Render topic Markdown notes to HTML with in-memory LRU caching.
+
+    Uses SHA-256 content hashing to derive a cache key (topic_id, content_hash)
+    for functools.lru_cache, avoiding expensive repeated markdown parsing and
+    HTML sanitization on subsequent page views.
+
+    Args:
+        topic_id: Primary key of the topic.
+        content: Raw markdown content string or None.
+
+    Returns:
+        str: Sanitized HTML string ready for template rendering.
+    """
+    if not content or not content.strip():
+        return ""
+
+    content_hash = hashlib.sha256(content.strip().encode("utf-8")).hexdigest()
+    _CONTENT_CACHE_STORE[content_hash] = content
+    return get_cached_topic_markdown(topic_id, content_hash)
+
+
+def clear_topic_markdown_cache() -> None:
+    """Clear in-memory LRU cache and underlying content store."""
+    get_cached_topic_markdown.cache_clear()
+    _CONTENT_CACHE_STORE.clear()
+

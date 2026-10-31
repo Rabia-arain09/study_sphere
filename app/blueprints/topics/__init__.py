@@ -4,10 +4,13 @@ from __future__ import annotations
 import re
 from flask import Blueprint, render_template, abort
 from flask_login import login_required, current_user
+from sqlalchemy import func
+from sqlalchemy.orm import defer, joinedload, selectinload
 from app.extensions import db
-from app.models.course import Course
+from app.models.course import Course, CoursePrerequisite
+from app.models.prerequisite import Prerequisite
 from app.models.topic import Topic
-from app.services.markdown_renderer import render_markdown
+from app.services.markdown_renderer import render_topic_markdown
 
 topics_bp: Blueprint = Blueprint("topics", __name__)
 
@@ -44,11 +47,17 @@ def semester_picker():
 
     semesters = list(range(1, 9))
     courses = Course.query.filter_by(semester=default_semester).order_by(Course.code).all()
-    topic_count = Topic.query.filter_by(semester=default_semester).count()
 
-    course_topic_counts = {
-        course.id: len(course.topics) for course in courses
-    }
+    # Efficient grouped COUNT query: 1 query for all courses in this semester
+    # Replaces N+1 queries from iterating course.topics
+    topic_counts = dict(
+        db.session.query(Topic.course_id, func.count(Topic.id))
+        .filter(Topic.semester == default_semester)
+        .group_by(Topic.course_id)
+        .all()
+    )
+    course_topic_counts = {course.id: topic_counts.get(course.id, 0) for course in courses}
+    topic_count = sum(course_topic_counts.values())
 
     return render_template(
         "topics/index.html",
@@ -69,11 +78,16 @@ def semester_view(semester: int):
 
     semesters = list(range(1, 9))
     courses = Course.query.filter_by(semester=semester).order_by(Course.code).all()
-    topic_count = Topic.query.filter_by(semester=semester).count()
 
-    course_topic_counts = {
-        course.id: len(course.topics) for course in courses
-    }
+    # Efficient grouped COUNT query: 1 query for all courses in this semester
+    topic_counts = dict(
+        db.session.query(Topic.course_id, func.count(Topic.id))
+        .filter(Topic.semester == semester)
+        .group_by(Topic.course_id)
+        .all()
+    )
+    course_topic_counts = {course.id: topic_counts.get(course.id, 0) for course in courses}
+    topic_count = sum(course_topic_counts.values())
 
     return render_template(
         "topics/semester.html",
@@ -89,10 +103,28 @@ def semester_view(semester: int):
 @login_required
 def course_topics(course_id: int):
     """List topics of a subject/course ordered by week, with difficulty and review badges."""
-    course = db.session.get(Course, course_id)
+    course = (
+        Course.query.filter_by(id=course_id)
+        .options(
+            selectinload(Course.prerequisites_required).joinedload(
+                CoursePrerequisite.prerequisite_course
+            )
+        )
+        .first()
+    )
     if course is None:
         abort(404)
-    topics = Topic.query.filter_by(course_id=course.id).all()
+
+    # Defer heavy Topic.content on list page and eager-load prerequisite/resource counts
+    topics = (
+        Topic.query.filter_by(course_id=course.id)
+        .options(
+            defer(Topic.content),
+            selectinload(Topic.prerequisites_required),
+            selectinload(Topic.resources),
+        )
+        .all()
+    )
     ordered_topics = sorted(topics, key=week_sort_key)
 
     return render_template(
@@ -106,11 +138,23 @@ def course_topics(course_id: int):
 @login_required
 def topic_detail(topic_id: int):
     """Render topic study notes reader, prerequisites as links, and attached resources."""
-    topic = db.session.get(Topic, topic_id)
+    topic = (
+        Topic.query.filter_by(id=topic_id)
+        .options(
+            joinedload(Topic.course),
+            selectinload(Topic.prerequisites_required).joinedload(
+                Prerequisite.prerequisite_topic
+            ),
+            selectinload(Topic.resources),
+        )
+        .first()
+    )
     if topic is None:
         abort(404)
 
-    rendered_notes = render_markdown(topic.content) if topic.content else ""
+    rendered_notes = (
+        render_topic_markdown(topic.id, topic.content) if topic.content else ""
+    )
 
     # Directed prerequisites: concepts required before taking this topic
     prerequisites = [

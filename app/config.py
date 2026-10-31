@@ -152,7 +152,7 @@ def get_engine_options(uri: str | None) -> dict[str, Any]:
     if uri and uri.startswith("postgresql"):
         return {
             "pool_pre_ping": True,
-            "pool_recycle": 300,
+            "pool_recycle": 280,
             "pool_size": 5,
             "max_overflow": 2,
         }

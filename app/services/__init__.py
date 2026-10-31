@@ -28,7 +28,12 @@ from app.services.notes_loader import (
     load_notes,
     get_notes_status,
 )
-from app.services.markdown_renderer import render_markdown
+from app.services.markdown_renderer import (
+    render_markdown,
+    render_topic_markdown,
+    get_cached_topic_markdown,
+    clear_topic_markdown_cache,
+)
 
 __all__: list[str] = [
     "CurriculumLoader",
@@ -48,4 +53,7 @@ __all__: list[str] = [
     "load_notes",
     "get_notes_status",
     "render_markdown",
+    "render_topic_markdown",
+    "get_cached_topic_markdown",
+    "clear_topic_markdown_cache",
 ]

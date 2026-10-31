@@ -4,6 +4,7 @@ from __future__ import annotations
 import os
 from pathlib import Path
 from flask import Flask, jsonify, render_template, request
+from werkzeug.exceptions import HTTPException
 from app.config import config_by_name, Config
 from app.extensions import db, migrate, login_manager, csrf
 from app.services.markdown_renderer import render_markdown
@@ -93,5 +94,24 @@ def create_app(config_name: str | None = None) -> Flask:
                 }
             ), 200
         return render_template("home.html")
+
+    # Error handlers
+    @app.errorhandler(404)
+    def handle_not_found(error):
+        """Render friendly 404 error page for missing routes or resources."""
+        return render_template("errors/404.html"), 404
+
+    @app.errorhandler(500)
+    @app.errorhandler(Exception)
+    def handle_internal_server_error(error):
+        """Handle 500 internal server errors, rollback database session, and log server-side."""
+        if isinstance(error, HTTPException) and error.code != 500:
+            return error
+        app.logger.error("Internal Server Error caught by handler: %s", error, exc_info=True)
+        try:
+            db.session.rollback()
+        except Exception as rollback_err:
+            app.logger.warning("Database session rollback failed during 500 error handling: %s", rollback_err)
+        return render_template("errors/500.html"), 500
 
     return app

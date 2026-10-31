@@ -1,0 +1,24 @@
+{% extends "base.html" %}
+
+{% block title %}Server Error (500) - StudySphere{% endblock %}
+
+{% block content %}
+<div class="coming-soon-card" style="border-color: #fecaca; background-color: #ffffff; max-width: 680px; margin: 3rem auto; padding: 3rem 2rem; box-shadow: var(--shadow-md);">
+    <div class="coming-soon-icon" style="font-size: 3.5rem;">⚠️</div>
+    <h1 class="coming-soon-title" style="color: #991b1b; font-size: 1.75rem; margin-bottom: 0.75rem;">Something Went Wrong</h1>
+    <p class="coming-soon-text" style="color: #4b5563; margin-bottom: 2rem;">
+        An unexpected error occurred while processing your request. Our system has automatically rolled back any pending database operations to maintain data integrity, and our engineering team has been notified.
+    </p>
+    <div style="display: flex; gap: 1rem; justify-content: center; flex-wrap: wrap;">
+        <button onclick="window.location.reload()" class="btn btn-primary">
+            Retry Request &orarr;
+        </button>
+        <a href="{{ url_for('topics.semester_picker') }}" class="btn btn-outline">
+            Browse Curriculum
+        </a>
+        <a href="{{ url_for('index') }}" class="btn btn-outline">
+            Return Home
+        </a>
+    </div>
+</div>
+{% endblock %}

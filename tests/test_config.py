@@ -62,7 +62,7 @@ def test_get_engine_options_postgresql():
     uri = "postgresql+psycopg2://u:p@h:5432/db?sslmode=require"
     opts = get_engine_options(uri)
     assert opts["pool_pre_ping"] is True
-    assert opts["pool_recycle"] == 300
+    assert opts["pool_recycle"] == 280
     assert opts["pool_size"] == 5
     assert opts["max_overflow"] == 2
 

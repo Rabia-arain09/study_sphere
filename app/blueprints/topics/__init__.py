@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 import re
+from typing import Any
 from flask import Blueprint, render_template, abort, jsonify
 from flask_login import login_required, current_user
 from sqlalchemy import func
@@ -39,6 +40,75 @@ def week_sort_key(topic: Topic) -> tuple[int, int, str]:
         end = numbers[-1] if len(numbers) > 1 else start
         return (start, end, topic.name.lower())
     return (998, 998, topic.name.lower())
+
+
+def format_week_heading(week: str | None) -> str:
+    """Format a topic's week indicator into a canonical group heading.
+
+    Examples:
+        '1' -> 'Week 1'
+        'Week 1' -> 'Week 1'
+        '2-3' -> 'Week 2-3'
+        'Week 4-5' -> 'Week 4-5'
+        None / '' / 'Unassigned' -> 'Other'
+
+    Args:
+        week: Raw week indicator string from topic model or None.
+
+    Returns:
+        str: Group heading string ('Week X', 'Week X-Y', or 'Other').
+    """
+    if not week:
+        return "Other"
+    clean = str(week).strip()
+    if not clean:
+        return "Other"
+    # Find all numeric sequences in the week value
+    numbers = re.findall(r"\d+", clean)
+    if not numbers:
+        return "Other"
+    if clean.lower().startswith("week"):
+        clean = clean[4:].strip()
+    return f"Week {clean}"
+
+
+def group_topics_by_week(topics: list[Topic]) -> list[dict[str, Any]]:
+    """Group topics under week headings preserving chronological academic week order.
+
+    Topics are sorted using existing `week_sort_key` logic. Chronologically valid
+    week indicators are partitioned into groups labeled 'Week 1', 'Week 2-3', etc.,
+    while topics without a valid week indicator are gathered into an 'Other' group
+    positioned deterministically at the end.
+
+    Args:
+        topics: Collection of Topic instances for a course.
+
+    Returns:
+        list[dict[str, Any]]: Ordered list of group dictionaries containing:
+            - 'heading': Display title for the week group (e.g., 'Week 1', 'Other').
+            - 'topics': List of Topic objects belonging to this week group.
+    """
+    ordered_topics = sorted(topics, key=week_sort_key)
+    groups: dict[str, list[Topic]] = {}
+    other_topics: list[Topic] = []
+
+    for topic in ordered_topics:
+        heading = format_week_heading(topic.week)
+        if heading == "Other":
+            other_topics.append(topic)
+        else:
+            if heading not in groups:
+                groups[heading] = []
+            groups[heading].append(topic)
+
+    result: list[dict[str, Any]] = [
+        {"heading": heading, "topics": group_topics}
+        for heading, group_topics in groups.items()
+    ]
+    if other_topics:
+        result.append({"heading": "Other", "topics": other_topics})
+
+    return result
 
 
 @topics_bp.route("/", methods=["GET"])
@@ -130,11 +200,13 @@ def course_topics(course_id: int):
         .all()
     )
     ordered_topics = sorted(topics, key=week_sort_key)
+    grouped_topics = group_topics_by_week(ordered_topics)
 
     return render_template(
         "topics/course.html",
         course=course,
         topics=ordered_topics,
+        grouped_topics=grouped_topics,
     )
 
 

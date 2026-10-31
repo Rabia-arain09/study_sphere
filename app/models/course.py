@@ -68,6 +68,11 @@ class Course(db.Model):
         cascade="all, delete-orphan",
     )
 
+    @property
+    def name(self) -> str:
+        """Alias for course title providing uniform naming across models and templates."""
+        return self.title
+
     def __repr__(self) -> str:
         return (
             f"<Course id={self.id} code='{self.code}' title='{self.title}' "

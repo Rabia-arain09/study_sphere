@@ -180,6 +180,136 @@ def test_course_topics_view(auth_client: FlaskClient, seeded_curriculum):
     assert b"AI-generated, not yet reviewed" in response.data
     assert b"Reviewed" in response.data
 
+    # Check week headings (Requirement 2)
+    assert b"Week 1" in response.data
+    assert b"Week 2" in response.data
+    assert b"Week 3" in response.data
+
+
+def test_course_topics_week_grouping_and_other_group(
+    app: Flask, auth_client: FlaskClient
+) -> None:
+    """Verify course page groups topics under week headings and places unassigned topics in 'Other'."""
+    with app.app_context():
+        course = Course(
+            code="CS350",
+            title="Machine Learning",
+            semester=5,
+            domain="Computing Core",
+            credit_hours=3,
+            contact_hours="3-0",
+            is_elective=False,
+        )
+        db.session.add(course)
+        db.session.commit()
+
+        # Create topics with week ranges, single weeks, and no week
+        t1 = Topic(
+            course_id=course.id,
+            semester=5,
+            subject="Machine Learning",
+            name="Introduction to ML",
+            difficulty=1,
+            week="1",
+            content_reviewed=True,
+        )
+        t2 = Topic(
+            course_id=course.id,
+            semester=5,
+            subject="Machine Learning",
+            name="Regression Models",
+            difficulty=2,
+            week="2-3",
+            content_reviewed=False,
+        )
+        t3 = Topic(
+            course_id=course.id,
+            semester=5,
+            subject="Machine Learning",
+            name="Neural Networks",
+            difficulty=4,
+            week="4-5",
+            content_reviewed=True,
+        )
+        t_unassigned = Topic(
+            course_id=course.id,
+            semester=5,
+            subject="Machine Learning",
+            name="Capstone Project Overview",
+            difficulty=3,
+            week=None,
+            content_reviewed=False,
+        )
+        db.session.add_all([t1, t2, t3, t_unassigned])
+        db.session.commit()
+        cid = course.id
+
+    response = auth_client.get(f"/topics/course/{cid}")
+    assert response.status_code == 200
+
+    # Verify week headings are present
+    assert b"Week 1" in response.data
+    assert b"Week 2-3" in response.data
+    assert b"Week 4-5" in response.data
+    assert b"Other" in response.data
+
+    # Verify chronological ordering and 'Other' group placed at the end
+    pos_w1 = response.data.find(b"Week 1")
+    pos_w23 = response.data.find(b"Week 2-3")
+    pos_w45 = response.data.find(b"Week 4-5")
+    pos_other = response.data.find(b"Other")
+    assert pos_w1 < pos_w23 < pos_w45 < pos_other
+
+    # Verify topic placement
+    pos_t1 = response.data.find(b"Introduction to ML")
+    pos_t2 = response.data.find(b"Regression Models")
+    pos_t3 = response.data.find(b"Neural Networks")
+    pos_t_unassigned = response.data.find(b"Capstone Project Overview")
+    assert pos_w1 < pos_t1 < pos_w23 < pos_t2 < pos_w45 < pos_t3 < pos_other < pos_t_unassigned
+
+    # Verify difficulty and review badges are retained
+    assert b"Level 1/5" in response.data
+    assert b"Level 2/5" in response.data
+    assert b"Level 4/5" in response.data
+    assert b"Level 3/5" in response.data
+    assert b"AI-generated, not yet reviewed" in response.data
+    assert b"Reviewed" in response.data
+
+
+def test_topic_detail_back_button_and_breadcrumb_course_name(
+    auth_client: FlaskClient, seeded_curriculum
+) -> None:
+    """Verify /topics/<id> back button and breadcrumb show course name instead of course code."""
+    topic_id = seeded_curriculum["topic_1_id"]
+    response = auth_client.get(f"/topics/{topic_id}")
+    assert response.status_code == 200
+
+    # Back button text: "← Back to <course name> topics"
+    assert "← Back to Operating Systems topics".encode("utf-8") in response.data
+    assert b"Back to CS301 Topics" not in response.data
+
+    # Breadcrumb trail contains course title
+    assert b">Operating Systems</a>" in response.data
+    # Header badge contains course title
+    assert b">Operating Systems</span>" in response.data
+    # Course code CS301 must NOT be shown where course name should be
+    assert b">CS301</a>" not in response.data
+    assert b">CS301: Operating Systems</span>" not in response.data
+
+
+def test_format_week_heading_and_grouping() -> None:
+    """Verify week formatting and grouping utility functions with varied inputs."""
+    from app.blueprints.topics import format_week_heading, group_topics_by_week
+
+    assert format_week_heading("1") == "Week 1"
+    assert format_week_heading("Week 1") == "Week 1"
+    assert format_week_heading("2-3") == "Week 2-3"
+    assert format_week_heading("Week 4-5") == "Week 4-5"
+    assert format_week_heading(None) == "Other"
+    assert format_week_heading("") == "Other"
+    assert format_week_heading("   ") == "Other"
+    assert format_week_heading("Orientation") == "Other"
+
 
 def test_course_topics_empty_coming_soon(auth_client: FlaskClient, seeded_curriculum):
     """Verify course with 0 topics displays friendly notes coming soon message."""

@@ -10,7 +10,7 @@
         <span class="breadcrumb-separator">/</span>
         <a href="{{ url_for('topics.semester_view', semester=topic.semester) }}">Semester {{ topic.semester }}</a>
         <span class="breadcrumb-separator">/</span>
-        <a href="{{ url_for('topics.course_topics', course_id=topic.course_id) }}">{{ topic.course.code }}</a>
+        <a href="{{ url_for('topics.course_topics', course_id=topic.course_id) }}">{{ topic.course.title }}</a>
         <span class="breadcrumb-separator">/</span>
         <span class="breadcrumb-current">{{ topic.name }}</span>
     </div>
@@ -18,7 +18,7 @@
     <!-- Topic Hero Header -->
     <header class="topic-header">
         <div class="topic-header-meta">
-            <span class="badge badge-primary">{{ topic.course.code }}: {{ topic.course.title }}</span>
+            <span class="badge badge-primary">{{ topic.course.title }}</span>
             {% if topic.week %}
                 <span class="badge badge-subtle">Week {{ topic.week }}</span>
             {% endif %}
@@ -191,7 +191,7 @@
             <!-- Back to Course Link -->
             <div class="sidebar-card back-card">
                 <a href="{{ url_for('topics.course_topics', course_id=topic.course_id) }}" class="btn btn-outline btn-block">
-                    &larr; Back to {{ topic.course.code }} Topics
+                    ← Back to {{ topic.course.title }} topics
                 </a>
             </div>
         </aside>

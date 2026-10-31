@@ -9,7 +9,7 @@
         <span class="breadcrumb-separator">/</span>
         <a href="{{ url_for('topics.semester_view', semester=course.semester) }}">Semester {{ course.semester }}</a>
         <span class="breadcrumb-separator">/</span>
-        <span class="breadcrumb-current">{{ course.code }}</span>
+        <span class="breadcrumb-current">{{ course.title }}</span>
     </div>
 
     <div class="course-hero">
@@ -33,7 +33,7 @@
                 <div class="prereq-tags">
                     {% for cp in course.prerequisites_required %}
                         <a href="{{ url_for('topics.course_topics', course_id=cp.prerequisite_course.id) }}" class="prereq-tag">
-                            {{ cp.prerequisite_course.code }}: {{ cp.prerequisite_course.title }}
+                            {{ cp.prerequisite_course.title }}
                         </a>
                     {% endfor %}
                 </div>
@@ -48,75 +48,86 @@
         <span class="text-muted">Chronologically ordered by academic week</span>
     </div>
 
-    {% if topics %}
-        <div class="topics-list">
-            {% for topic in topics %}
-                <div class="topic-row-card">
-                    <div class="topic-week-badge">
-                        {% if topic.week %}
-                            <span class="week-label">WEEK</span>
-                            <span class="week-number">{{ topic.week }}</span>
-                        {% else %}
-                            <span class="week-label">TOPIC</span>
-                            <span class="week-number">#{{ loop.index }}</span>
-                        {% endif %}
+    {% if grouped_topics %}
+        <div class="week-groups">
+            {% for group in grouped_topics %}
+                <section class="week-group-section">
+                    <div class="week-group-header">
+                        <h3 class="week-group-title week-heading">{{ group.heading }}</h3>
+                        <span class="week-group-count">{{ group.topics|length }} topic{{ 's' if group.topics|length != 1 else '' }}</span>
                     </div>
 
-                    <div class="topic-main-info">
-                        <div class="topic-title-line">
-                            <h3 class="topic-name">
-                                <a href="{{ url_for('topics.topic_detail', topic_id=topic.id) }}">
-                                    {{ topic.name }}
-                                </a>
-                            </h3>
+                    <div class="topics-list">
+                        {% for topic in group.topics %}
+                            <div class="topic-row-card">
+                                <div class="topic-week-badge">
+                                    {% if topic.week %}
+                                        <span class="week-label">WEEK</span>
+                                        <span class="week-number">{{ topic.week }}</span>
+                                    {% else %}
+                                        <span class="week-label">TOPIC</span>
+                                        <span class="week-number">#{{ loop.index }}</span>
+                                    {% endif %}
+                                </div>
 
-                            <!-- Review Provenance Badge (Requirement 3) -->
-                            {% if not topic.content_reviewed %}
-                                <span class="badge badge-warning" title="Authored via AI extraction, awaiting instructor verification">
-                                    AI-generated, not yet reviewed
-                                </span>
-                            {% else %}
-                                <span class="badge badge-success" title="Verified by academic faculty">
-                                    Reviewed
-                                </span>
-                            {% endif %}
-                        </div>
+                                <div class="topic-main-info">
+                                    <div class="topic-title-line">
+                                        <h3 class="topic-name">
+                                            <a href="{{ url_for('topics.topic_detail', topic_id=topic.id) }}">
+                                                {{ topic.name }}
+                                            </a>
+                                        </h3>
 
-                        {% if topic.description %}
-                            <p class="topic-snippet">{{ topic.description }}</p>
-                        {% endif %}
+                                        <!-- Review Provenance Badge (Requirement 3) -->
+                                        {% if not topic.content_reviewed %}
+                                            <span class="badge badge-warning" title="Authored via AI extraction, awaiting instructor verification">
+                                                AI-generated, not yet reviewed
+                                            </span>
+                                        {% else %}
+                                            <span class="badge badge-success" title="Verified by academic faculty">
+                                                Reviewed
+                                            </span>
+                                        {% endif %}
+                                    </div>
 
-                        <div class="topic-footer-meta">
-                            <!-- Difficulty display (Requirement 3) -->
-                            <div class="difficulty-indicator">
-                                <span class="difficulty-label">Difficulty:</span>
-                                <span class="difficulty-meter diff-{{ topic.difficulty }}">
-                                    Level {{ topic.difficulty }}/5
-                                </span>
+                                    {% if topic.description %}
+                                        <p class="topic-snippet">{{ topic.description }}</p>
+                                    {% endif %}
+
+                                    <div class="topic-footer-meta">
+                                        <!-- Difficulty display (Requirement 3) -->
+                                        <div class="difficulty-indicator">
+                                            <span class="difficulty-label">Difficulty:</span>
+                                            <span class="difficulty-meter diff-{{ topic.difficulty }}">
+                                                Level {{ topic.difficulty }}/5
+                                            </span>
+                                        </div>
+
+                                        {% if topic.prerequisites_required %}
+                                            <span class="dot-separator">•</span>
+                                            <span class="meta-subtext">
+                                                🔗 {{ topic.prerequisites_required|length }} Prerequisite{{ 's' if topic.prerequisites_required|length != 1 else '' }}
+                                            </span>
+                                        {% endif %}
+
+                                        {% if topic.resources %}
+                                            <span class="dot-separator">•</span>
+                                            <span class="meta-subtext">
+                                                📁 {{ topic.resources|length }} Resource{{ 's' if topic.resources|length != 1 else '' }}
+                                            </span>
+                                        {% endif %}
+                                    </div>
+                                </div>
+
+                                <div class="topic-action-col">
+                                    <a href="{{ url_for('topics.topic_detail', topic_id=topic.id) }}" class="btn btn-primary btn-sm">
+                                        Read Notes &rarr;
+                                    </a>
+                                </div>
                             </div>
-
-                            {% if topic.prerequisites_required %}
-                                <span class="dot-separator">•</span>
-                                <span class="meta-subtext">
-                                    🔗 {{ topic.prerequisites_required|length }} Prerequisite{{ 's' if topic.prerequisites_required|length != 1 else '' }}
-                                </span>
-                            {% endif %}
-
-                            {% if topic.resources %}
-                                <span class="dot-separator">•</span>
-                                <span class="meta-subtext">
-                                    📁 {{ topic.resources|length }} Resource{{ 's' if topic.resources|length != 1 else '' }}
-                                </span>
-                            {% endif %}
-                        </div>
+                        {% endfor %}
                     </div>
-
-                    <div class="topic-action-col">
-                        <a href="{{ url_for('topics.topic_detail', topic_id=topic.id) }}" class="btn btn-primary btn-sm">
-                            Read Notes &rarr;
-                        </a>
-                    </div>
-                </div>
+                </section>
             {% endfor %}
         </div>
     {% else %}

@@ -1,7 +1,7 @@
 """Unit tests for the markdown rendering and HTML sanitization service."""
 
 from __future__ import annotations
-from app.services.markdown_renderer import render_markdown
+from app.services.markdown_renderer import render_markdown, calculate_reading_time
 
 
 def test_render_markdown_empty_and_whitespace():
@@ -78,3 +78,25 @@ def test_markdown_preserves_safe_links():
 
     assert 'href="https://docs.python.org/3/"' in html
     assert 'rel="noopener noreferrer"' in html
+
+
+def test_calculate_reading_time_empty_and_whitespace():
+    """Verify calculate_reading_time returns None for empty, whitespace, or None content."""
+    assert calculate_reading_time(None) is None
+    assert calculate_reading_time("") is None
+    assert calculate_reading_time("   \n\t  ") is None
+
+
+def test_calculate_reading_time_minimum_one_minute():
+    """Verify non-empty short content enforces a minimum 1 minute reading time."""
+    assert calculate_reading_time("Short note") == "1 min read"
+    assert calculate_reading_time("word " * 50) == "1 min read"
+    assert calculate_reading_time("word " * 200) == "1 min read"
+
+
+def test_calculate_reading_time_longer_content():
+    """Verify reading time calculation for longer content at ~200 wpm."""
+    assert calculate_reading_time("word " * 1200) == "6 min read"
+    assert calculate_reading_time("word " * 201) == "2 min read"
+    assert calculate_reading_time("word " * 1000) == "5 min read"
+

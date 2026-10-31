@@ -326,7 +326,7 @@ def test_course_topics_not_found(auth_client: FlaskClient):
 
 
 def test_topic_detail_notes_reader(auth_client: FlaskClient, seeded_curriculum):
-    """Verify /topics/<id> renders sanitized markdown notes, links, and resources."""
+    """Verify /topics/<id> renders sanitized markdown notes, links, reading time, and resources."""
     topic_id = seeded_curriculum["topic_1_id"]
     response = auth_client.get(f"/topics/{topic_id}")
     assert response.status_code == 200
@@ -335,6 +335,10 @@ def test_topic_detail_notes_reader(auth_client: FlaskClient, seeded_curriculum):
     assert b"Processes and Threads" in response.data
     assert b"<strong>process</strong>" in response.data
     assert b"<li>State: Ready, Running, Blocked</li>" in response.data
+
+    # Reading time appears on Study Notes header, old label is removed
+    assert b"Pedagogical Ground Truth" not in response.data
+    assert b"1 min read" in response.data
 
     # Attached resource displayed
     assert b"Process Lifecycle Diagram" in response.data
@@ -358,13 +362,58 @@ def test_topic_detail_prerequisites_as_links(auth_client: FlaskClient, seeded_cu
 
 
 def test_topic_detail_empty_notes_friendly_message(auth_client: FlaskClient, seeded_curriculum):
-    """Verify topic with empty content displays friendly message, not broken page."""
+    """Verify topic with empty content displays friendly message and no reading time."""
     topic_3_id = seeded_curriculum["topic_3_id"]
     response = auth_client.get(f"/topics/{topic_3_id}")
     assert response.status_code == 200
     assert b"No study notes available yet" in response.data
+    assert b"min read" not in response.data
+    assert b"Pedagogical Ground Truth" not in response.data
 
 
 def test_topic_detail_not_found(auth_client: FlaskClient):
     """Verify non-existent topic returns HTTP 404."""
     assert auth_client.get("/topics/99999").status_code == 404
+
+
+def test_topic_detail_reading_time_and_minimum(
+    auth_client: FlaskClient, app: Flask, seeded_curriculum
+):
+    """Verify reading time calculation on topic detail view, including 1 min minimum and ~200 wpm scaling."""
+    with app.app_context():
+        course_id = seeded_curriculum["course_sem5_id"]
+        # Topic with 1200 words (~6 min read)
+        t_long = Topic(
+            course_id=course_id,
+            semester=5,
+            subject="Operating Systems",
+            name="Advanced Kernel Architecture",
+            difficulty=4,
+            content="kernel " * 1200,
+        )
+        # Topic with short text (15 words -> minimum 1 min read)
+        t_short = Topic(
+            course_id=course_id,
+            semester=5,
+            subject="Operating Systems",
+            name="Microkernels and Monolithic Kernels",
+            difficulty=3,
+            content="Microkernels isolate services in user space while monolithic kernels run everything inside supervisor mode.",
+        )
+        db.session.add_all([t_long, t_short])
+        db.session.commit()
+        long_id = t_long.id
+        short_id = t_short.id
+
+    # Verify 1200 words renders "6 min read" and excludes old badge
+    resp_long = auth_client.get(f"/topics/{long_id}")
+    assert resp_long.status_code == 200
+    assert b"6 min read" in resp_long.data
+    assert b"Pedagogical Ground Truth" not in resp_long.data
+
+    # Verify short content renders "1 min read" (minimum 1 minute) and excludes old badge
+    resp_short = auth_client.get(f"/topics/{short_id}")
+    assert resp_short.status_code == 200
+    assert b"1 min read" in resp_short.data
+    assert b"Pedagogical Ground Truth" not in resp_short.data
+

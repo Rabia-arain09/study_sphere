@@ -3,6 +3,7 @@
 from __future__ import annotations
 import functools
 import hashlib
+import math
 import markdown
 import nh3
 
@@ -150,4 +151,32 @@ def clear_topic_markdown_cache() -> None:
     """Clear in-memory LRU cache and underlying content store."""
     get_cached_topic_markdown.cache_clear()
     _CONTENT_CACHE_STORE.clear()
+
+
+def calculate_reading_time(content: str | None) -> str | None:
+    """Calculate estimated reading time from content word count.
+
+    Computes reading time assuming an average reading speed of approximately
+    200 words per minute, enforcing a minimum of 1 minute for non-empty content.
+    Returns None if content is empty or contains no words.
+
+    Args:
+        content: Raw text or Markdown content string.
+
+    Returns:
+        str | None: Formatted reading time string (e.g., '6 min read') or None.
+    """
+    if hasattr(content, "content"):
+        content = getattr(content, "content")
+
+    if not content or not isinstance(content, str) or not content.strip():
+        return None
+
+    words = len(content.split())
+    if words == 0:
+        return None
+
+    minutes = max(1, math.ceil(words / 200))
+    return f"{minutes} min read"
+
 

@@ -1033,11 +1033,9 @@ body {
     color: var(--neutral-900);
 }
 
-.reader-note-indicator {
-    font-size: 0.75rem;
-    font-weight: 600;
-    text-transform: uppercase;
-    letter-spacing: 0.05em;
+.reader-reading-time {
+    font-size: 0.8125rem;
+    font-weight: 500;
     color: var(--neutral-500);
 }
 

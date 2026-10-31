@@ -58,7 +58,10 @@
             <div class="notes-reader-card">
                 <div class="notes-reader-header">
                     <h2 class="reader-heading">📖 Study Notes</h2>
-                    <span class="reader-note-indicator">Pedagogical Ground Truth</span>
+                    {% set display_reading_time = reading_time if reading_time is defined and reading_time else (topic.reading_time if topic is defined and topic.reading_time else None) %}
+                    {% if display_reading_time %}
+                        <span class="reader-reading-time">{{ display_reading_time }}</span>
+                    {% endif %}
                 </div>
 
                 <div class="notes-content">

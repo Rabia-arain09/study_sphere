@@ -124,6 +124,20 @@ class Topic(db.Model):
         cascade="all, delete-orphan",
     )
 
+    @property
+    def reading_time(self) -> str | None:
+        """Calculate estimated reading time from note content word count.
+
+        Assumes an average reading speed of 200 words per minute, enforcing
+        a minimum of 1 minute for non-empty content. Returns None if content is empty.
+
+        Returns:
+            str | None: Formatted reading time string (e.g., '6 min read') or None.
+        """
+        from app.services.markdown_renderer import calculate_reading_time
+
+        return calculate_reading_time(self.content)
+
     def __repr__(self) -> str:
         return (
             f"<Topic id={self.id} course_id={self.course_id} semester={self.semester} "

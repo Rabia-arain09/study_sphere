@@ -7,7 +7,10 @@ from flask import Flask, jsonify, render_template, request
 from werkzeug.exceptions import HTTPException
 from app.config import config_by_name, Config
 from app.extensions import db, migrate, login_manager, csrf
-from app.services.markdown_renderer import render_markdown
+from app.services.markdown_renderer import (
+    calculate_reading_time,
+    render_markdown,
+)
 import app.models  # noqa: F401 - Register models with SQLAlchemy metadata
 from app.models.user import User
 
@@ -64,6 +67,8 @@ def create_app(config_name: str | None = None) -> Flask:
 
     # Register custom template filters
     app.jinja_env.filters["render_markdown"] = render_markdown
+    app.jinja_env.filters["reading_time"] = calculate_reading_time
+    app.jinja_env.filters["calculate_reading_time"] = calculate_reading_time
 
     # Register custom CLI commands
     from app.cli import register_cli_commands

@@ -272,3 +272,40 @@ def test_question_and_attempt_pipeline(app):
         assert queried_attempt.label == MasteryLabel.EXCELLENT
         assert queried_attempt.label.value == "Excellent"
         assert queried_attempt.score == 85.0
+
+
+def test_topic_reading_time_property(app):
+    """Verify Topic.reading_time property calculation, minimum 1 min, and empty handling."""
+    with app.app_context():
+        course = _make_course(code="CS202", title="Algorithms", semester=3)
+        t_long = Topic(
+            course_id=course.id,
+            semester=3,
+            subject="Algorithms",
+            name="Dynamic Programming",
+            difficulty=4,
+            content="algorithm " * 1200,
+        )
+        t_short = Topic(
+            course_id=course.id,
+            semester=3,
+            subject="Algorithms",
+            name="Greedy Algorithms",
+            difficulty=3,
+            content="Greedy algorithms pick local optima.",
+        )
+        t_empty = Topic(
+            course_id=course.id,
+            semester=3,
+            subject="Algorithms",
+            name="Graph Traversals",
+            difficulty=3,
+            content=None,
+        )
+        db.session.add_all([t_long, t_short, t_empty])
+        db.session.commit()
+
+        assert t_long.reading_time == "6 min read"
+        assert t_short.reading_time == "1 min read"
+        assert t_empty.reading_time is None
+

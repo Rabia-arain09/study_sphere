@@ -11,7 +11,10 @@ from app.extensions import db
 from app.models.course import Course, CoursePrerequisite
 from app.models.prerequisite import Prerequisite
 from app.models.topic import Topic
-from app.services.markdown_renderer import render_topic_markdown
+from app.services.markdown_renderer import (
+    calculate_reading_time,
+    render_topic_markdown,
+)
 from app.services.recommendation_service import (
     get_recommendations,
     get_related_topics,
@@ -231,6 +234,7 @@ def topic_detail(topic_id: int):
     rendered_notes = (
         render_topic_markdown(topic.id, topic.content) if topic.content else ""
     )
+    reading_time = calculate_reading_time(topic.content)
 
     # Directed prerequisites: concepts required before taking this topic
     prerequisites = [
@@ -248,6 +252,7 @@ def topic_detail(topic_id: int):
         prerequisites=prerequisites,
         resources=topic.resources,
         related_topics=related_topics,
+        reading_time=reading_time,
     )
 
 

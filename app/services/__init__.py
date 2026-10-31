@@ -33,6 +33,7 @@ from app.services.markdown_renderer import (
     render_topic_markdown,
     get_cached_topic_markdown,
     clear_topic_markdown_cache,
+    calculate_reading_time,
 )
 from app.services.recommendation_service import (
     get_recommender,
@@ -63,6 +64,7 @@ __all__: list[str] = [
     "render_topic_markdown",
     "get_cached_topic_markdown",
     "clear_topic_markdown_cache",
+    "calculate_reading_time",
     "get_recommender",
     "reset_recommender",
     "get_recommendations",

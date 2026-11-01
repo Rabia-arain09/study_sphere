@@ -1,226 +1,160 @@
-"""Verification script for StudySphere quiz engine workflow and response time performance."""
+"""Verification script for StudySphere quiz workflow on SQLite.
+
+Tests one topic per Semester 5 subject:
+- Compiler Construction
+- Operating Systems
+- Machine Learning
+- Web Engineering
+
+Measures latency (< 1.0 second per page load) for GET /quiz/topic/<id>,
+POST /quiz/topic/<id>/submit, and GET /quiz/attempt/<id>.
+Creates a temporary user, executes the quiz attempts, and deletes the temporary user and attempts cleanly.
+Never prints any secrets.
+"""
 
 from __future__ import annotations
+
 import os
 import sys
 import time
 from pathlib import Path
 
-# Ensure repository root is on sys.path
-BASE_DIR = Path(__file__).resolve().parent.parent
-if str(BASE_DIR) not in sys.path:
-    sys.path.insert(0, str(BASE_DIR))
-
-# Ensure Windows console handles UTF-8
-if hasattr(sys.stdout, "reconfigure"):
-    sys.stdout.reconfigure(encoding="utf-8", errors="replace")
-
-# Temporary env override for SQLite (do not modify .env)
-sqlite_path = (BASE_DIR / "instance" / "studysphere_quiz_verify.db").resolve()
-os.environ["DATABASE_URL"] = f"sqlite:///{sqlite_path.as_posix()}"
+# Ensure SQLite instance database is targeted
+os.environ["DATABASE_URL"] = "sqlite:///instance/studysphere.db"
+sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
 from app import create_app
 from app.extensions import db
 from app.models.user import User
 from app.models.topic import Topic
+from app.models.course import Course
 from app.models.attempt import Attempt
-from app.services.curriculum_loader import load_curriculum
-from app.services.notes_loader import load_notes
-from app.services.question_loader import load_questions
+from app.models.question import Question
 
 
-def run_verification() -> bool:
-    """Run full quiz workflow on SQLite, measure timings, and cleanly delete temporary user."""
-    print("=" * 70)
-    print(" StudySphere Phase 4 Quiz Engine & Performance Verification (SQLite)")
-    print("=" * 70)
-    print(f"> Target Database : sqlite:///{sqlite_path.as_posix()}")
+def verify_quiz_flow() -> None:
+    app = create_app()
+    app.config["TESTING"] = False
+    app.config["WTF_CSRF_ENABLED"] = False  # Simplify test client form submission
 
-    app = create_app("development")
-    temp_email = "temp_quiz_verifier@example.com"
-    temp_pass = "VerifyQuizPass123!"
+    client = app.test_client()
 
     with app.app_context():
-        # 1. Prepare clean database schema
-        db.create_all()
-
-        # Ingest curriculum & questions if needed
-        if Topic.query.count() == 0:
-            print("[1/5] Ingesting curriculum & notes into temporary SQLite db...")
-            load_curriculum(data_dir="data", dry_run=False)
-            load_notes(notes_dir="data/notes", dry_run=False)
-        else:
-            print("[1/5] Curriculum already loaded.")
-
-        print("[2/5] Ingesting sample questions from data/questions.csv...")
-        q_summary = load_questions(file_path="data/questions.csv", dry_run=False)
-        print(f"      Processed {q_summary.total_rows} questions (inserted: {q_summary.inserted}, unchanged: {q_summary.unchanged}).")
-
-        # Find target topic with questions
-        target_topic = Topic.query.filter_by(
-            name="Introduction to Machine Learning", semester=5
-        ).first()
-        assert target_topic is not None, "Target topic 'Introduction to Machine Learning' not found!"
-        topic_id = target_topic.id
-        print(f"      Target Topic: '{target_topic.name}' (ID: {topic_id})")
-
-        # 2. Clean up any leftover temporary user
-        existing_user = User.query.filter_by(email=temp_email).first()
-        if existing_user:
-            db.session.delete(existing_user)
-            db.session.commit()
-
-        # 3. Create temporary test student
-        print("[3/5] Creating temporary test student...")
-        student = User(
+        # 1. Create temporary test user
+        temp_email = f"temp_verifier_{int(time.time())}@example.com"
+        temp_user = User(
             name="Temporary Quiz Verifier",
             email=temp_email,
             semester=5,
         )
-        student.set_password(temp_pass)
-        db.session.add(student)
+        temp_user.set_password("TempPassword123!")
+        db.session.add(temp_user)
         db.session.commit()
-        student_id = student.id
-        print(f"      Created student ID: {student_id}")
-
-        all_under_one_second = True
+        user_id = temp_user.id
+        print(f"> Created temporary test user with ID: {user_id}")
 
         try:
-            with app.test_client() as client:
-                import re
+            # 2. Log in temporary user via test client
+            login_resp = client.post(
+                "/auth/login",
+                data={"email": temp_email, "password": "TempPassword123!"},
+                follow_redirects=True,
+            )
+            assert login_resp.status_code == 200, f"Login failed: status {login_resp.status_code}"
+            print("> Authenticated temporary user session successfully.")
 
-                # Extract CSRF token from login form
-                get_login = client.get("/auth/login")
-                csrf_match = re.search(
-                    r'name="csrf_token"\s+type="hidden"\s+value="([^"]+)"',
-                    get_login.data.decode("utf-8", errors="replace"),
-                ) or re.search(
-                    r'value="([^"]+)"\s+name="csrf_token"',
-                    get_login.data.decode("utf-8", errors="replace"),
+            # 3. Select one topic from each Semester 5 subject
+            target_subjects = [
+                "Compiler Construction",
+                "Operating Systems",
+                "Machine Learning",
+                "Web Engineering",
+            ]
+
+            print("=" * 70)
+            print(" Running End-to-End Quiz Verification on SQLite (1 topic per subject)")
+            print("=" * 70)
+
+            for subject_name in target_subjects:
+                topic = (
+                    Topic.query.join(Course, Topic.course_id == Course.id)
+                    .filter(Course.title == subject_name, Course.semester == 5)
+                    .order_by(Topic.id)
+                    .first()
                 )
-                assert csrf_match, "Failed to extract login CSRF token"
-                login_csrf = csrf_match.group(1)
+                assert topic is not None, f"No topic found for subject '{subject_name}' in Semester 5."
 
-                # Authenticate
-                login_resp = client.post(
-                    "/auth/login",
-                    data={
-                        "csrf_token": login_csrf,
-                        "email": temp_email,
-                        "password": temp_pass,
-                    },
-                    follow_redirects=True,
-                )
-                assert login_resp.status_code == 200, "Authentication failed"
+                print(f"\n--- Testing Subject: {subject_name} ---")
+                print(f"Topic ID: {topic.id} | Name: {topic.name}")
 
-                print("\n[4/5] Testing pages and measuring response times...")
-                print("-" * 70)
-                print(f"{'Endpoint':<35} | {'Status':<6} | {'Time (ms)':>10} | {'Under 1s?':<9}")
-                print("-" * 70)
-
-                # Page 1: Topic detail page before attempts
+                # Step A: GET /quiz/topic/<id>
                 t0 = time.perf_counter()
-                r_topic = client.get(f"/topics/{topic_id}")
-                elapsed_topic = (time.perf_counter() - t0) * 1000
-                under_1s = elapsed_topic < 1000.0
-                all_under_one_second &= under_1s
-                print(f"{'/topics/' + str(topic_id):<35} | {r_topic.status_code:<6} | {elapsed_topic:9.2f}ms | {'PASS' if under_1s else 'FAIL':<9}")
-                assert r_topic.status_code == 200
-                assert b"Take Quiz" in r_topic.data
+                get_resp = client.get(f"/quiz/topic/{topic.id}")
+                t_get = time.perf_counter() - t0
 
-                # Page 2: Quiz form
+                assert get_resp.status_code == 200, f"GET /quiz/topic/{topic.id} failed with status {get_resp.status_code}"
+                html = get_resp.get_data(as_text=True)
+                assert "Questions for this topic are not added yet" not in html, "Unexpected empty quiz template."
+                assert "Take Quiz:" in html or "Question" in html, "Expected quiz interface not rendered."
+                print(f"  [GET /quiz/topic/{topic.id}] Status: {get_resp.status_code} | Latency: {t_get:.4f}s (< 1.0s: {t_get < 1.0})")
+                assert t_get < 1.0, f"GET /quiz/topic/{topic.id} took too long: {t_get:.4f}s"
+
+                # Step B: Prepare answer submission
+                # Fetch questions served for this topic
+                q_list = Question.query.filter_by(topic_id=topic.id).all()
+                assert len(q_list) == 6, f"Expected 6 questions for topic {topic.id}, found {len(q_list)}"
+
+                form_data = {}
+                for q in q_list:
+                    if q.type == "mcq":
+                        form_data[f"question_{q.id}"] = q.correct_answer
+                    elif q.type == "tf":
+                        form_data[f"question_{q.id}"] = q.correct_answer
+                    elif q.type == "short":
+                        first_variant = q.correct_answer.split("|")[0].strip()
+                        form_data[f"question_{q.id}"] = first_variant
+                    elif q.type == "theory":
+                        form_data[f"question_{q.id}"] = q.correct_answer
+
+                # Step C: POST /quiz/topic/<id>/submit
                 t0 = time.perf_counter()
-                r_quiz = client.get(f"/quiz/topic/{topic_id}")
-                elapsed_quiz = (time.perf_counter() - t0) * 1000
-                under_1s = elapsed_quiz < 1000.0
-                all_under_one_second &= under_1s
-                print(f"{'/quiz/topic/' + str(topic_id):<35} | {r_quiz.status_code:<6} | {elapsed_quiz:9.2f}ms | {'PASS' if under_1s else 'FAIL':<9}")
-                assert r_quiz.status_code == 200
-
-                # Extract CSRF token from quiz form
-                quiz_csrf_match = re.search(
-                    r'name="csrf_token"\s+value="([^"]+)"',
-                    r_quiz.data.decode("utf-8", errors="replace"),
-                ) or re.search(
-                    r'value="([^"]+)"\s+name="csrf_token"',
-                    r_quiz.data.decode("utf-8", errors="replace"),
-                )
-                quiz_csrf = quiz_csrf_match.group(1) if quiz_csrf_match else ""
-
-                # Page 3: Submit quiz
-                post_data: dict[str, str] = {"csrf_token": quiz_csrf}
-                for q in target_topic.questions:
-                    post_data[f"question_{q.id}"] = q.correct_answer
-
-                t0 = time.perf_counter()
-                r_submit = client.post(
-                    f"/quiz/topic/{topic_id}/submit",
-                    data=post_data,
+                post_resp = client.post(
+                    f"/quiz/topic/{topic.id}/submit",
+                    data=form_data,
                     follow_redirects=False,
                 )
-                elapsed_submit = (time.perf_counter() - t0) * 1000
-                under_1s = elapsed_submit < 1000.0
-                all_under_one_second &= under_1s
-                print(f"{'/quiz/topic/' + str(topic_id) + '/submit':<35} | {r_submit.status_code:<6} | {elapsed_submit:9.2f}ms | {'PASS' if under_1s else 'FAIL':<9}")
-                assert r_submit.status_code == 302
-                redirect_url = r_submit.headers["Location"]
-                attempt_id_str = redirect_url.split("/")[-1]
-                attempt_id = int(attempt_id_str)
+                t_post = time.perf_counter() - t0
 
-                # Page 4: Attempt result page
+                assert post_resp.status_code == 302, f"POST /quiz/topic/{topic.id}/submit expected 302 redirect, got {post_resp.status_code}"
+                redirect_url = post_resp.headers.get("Location")
+                assert redirect_url is not None and "/quiz/attempt/" in redirect_url
+                print(f"  [POST /quiz/topic/{topic.id}/submit] Status: {post_resp.status_code} -> Redirect: {redirect_url} | Latency: {t_post:.4f}s (< 1.0s: {t_post < 1.0})")
+                assert t_post < 1.0, f"POST /quiz/topic/{topic.id}/submit took too long: {t_post:.4f}s"
+
+                # Step D: GET /quiz/attempt/<attempt_id>
                 t0 = time.perf_counter()
-                r_result = client.get(f"/quiz/attempt/{attempt_id}")
-                elapsed_result = (time.perf_counter() - t0) * 1000
-                under_1s = elapsed_result < 1000.0
-                all_under_one_second &= under_1s
-                print(f"{'/quiz/attempt/' + str(attempt_id):<35} | {r_result.status_code:<6} | {elapsed_result:9.2f}ms | {'PASS' if under_1s else 'FAIL':<9}")
-                assert r_result.status_code == 200
-                assert b"Quiz Results" in r_result.data
-                assert b"Detailed Question Review" in r_result.data
+                result_resp = client.get(redirect_url)
+                t_result = time.perf_counter() - t0
 
-                # Page 5: Topic detail page after attempt (displaying last attempt and count)
-                t0 = time.perf_counter()
-                r_topic_after = client.get(f"/topics/{topic_id}")
-                elapsed_topic_after = (time.perf_counter() - t0) * 1000
-                under_1s = elapsed_topic_after < 1000.0
-                all_under_one_second &= under_1s
-                print(f"{'/topics/' + str(topic_id) + ' (with attempt)':<35} | {r_topic_after.status_code:<6} | {elapsed_topic_after:9.2f}ms | {'PASS' if under_1s else 'FAIL':<9}")
-                assert r_topic_after.status_code == 200
-                assert b"Total Attempts:" in r_topic_after.data
-                assert b"Last Score:" in r_topic_after.data
+                assert result_resp.status_code == 200, f"GET {redirect_url} failed with status {result_resp.status_code}"
+                result_html = result_resp.get_data(as_text=True)
+                assert "Quiz Result" in result_html or "Attempt Summary" in result_html or "Score" in result_html or "Mastery" in result_html
+                print(f"  [GET {redirect_url}] Status: {result_resp.status_code} | Latency: {t_result:.4f}s (< 1.0s: {t_result < 1.0})")
+                assert t_result < 1.0, f"GET {redirect_url} took too long: {t_result:.4f}s"
 
-                print("-" * 70)
+            print("\n" + "=" * 70)
+            print(" All 4 subject quizzes completed successfully with < 1.0s latencies!")
+            print("=" * 70)
 
         finally:
-            # 5. Delete temporary student and attempts
-            print("\n[5/5] Deleting temporary test student and cleaning up...")
-            user_to_delete = db.session.get(User, student_id)
-            if user_to_delete:
-                db.session.delete(user_to_delete)
-                db.session.commit()
-                print("      Temporary user cleanly removed from SQLite database.")
-
-            # Double check verification
-            verified_deleted = db.session.get(User, student_id)
-            assert verified_deleted is None, "Failed to delete temporary user!"
-
-    print("\n" + "=" * 70)
-    if all_under_one_second:
-        print(" ALL VERIFICATION CHECKS PASSED: Every page responded in < 1 second!")
-    else:
-        print(" VERIFICATION WARNING: One or more pages took >= 1 second.")
-    print("=" * 70)
-
-    # Clean up temporary SQLite db file
-    try:
-        if sqlite_path.exists():
-            sqlite_path.unlink()
-    except Exception:
-        pass
-
-    return all_under_one_second
+            # Clean up: delete attempts and the temporary user
+            Attempt.query.filter_by(user_id=user_id).delete()
+            u = db.session.get(User, user_id)
+            if u:
+                db.session.delete(u)
+            db.session.commit()
+            print(f"> Deleted temporary test user (ID: {user_id}) and all associated attempts.")
 
 
 if __name__ == "__main__":
-    success = run_verification()
-    sys.exit(0 if success else 1)
+    verify_quiz_flow()

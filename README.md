@@ -608,3 +608,73 @@ StudySphere features a content-based recommendation engine (`ml/recommender.py` 
 - **Study Notes Reading Time Metric**: Replaced the static 'Pedagogical Ground Truth' header badge with dynamic reading time ('X min read') computed via `calculate_reading_time` at 200 words per minute using `max(1, math.ceil(words / 200))` with a 1-minute minimum for non-empty content and omitting the badge for empty notes.
 - **Quiz Engine Attempt Review & Model Reuse**: Reused existing `Question` and `Attempt` database schemas without migrations, persisting student responses in the signed session and recording numeric features (`score`, `total_questions`, `wrong_count`, `attempt_number`, `label=None`) for the Phase 5 Decision Tree.
 - **Assessment Ingestion Pipeline and Idempotency**: Built `load-questions` CLI validating CSV headers, natural topic keys, and question type rubrics before transactions, guaranteeing idempotency via `(topic_id, type, question_text)` compound keys.
+- **Question Bank Generation & Balanced Option Distribution**: Generated exactly 6 note-grounded questions per topic (3 MCQ, 1 TF, 1 Short, 1 Theory) across all 165 Semester 5 topics strictly from lecture note content and Quick checks with cyclic A-D answer distribution (36 of each letter in 48-topic subjects) and pre-commit automated CSV schema validation.
+
+---
+
+## Question Bank Authoring, Validation & Ingestion
+
+StudySphere maintains a calibrated assessment question bank for all curriculum topics. Assessment items are organized into subject-specific CSV files under `data/questions/`:
+
+- `data/questions/compiler-construction.csv` (32 topics, 192 questions)
+- `data/questions/operating-systems.csv` (37 topics, 222 questions)
+- `data/questions/machine-learning.csv` (48 topics, 288 questions)
+- `data/questions/web-engineering.csv` (48 topics, 288 questions)
+
+### Quota & Quality Rules
+
+Every topic requires exactly **6 questions**:
+1. **3 Multiple Choice Questions (`mcq`)**:
+   - Exactly 4 non-empty options (`option_a`, `option_b`, `option_c`, `option_d`).
+   - Exactly one unambiguously correct answer letter (`A`, `B`, `C`, or `D`).
+   - Plausible distractors (never use "all of the above" or "none of the above").
+   - Balanced letter distribution across the subject (avoiding over-concentration in option A).
+2. **1 True/False Question (`tf`)**:
+   - `option_a` is "True" and `option_b` is "False".
+   - `correct_answer` is strictly `"True"` or `"False"`.
+   - Statements must evaluate non-trivial factual claims grounded in the topic's lecture note.
+3. **1 Short Answer Question (`short`)**:
+   - Concise target answers: 1 to 3 words per variant.
+   - Accepted variants and synonyms separated by vertical bars `|` (e.g. `backtick|backticks|```).
+4. **1 Theory Question (`theory`)**:
+   - High-quality model answer of 2 to 4 complete sentences explaining principles, mechanisms, or trade-offs.
+   - Reuses or expands upon the topic's note "Quick check" questions.
+5. **Metadata**:
+   - `semester`, `subject`, and `topic` must match `data/topics.csv` verbatim.
+   - `source` must be set to `"generated"` on every row.
+
+### How Teammates Validate Questions
+
+Before committing any question additions or modifications, run the validation tool to verify schema, quotas, and constraints:
+
+```bash
+python scripts/validate_questions.py
+```
+
+The validation suite checks:
+- All 165 Semester 5 topics are present with exact type quotas (3 mcq, 1 tf, 1 short, 1 theory).
+- No duplicate question texts within a topic.
+- Non-empty options and valid answer keys.
+- Balanced MCQ answer distribution per subject.
+- Automated CI integration: `pytest tests/test_questions_validation.py` enforces these rules automatically.
+
+### How Teammates Ingest Questions into the Database
+
+Ingest questions into the local database using the Flask CLI. Always run with `--dry-run` first to validate integrity:
+
+```bash
+# 1. Validate via dry-run (no database changes persisted)
+flask --app run.py load-questions --file data/questions/compiler-construction.csv --dry-run
+flask --app run.py load-questions --file data/questions/operating-systems.csv --dry-run
+flask --app run.py load-questions --file data/questions/machine-learning.csv --dry-run
+flask --app run.py load-questions --file data/questions/web-engineering.csv --dry-run
+
+# 2. Persist questions into database
+flask --app run.py load-questions --file data/questions/compiler-construction.csv
+flask --app run.py load-questions --file data/questions/operating-systems.csv
+flask --app run.py load-questions --file data/questions/machine-learning.csv
+flask --app run.py load-questions --file data/questions/web-engineering.csv
+```
+
+The loader is completely idempotent: running it against already-ingested files will report `0 Inserted, 0 Updated, N Unchanged` without duplicating records.
+

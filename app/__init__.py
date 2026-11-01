@@ -66,9 +66,13 @@ def create_app(config_name: str | None = None) -> Flask:
             return None
 
     # Register custom template filters
+    from app.services.label_service import get_label_guidance, get_label_badge_class
+
     app.jinja_env.filters["render_markdown"] = render_markdown
     app.jinja_env.filters["reading_time"] = calculate_reading_time
     app.jinja_env.filters["calculate_reading_time"] = calculate_reading_time
+    app.jinja_env.filters["label_guidance"] = get_label_guidance
+    app.jinja_env.filters["label_badge_class"] = get_label_badge_class
 
     # Register custom CLI commands
     from app.cli import register_cli_commands

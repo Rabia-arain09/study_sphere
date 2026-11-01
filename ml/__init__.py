@@ -8,5 +8,21 @@ Contains:
 """
 
 from ml.recommender import TopicRecommender
+from ml.label_model import (
+    predict_label,
+    train_model,
+    generate_synthetic_dataset,
+    get_feature_importances,
+    FEATURE_NAMES,
+    LABELS,
+)
 
-__all__ = ["TopicRecommender"]
+__all__ = [
+    "TopicRecommender",
+    "predict_label",
+    "train_model",
+    "generate_synthetic_dataset",
+    "get_feature_importances",
+    "FEATURE_NAMES",
+    "LABELS",
+]

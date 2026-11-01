@@ -10,7 +10,7 @@ from app.models.user import User
 from app.models.course import Course
 from app.models.topic import Topic
 from app.models.question import Question, QuestionType, QuestionSource
-from app.models.attempt import Attempt
+from app.models.attempt import Attempt, MasteryLabel
 from app.models.attempt_answer import AttemptAnswer, SelfRating
 from app.services.quiz_engine import (
     evaluate_single_answer,
@@ -361,8 +361,14 @@ def test_attempt_number_increments_for_same_user_and_topic(
             )
             assert latest is not None
             assert latest.attempt_number == expected_attempt_num
-            # Label must remain None in Phase 4 (Decision Tree comes in Phase 5)
-            assert latest.label is None
+            # Phase 5: Decision Tree sets the mastery label on submit
+            assert latest.label is not None
+            assert latest.label in (
+                MasteryLabel.WEAK,
+                MasteryLabel.GOOD,
+                MasteryLabel.BETTER,
+                MasteryLabel.EXCELLENT,
+            )
 
 
 def test_empty_topic_shows_friendly_coming_soon_page(

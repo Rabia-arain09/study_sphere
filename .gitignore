@@ -29,8 +29,7 @@ instance/
 # ML models and artifacts
 *.joblib
 *.pkl
-ml/models/*.joblib
-ml/models/*.pkl
+ml/models/
 
 # IDE and OS files
 .vscode/

@@ -1,0 +1,40 @@
+|--- score_ratio <= 0.68
+|   |--- score_ratio <= 0.46
+|   |   |--- class: Weak
+|   |--- score_ratio >  0.46
+|   |   |--- score_ratio <= 0.54
+|   |   |   |--- improvement <= 0.04
+|   |   |   |   |--- attempt_number <= 3.50
+|   |   |   |   |   |--- class: Good
+|   |   |   |   |--- attempt_number >  3.50
+|   |   |   |   |   |--- class: Good
+|   |   |   |--- improvement >  0.04
+|   |   |   |   |--- attempt_number <= 2.50
+|   |   |   |   |   |--- class: Good
+|   |   |   |   |--- attempt_number >  2.50
+|   |   |   |   |   |--- class: Weak
+|   |   |--- score_ratio >  0.54
+|   |   |   |--- class: Good
+|--- score_ratio >  0.68
+|   |--- wrong_ratio <= 0.11
+|   |   |--- wrong_ratio <= 0.09
+|   |   |   |--- class: Excellent
+|   |   |--- wrong_ratio >  0.09
+|   |   |   |--- previous_score_ratio <= 0.60
+|   |   |   |   |--- class: Excellent
+|   |   |   |--- previous_score_ratio >  0.60
+|   |   |   |   |--- improvement <= 0.25
+|   |   |   |   |   |--- class: Excellent
+|   |   |   |   |--- improvement >  0.25
+|   |   |   |   |   |--- class: Better
+|   |--- wrong_ratio >  0.11
+|   |   |--- wrong_ratio <= 0.15
+|   |   |   |--- improvement <= -0.08
+|   |   |   |   |--- class: Excellent
+|   |   |   |--- improvement >  -0.08
+|   |   |   |   |--- attempt_number <= 3.50
+|   |   |   |   |   |--- class: Better
+|   |   |   |   |--- attempt_number >  3.50
+|   |   |   |   |   |--- class: Better
+|   |   |--- wrong_ratio >  0.15
+|   |   |   |--- class: Better

@@ -105,6 +105,28 @@
                                 {% endif %}
                             </span>
                         </div>
+                        {% if last_attempt.label %}
+                            <div class="quiz-stat-row" style="align-items: center;">
+                                <span class="quiz-stat-label">Mastery:</span>
+                                <span class="quiz-stat-value">
+                                    {% set lbl = last_attempt.label.value if last_attempt.label.value is defined else last_attempt.label %}
+                                    {% if lbl == 'Weak' %}
+                                        <span class="badge badge-mastery-weak">Weak</span>
+                                    {% elif lbl == 'Good' %}
+                                        <span class="badge badge-mastery-good">Good</span>
+                                    {% elif lbl == 'Better' %}
+                                        <span class="badge badge-mastery-better">Better</span>
+                                    {% elif lbl == 'Excellent' %}
+                                        <span class="badge badge-mastery-excellent">Excellent</span>
+                                    {% else %}
+                                        <span class="badge badge-subtle">{{ lbl }}</span>
+                                    {% endif %}
+                                </span>
+                            </div>
+                            <div class="mastery-guidance text-xs text-muted" style="margin-top: 0.15rem; margin-bottom: 0.35rem; line-height: 1.3;">
+                                {{ last_attempt.label | label_guidance }}
+                            </div>
+                        {% endif %}
                         <div class="quiz-stat-row">
                             <span class="quiz-stat-label">Last Taken:</span>
                             <span class="quiz-stat-value text-muted">{{ last_attempt.created_at.strftime('%b %d, %Y') }}</span>

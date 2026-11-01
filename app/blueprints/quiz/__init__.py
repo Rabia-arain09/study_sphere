@@ -20,6 +20,7 @@ from app.models.topic import Topic
 from app.models.question import Question, QuestionType
 from app.models.attempt import Attempt
 from app.models.attempt_answer import AttemptAnswer, SelfRating
+from app.services.label_service import label_attempt_record
 from app.services.quiz_engine import (
     get_topic_quiz_questions,
     score_quiz,
@@ -189,6 +190,9 @@ def submit_quiz(topic_id: int):
     db.session.add(attempt)
     db.session.flush()
 
+    # Predict initial mastery label from auto-scored questions inside the same transaction
+    label_attempt_record(attempt, commit=False)
+
     for q in ordered_questions:
         ans_text = student_answers.get(q.id, "")
         is_corr = evaluate_single_answer(q, ans_text)
@@ -356,6 +360,10 @@ def self_grade(attempt_id: int):
     attempt.score = auto_score + theory_score
     attempt.wrong_count = auto_wrong + theory_wrong
     attempt.total_questions = auto_count + theory_count
+
+    # Recompute Decision Tree mastery label after theory self-evaluation updates scores
+    label_attempt_record(attempt, commit=False)
+
     db.session.commit()
 
     percentage = (
@@ -372,6 +380,7 @@ def self_grade(attempt_id: int):
                 "total_questions": attempt.total_questions,
                 "wrong_count": attempt.wrong_count,
                 "percentage": percentage,
+                "label": attempt.label.value if attempt.label else None,
             }
         )
 

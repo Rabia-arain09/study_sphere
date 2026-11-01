@@ -50,19 +50,31 @@
                 <span class="score-value">{{ attempt.wrong_count if attempt.wrong_count % 1 != 0 else (attempt.wrong_count | int) }}</span>
             </div>
 
-            <div class="score-card">
-                <span class="score-label">Evaluation Tier</span>
+            <div class="score-card score-card-mastery">
+                <span class="score-label">Mastery Level</span>
                 <span class="score-tier">
-                    {% if percentage >= 85 %}
-                        <span class="badge badge-success">Strong</span>
-                    {% elif percentage >= 65 %}
-                        <span class="badge badge-primary">Good</span>
-                    {% elif percentage >= 45 %}
-                        <span class="badge badge-warning">Needs Practice</span>
+                    {% if attempt.label %}
+                        {% set lbl = attempt.label.value if attempt.label.value is defined else attempt.label %}
+                        {% if lbl == 'Weak' %}
+                            <span class="badge badge-mastery-weak">Weak</span>
+                        {% elif lbl == 'Good' %}
+                            <span class="badge badge-mastery-good">Good</span>
+                        {% elif lbl == 'Better' %}
+                            <span class="badge badge-mastery-better">Better</span>
+                        {% elif lbl == 'Excellent' %}
+                            <span class="badge badge-mastery-excellent">Excellent</span>
+                        {% else %}
+                            <span class="badge badge-subtle">{{ lbl }}</span>
+                        {% endif %}
                     {% else %}
-                        <span class="badge badge-danger">Needs Revision</span>
+                        <span class="badge badge-subtle">Unrated</span>
                     {% endif %}
                 </span>
+                {% if attempt.label %}
+                    <p class="mastery-guidance text-xs text-muted" style="margin-top: 0.35rem; line-height: 1.3;">
+                        {{ attempt.label | label_guidance }}
+                    </p>
+                {% endif %}
             </div>
         </div>
     </header>

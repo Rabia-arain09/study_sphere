@@ -470,6 +470,99 @@ def load_questions_command(csv_file: str, dry_run: bool) -> None:
         sys.exit(1)
 
 
+@click.command("train-label-model")
+@click.option(
+    "--seed",
+    default=42,
+    type=int,
+    help="Random seed for dataset generation and CV (default: 42).",
+)
+@click.option(
+    "--n-samples",
+    default=1000,
+    type=int,
+    help="Number of synthetic samples (default: 1000).",
+)
+@with_appcontext
+def train_label_model_command(seed: int, n_samples: int) -> None:
+    """Train the Decision Tree mastery classifier, print metrics, and save artifacts."""
+    from ml.label_model import train_model, generate_synthetic_dataset, LABELS
+
+    click.echo("=" * 65)
+    click.echo(f" Training Decision Tree Mastery Classifier (n={n_samples}, seed={seed})")
+    click.echo("=" * 65)
+
+    dataset = generate_synthetic_dataset(n=n_samples, seed=seed)
+    result = train_model(dataset=dataset, seed=seed)
+
+    click.echo(f"\nBest Hyperparameters : {result['best_params']}")
+    click.echo(f"5-Fold CV Score      : {result['cv_best_score']:.4f}")
+    click.echo(f"Training Accuracy    : {result['train_accuracy']:.4f}")
+    click.echo(f"Holdout Test Accuracy: {result['test_accuracy']:.4f}")
+    diff = result["train_accuracy"] - result["test_accuracy"]
+    click.echo(f"Generalization Gap   : {diff:.4f} (transparent overfitting check)")
+
+    click.echo("\n--- Classification Report (Holdout Test Split) ---")
+    click.echo(result["classification_report_str"])
+
+    click.echo("--- Confusion Matrix (Labels: Weak, Good, Better, Excellent) ---")
+    cm = result["confusion_matrix"]
+    click.echo(f"{'Actual \\ Predicted':<20} {'Weak':>8} {'Good':>8} {'Better':>8} {'Excellent':>8}")
+    for idx, label in enumerate(LABELS):
+        row = cm[idx]
+        click.echo(f"{label:<20} {row[0]:>8} {row[1]:>8} {row[2]:>8} {row[3]:>8}")
+
+    click.echo("\n--- Feature Importances ---")
+    for feat, imp in result["feature_importances"].items():
+        click.echo(f"  * {feat:<22}: {imp:.4f}")
+
+    click.echo("\n--- Persisted Artifacts ---")
+    click.echo(f"  * Model artifact   : {result['model_path']}")
+    click.echo(f"  * Metrics JSON     : {result['metrics_path']}")
+    click.echo(f"  * Tree text export : {result['tree_path']}")
+    click.echo("=" * 65)
+    click.echo(" Model training completed successfully!")
+
+
+@click.command("label-attempts")
+@click.option(
+    "--force",
+    is_flag=True,
+    default=False,
+    help="Force re-labeling all attempts, including previously labeled records.",
+)
+@with_appcontext
+def label_attempts_command(force: bool) -> None:
+    """Label existing attempts that have no mastery label (idempotent)."""
+    from app.models.attempt import Attempt
+    from app.services.label_service import label_attempt_record
+
+    query = Attempt.query.order_by(Attempt.id.asc())
+    if not force:
+        query = query.filter(Attempt.label.is_(None))
+
+    attempts_to_label = query.all()
+    total = len(attempts_to_label)
+
+    if total == 0:
+        click.echo("No attempts require labeling. All attempts already have mastery labels.")
+        return
+
+    click.echo(f"Found {total} attempt(s) to classify...")
+    labeled_counts: dict[str, int] = {}
+
+    for attempt in attempts_to_label:
+        label = label_attempt_record(attempt, commit=False)
+        val = label.value
+        labeled_counts[val] = labeled_counts.get(val, 0) + 1
+
+    db.session.commit()
+
+    click.echo(f"Successfully labeled {total} attempt(s):")
+    for val, count in sorted(labeled_counts.items()):
+        click.echo(f"  - {val}: {count}")
+
+
 def register_cli_commands(app: Flask) -> None:
     """Register custom CLI commands with the Flask application.
 
@@ -482,3 +575,5 @@ def register_cli_commands(app: Flask) -> None:
     app.cli.add_command(notes_status_command)
     app.cli.add_command(setup_local_db_command)
     app.cli.add_command(load_questions_command)
+    app.cli.add_command(train_label_model_command)
+    app.cli.add_command(label_attempts_command)

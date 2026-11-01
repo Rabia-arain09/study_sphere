@@ -57,6 +57,17 @@ from app.services.question_loader import (
     MissingQuestionsFileError,
     load_questions,
 )
+from app.services.label_service import (
+    get_model,
+    reset_model_cache,
+    extract_features_for_attempt,
+    predict_mastery_for_attempt,
+    label_attempt_record,
+    get_label_guidance,
+    get_label_badge_class,
+    LABEL_GUIDANCE,
+    LABEL_BADGE_CLASSES,
+)
 
 __all__: list[str] = [
     "CurriculumLoader",
@@ -96,4 +107,13 @@ __all__: list[str] = [
     "QuestionsValidationError",
     "MissingQuestionsFileError",
     "load_questions",
+    "get_model",
+    "reset_model_cache",
+    "extract_features_for_attempt",
+    "predict_mastery_for_attempt",
+    "label_attempt_record",
+    "get_label_guidance",
+    "get_label_badge_class",
+    "LABEL_GUIDANCE",
+    "LABEL_BADGE_CLASSES",
 ]

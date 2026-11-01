@@ -1,0 +1,83 @@
+{
+  "model_type": "DecisionTreeClassifier",
+  "best_params": {
+    "criterion": "entropy",
+    "max_depth": 5
+  },
+  "cv_best_score": 0.9887,
+  "train_accuracy": 0.9938,
+  "test_accuracy": 0.99,
+  "feature_importances": {
+    "score_ratio": 0.7604,
+    "wrong_ratio": 0.1841,
+    "total_questions": 0.0,
+    "attempt_number": 0.0261,
+    "previous_score_ratio": 0.0007,
+    "improvement": 0.0287
+  },
+  "per_class_metrics": {
+    "Weak": {
+      "precision": 1.0,
+      "recall": 0.9894,
+      "f1_score": 0.9947,
+      "support": 94
+    },
+    "Good": {
+      "precision": 0.9714,
+      "recall": 1.0,
+      "f1_score": 0.9855,
+      "support": 34
+    },
+    "Better": {
+      "precision": 1.0,
+      "recall": 0.9737,
+      "f1_score": 0.9867,
+      "support": 38
+    },
+    "Excellent": {
+      "precision": 0.9714,
+      "recall": 1.0,
+      "f1_score": 0.9855,
+      "support": 34
+    }
+  },
+  "macro_avg": {
+    "precision": 0.9857,
+    "recall": 0.9908,
+    "f1_score": 0.9881
+  },
+  "confusion_matrix": {
+    "labels": [
+      "Weak",
+      "Good",
+      "Better",
+      "Excellent"
+    ],
+    "matrix": [
+      [
+        93,
+        1,
+        0,
+        0
+      ],
+      [
+        0,
+        34,
+        0,
+        0
+      ],
+      [
+        0,
+        0,
+        37,
+        1
+      ],
+      [
+        0,
+        0,
+        0,
+        34
+      ]
+    ]
+  }
+}

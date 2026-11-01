@@ -242,6 +242,37 @@ body {
     border: 1px solid var(--neutral-200);
 }
 
+.badge-danger {
+    background-color: var(--danger-bg);
+    color: var(--danger);
+    border: 1px solid var(--danger-border);
+}
+
+/* Phase 5 Decision Tree Mastery Badges */
+.badge-mastery-weak {
+    background-color: var(--danger-bg);
+    color: var(--danger);
+    border: 1px solid var(--danger-border);
+}
+
+.badge-mastery-good {
+    background-color: var(--warning-bg);
+    color: var(--warning);
+    border: 1px solid var(--warning-border);
+}
+
+.badge-mastery-better {
+    background-color: var(--primary-light);
+    color: var(--primary);
+    border: 1px solid var(--primary-border);
+}
+
+.badge-mastery-excellent {
+    background-color: var(--success-bg);
+    color: var(--success);
+    border: 1px solid var(--success-border);
+}
+
 /* Flash Messages */
 .flash-container {
     margin-bottom: 1.5rem;

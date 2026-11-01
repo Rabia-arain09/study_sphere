@@ -15,6 +15,7 @@ from app.services.quiz_engine import (
     evaluate_single_answer,
     score_quiz,
     get_topic_quiz_questions,
+    normalize_short_answer,
 )
 from app.services.question_loader import (
     QuestionLoader,
@@ -166,6 +167,54 @@ def test_short_scoring_evaluates_multiple_accepted_answers(
         assert evaluate_single_answer(q_short, "unsupervised") is False
         assert evaluate_single_answer(q_short, "reinforcement") is False
         assert evaluate_single_answer(q_short, "") is False
+
+
+def test_normalize_short_answer_rules():
+    """Verify normalize_short_answer applies trimming, lowercase, hyphens, punctuation, and articles."""
+    # Lowercase & trimming & collapsing spaces
+    assert normalize_short_answer("  Left   Recursion  ") == "left recursion"
+    # Hyphens and underscores to spaces
+    assert normalize_short_answer("left-recursive") == "left recursive"
+    assert normalize_short_answer("left_recursion") == "left recursion"
+    # Punctuation stripping
+    assert normalize_short_answer("left recursive!") == "left recursive"
+    assert normalize_short_answer('"left recursion"') == "left recursion"
+    # Leading articles (a, an, the)
+    assert normalize_short_answer("the left recursion") == "left recursion"
+    assert normalize_short_answer("a binary tree") == "binary tree"
+    assert normalize_short_answer("an operating system") == "operating system"
+    # Single-word articles and pure symbols are preserved safely
+    assert normalize_short_answer("the") == "the"
+    assert normalize_short_answer("a") == "a"
+    assert normalize_short_answer("$") == "$"
+    assert normalize_short_answer("") == ""
+
+
+def test_short_scoring_left_recursion_tolerant_matching(app: Flask):
+    """Verify that 'left recursive', 'Left-Recursion', and ' the left recursion ' evaluate as correct."""
+    with app.app_context():
+        q = Question(
+            type=QuestionType.SHORT,
+            question_text="Which type of recursion enforces left associativity?",
+            correct_answer="left recursion|left-recursive",
+        )
+
+        # Requirement 5: 'left recursive', 'Left-Recursion', ' the left recursion ' are correct
+        assert evaluate_single_answer(q, "left recursive") is True
+        assert evaluate_single_answer(q, "Left-Recursion") is True
+        assert evaluate_single_answer(q, " the left recursion ") is True
+
+        # Equivalent variants and forms
+        assert evaluate_single_answer(q, "LEFT RECURSION") is True
+        assert evaluate_single_answer(q, "left-recursive") is True
+        assert evaluate_single_answer(q, "a left recursion") is True
+
+        # Requirement 5: wrong answer such as 'right recursion' is still wrong
+        assert evaluate_single_answer(q, "right recursion") is False
+        assert evaluate_single_answer(q, "Right-Recursive") is False
+        assert evaluate_single_answer(q, "recursion") is False
+        assert evaluate_single_answer(q, "left") is False
+        assert evaluate_single_answer(q, "") is False
 
 
 def test_theory_question_excluded_from_score_and_totals(
@@ -438,6 +487,64 @@ def test_attempt_result_page_is_owner_only(
     html = resp_owner.data.decode("utf-8")
     assert "Quiz Results" in html
     assert f"Attempt #{attempt_num}" in html
+
+
+def test_quiz_result_page_shows_no_pipe_for_short_answers(
+    auth_client: FlaskClient, quiz_setup: dict, app: Flask
+):
+    """Verify result page formats short answers with ' or ' and never renders raw '|'."""
+    topic_id = quiz_setup["topic_id"]
+
+    # Add a left-recursion question to this topic
+    with app.app_context():
+        q_lr = Question(
+            topic_id=topic_id,
+            type=QuestionType.SHORT,
+            question_text="Which recursion causes infinite loop in top-down parsers?",
+            correct_answer="left recursion|left-recursive",
+            source=QuestionSource.CURRICULUM,
+        )
+        db.session.add(q_lr)
+        db.session.commit()
+        q_lr_id = q_lr.id
+
+    # 1. Start quiz to establish active session
+    get_resp = auth_client.get(f"/quiz/topic/{topic_id}")
+    assert get_resp.status_code == 200
+
+    # 2. Submit form with answers (answering 'left recursive' to the left recursion question)
+    with app.app_context():
+        questions = Question.query.filter_by(topic_id=topic_id).all()
+        post_data = {}
+        for q in questions:
+            if q.id == q_lr_id:
+                post_data[f"question_{q.id}"] = "left recursive"
+            elif q.id == quiz_setup["q_short_id"]:
+                post_data[f"question_{q.id}"] = "supervised"
+            elif q.type == QuestionType.MCQ:
+                post_data[f"question_{q.id}"] = "A"
+            elif q.type == QuestionType.TF:
+                post_data[f"question_{q.id}"] = "True"
+            else:
+                post_data[f"question_{q.id}"] = "Theory answer text"
+
+    resp = auth_client.post(
+        f"/quiz/topic/{topic_id}/submit",
+        data=post_data,
+        follow_redirects=True,
+    )
+    assert resp.status_code == 200
+    html = resp.data.decode("utf-8")
+
+    # Verify student answer was evaluated as correct
+    assert "✓ Correct" in html
+
+    # Verify short answer questions display alternatives joined with ' or '
+    assert "left recursion or left-recursive" in html
+    assert "supervised or supervised learning" in html
+
+    # Verify no raw '|' appears anywhere in the rendered HTML
+    assert "|" not in html
 
 
 # ==============================================================================

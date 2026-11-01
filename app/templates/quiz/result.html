@@ -110,7 +110,11 @@
                                 {% endif %}
                             </span>
                             <div class="answer-block-text">
-                                {{ item.correct_answer }}
+                                {% if item.question_type == 'short' and item.correct_answer and '|' in item.correct_answer %}
+                                    {{ item.formatted_correct_answer if item.formatted_correct_answer is defined else (item.correct_answer.split('|') | map('trim') | reject('equalto', '') | join(' or ')) }}
+                                {% else %}
+                                    {{ item.correct_answer }}
+                                {% endif %}
                             </div>
                         </div>
                     </div>

@@ -2,9 +2,50 @@
 
 from __future__ import annotations
 import random
+import re
 from dataclasses import dataclass
 from typing import Any
 from app.models.question import Question, QuestionType
+
+
+def normalize_short_answer(text: str) -> str:
+    """Normalize a short answer string for tolerant comparison.
+
+    Transforms text by:
+    1. Lowercase.
+    2. Treating hyphens and underscores as spaces.
+    3. Stripping punctuation (preserving pure symbols like '$', '.', '`').
+    4. Collapsing repeated whitespace and trimming.
+    5. Ignoring a leading English article ('a', 'an', 'the') if followed by content words.
+
+    Args:
+        text: Raw answer string or accepted variant.
+
+    Returns:
+        str: Cleaned, normalized token string.
+    """
+    if not text:
+        return ""
+
+    s = text.lower().strip()
+
+    # Treat hyphens and underscores as spaces
+    s = s.replace("-", " ").replace("_", " ")
+
+    # Strip punctuation while preserving purely non-alphanumeric inputs
+    cleaned = re.sub(r"[^\w\s]", "", s)
+    if cleaned.strip():
+        s = cleaned
+
+    # Collapse repeated whitespace and trim
+    s = " ".join(s.split())
+
+    # Ignore leading article ('a', 'an', 'the')
+    tokens = s.split()
+    if len(tokens) > 1 and tokens[0] in {"a", "an", "the"}:
+        s = " ".join(tokens[1:])
+
+    return s.strip()
 
 
 @dataclass
@@ -18,6 +59,18 @@ class QuestionResultDetail:
     correct_answer: str
     is_correct: bool | None  # None for non-auto-scored theory questions
     options: dict[str, Any] | list[Any] | None = None
+
+    @property
+    def formatted_correct_answer(self) -> str:
+        """Format the ground-truth answer for display on the result page.
+
+        For short answers, multiple '|'-separated accepted variants are joined with ' or '.
+        """
+        if self.question_type == "short" and self.correct_answer:
+            variants = [v.strip() for v in self.correct_answer.split("|") if v.strip()]
+            if variants:
+                return " or ".join(variants)
+        return self.correct_answer
 
 
 @dataclass
@@ -88,13 +141,15 @@ def evaluate_single_answer(
     if q_type_str == QuestionType.SHORT.value:
         if not clean_student:
             return False
+        norm_student = normalize_short_answer(clean_student)
+        if not norm_student:
+            return False
         # Multiple accepted answers separated by '|'
-        accepted_variants = [
-            variant.strip().lower()
-            for variant in clean_correct.split("|")
-            if variant.strip()
-        ]
-        return clean_student.lower() in accepted_variants
+        for variant in clean_correct.split("|"):
+            norm_variant = normalize_short_answer(variant)
+            if norm_variant and norm_student == norm_variant:
+                return True
+        return False
 
     return False
 

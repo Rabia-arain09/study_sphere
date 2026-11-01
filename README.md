@@ -609,6 +609,7 @@ StudySphere features a content-based recommendation engine (`ml/recommender.py` 
 - **Quiz Engine Attempt Review & Model Reuse**: Reused existing `Question` and `Attempt` database schemas without migrations, persisting student responses in the signed session and recording numeric features (`score`, `total_questions`, `wrong_count`, `attempt_number`, `label=None`) for the Phase 5 Decision Tree.
 - **Assessment Ingestion Pipeline and Idempotency**: Built `load-questions` CLI validating CSV headers, natural topic keys, and question type rubrics before transactions, guaranteeing idempotency via `(topic_id, type, question_text)` compound keys.
 - **Question Bank Generation & Balanced Option Distribution**: Generated exactly 6 note-grounded questions per topic (3 MCQ, 1 TF, 1 Short, 1 Theory) across all 165 Semester 5 topics strictly from lecture note content and Quick checks with cyclic A-D answer distribution (36 of each letter in 48-topic subjects) and pre-commit automated CSV schema validation.
+- **Tolerant Short-Answer Normalization & Variant Ground Truth**: Normalized short-answer submissions by converting hyphens/underscores to spaces, stripping non-symbol punctuation, collapsing whitespace, and stripping leading articles ('a', 'an', 'the') for strict equality against pipe-delimited variants, while joining accepted answers with ' or ' and eliminating raw '|' delimiters in attempt result reviews.
 
 ---
 

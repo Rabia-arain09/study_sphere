@@ -3,7 +3,7 @@
 from __future__ import annotations
 import re
 from typing import Any
-from flask import Blueprint, render_template, abort, jsonify
+from flask import Blueprint, render_template, abort, jsonify, request
 from flask_login import login_required, current_user
 from sqlalchemy import func
 from sqlalchemy.orm import defer, joinedload, selectinload
@@ -11,7 +11,7 @@ from app.extensions import db
 from app.models.course import Course, CoursePrerequisite
 from app.models.prerequisite import Prerequisite
 from app.models.topic import Topic
-from app.models.attempt import Attempt
+from app.models.attempt import Attempt, MasteryLabel
 from app.services.markdown_renderer import (
     calculate_reading_time,
     render_topic_markdown,
@@ -21,6 +21,7 @@ from app.services.recommendation_service import (
     get_recommendations,
     get_related_topics,
 )
+from app.services.gap_analysis import get_prerequisite_gaps
 
 topics_bp: Blueprint = Blueprint("topics", __name__)
 
@@ -259,6 +260,17 @@ def topic_detail(topic_id: int):
     last_attempt = attempts_history[0].attempt if attempts_history else None
     attempt_count = len(user_attempts)
 
+    # When the student's latest attempt on this topic is Weak, compute prerequisite gaps
+    prereq_gaps = []
+    if last_attempt and last_attempt.label:
+        lbl_val = (
+            last_attempt.label.value
+            if hasattr(last_attempt.label, "value")
+            else str(last_attempt.label)
+        )
+        if lbl_val == MasteryLabel.WEAK.value or lbl_val == "Weak":
+            prereq_gaps = get_prerequisite_gaps(topic.id, current_user.id)
+
     return render_template(
         "topics/topic.html",
         topic=topic,
@@ -270,7 +282,52 @@ def topic_detail(topic_id: int):
         last_attempt=last_attempt,
         attempt_count=attempt_count,
         recent_attempts=recent_attempts,
+        prereq_gaps=prereq_gaps,
     )
+
+
+@topics_bp.route("/<int:topic_id>/revise", methods=["GET"])
+@login_required
+def revise_topic(topic_id: int):
+    """Render the 'Revise these first' prerequisite gap page for a topic."""
+    topic = (
+        Topic.query.options(
+            joinedload(Topic.course),
+            defer(Topic.content),
+        )
+        .filter_by(id=topic_id)
+        .first()
+    )
+    if topic is None:
+        abort(404)
+
+    gaps = get_prerequisite_gaps(topic.id, current_user.id)
+
+    if request.is_json or request.headers.get("Accept") == "application/json":
+        return jsonify(list(gaps))
+
+    return render_template(
+        "topics/revise.html",
+        topic=topic,
+        gaps=gaps,
+        has_prerequisites=getattr(gaps, "has_prerequisites", False),
+    )
+
+
+@topics_bp.route("/<int:topic_id>/revise.json", methods=["GET"])
+@login_required
+def revise_topic_json(topic_id: int):
+    """Return JSON representation of prerequisite knowledge gaps for a topic."""
+    topic = (
+        Topic.query.options(defer(Topic.content))
+        .filter_by(id=topic_id)
+        .first()
+    )
+    if topic is None:
+        abort(404)
+
+    gaps = get_prerequisite_gaps(topic.id, current_user.id)
+    return jsonify(list(gaps))
 
 
 @topics_bp.route("/<int:topic_id>/related", methods=["GET"])

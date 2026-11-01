@@ -621,6 +621,7 @@ StudySphere features a content-based recommendation engine (`ml/recommender.py` 
 - **Phase 5 Test Assertion Progression**: Upgraded `test_attempt_number_increments_for_same_user_and_topic` to verify that `Attempt.label` is populated with a valid `MasteryLabel` upon quiz submission rather than remaining `None` (which was a Phase 4 placeholder).
 - **In-Memory Sequential Delta Calculation**: Computed attempt score percentage changes relative to the prior attempt sequentially in pure Python using `calculate_attempts_history`, eliminating secondary database queries and keeping queries strictly $O(1)$.
 - **Compact Sidebar Metric Preservation & Multi-Attempt History Table**: Retained latest attempt summary metrics on the topic sidebar while integrating the 5-attempt table with directional delta arrows and conditional 'View all attempts' links to maintain backward compatibility with existing topic summary checks.
+- **Prerequisite Knowledge Gap Graph Traversal**: Engineered pure Python breadth-first search (BFS) traversal (`app/services/gap_analysis.py`) over the topic prerequisite DAG with cycle-safe visited sets, bounded depth (max 4), and constant 4-query retrieval (`joinedload` course, deferred content) prioritizing foundational deficits for personalized student revision.
 
 ---
 
@@ -771,5 +772,50 @@ flask --app run.py train-label-model
 # 2. Idempotently classify existing attempts in database that lack mastery labels:
 flask --app run.py label-attempts
 ```
+
+---
+
+## Prerequisite Knowledge Gap Analysis (Phase 6)
+
+When a student struggles on a quiz and receives a **Weak** mastery assessment, StudySphere does not simply recommend retaking the same quiz blindly. Instead, it diagnoses foundational concept deficits by performing **Prerequisite Knowledge Gap Analysis**.
+
+### Graph Traversal, Not Machine Learning (Viva Discussion Point)
+> [!NOTE]
+> **Viva Concept Clarity**: While topic mastery classification in Phase 5 is driven by a supervised Machine Learning Decision Tree model, **Prerequisite Gap Analysis is pure deterministic graph traversal (Breadth-First Search)** over the curriculum prerequisite directed graph. It involves zero machine learning inference, zero neural weights, and no probabilistic guessing. It is an algorithmic, explainable graph traversal algorithm operating directly on syllabus concept dependencies.
+
+### Key Rules & Architecture
+
+1. **The Gap Rule**:
+   - A prerequisite topic is flagged as a **"gap"** if:
+     - The student has **never attempted** that prerequisite topic (no attempt history), OR
+     - The student's **latest quiz attempt** on that prerequisite is labeled **Weak**.
+   - Prerequisites where the student's latest performance is **Good**, **Better**, or **Excellent** are **not gaps** (they are already understood).
+   - **Crucial Traversal Behavior**: Even when a prerequisite is mastered (`Good`/`Better`/`Excellent`), the graph walk **does not stop** at that node. It continues traversing through that node to inspect any deeper, transitive prerequisites that might still be unattempted or weak.
+
+2. **The Depth Limit (Max Depth 4)**:
+   - The BFS traversal is bounded to a maximum depth of **4 levels** backward from the target topic.
+   - Bounding the depth prevents cognitive overload, ensuring the remediation roadmap focuses on immediately relevant foundational knowledge rather than pulling in the entire university curriculum back to primary school arithmetic.
+
+3. **Ordering Rule (Deepest & Most Basic Topics First)**:
+   - Gaps are returned ordered so the student revises the **most foundational concepts first**:
+     1. **Depth Descending** (`-depth`): Deeper prerequisites (e.g., Depth 3 or 2) appear before the shallower topics that depend directly on them (e.g., Depth 1).
+     2. **Ties Broken by Difficulty** (`Topic.difficulty` ascending): At the same depth, easier/more basic topics (e.g., Difficulty 1) appear before more challenging ones (e.g., Difficulty 3).
+     3. **Ties Broken by Week** (`Topic.week` ascending): At the same depth and difficulty, topics introduced earlier in the semester syllabus appear first.
+   - The resulting list is capped at **10 items** to keep the revision roadmap actionable.
+
+4. **Cycle Safety**:
+   - While an ideal academic curriculum forms a Directed Acyclic Graph (DAG), real-world curriculum definitions, manual edits, or student-uploaded modules might inadvertently introduce circular dependencies (e.g., Topic A $\rightarrow$ Topic B $\rightarrow$ Topic A).
+   - The traversal maintains an explicit in-memory `visited` set. If an edge loops back to an already-evaluated topic, the traversal skips re-enqueuing that node, guaranteeing termination in $O(V + E)$ time and completely preventing infinite loops or recursion limits.
+
+5. **Strict Query Budget (Constant $O(1)$ Queries)**:
+   - To achieve sub-10ms response times and prevent $N+1$ database performance degradation, the service executes at most **3 SQL queries** (or **4 queries** total including target topic validation in web routes):
+     - **Query 1**: Load all `Prerequisite` edges in a single query to construct the in-memory adjacency list.
+     - **Query 2**: Query the student's latest quiz attempts across all visited topic IDs in a single query using a `GROUP BY topic_id` subquery over `MAX(attempts.id)` filtered strictly by `user_id`.
+     - **Query 3**: Fetch topic metadata and related courses for all identified gap topic IDs in a single query using `joinedload(Topic.course)` and `defer(Topic.content)`.
+   - The query count remains strictly constant regardless of whether the curriculum graph contains 5 topics or 5,000 topics.
+
+6. **Student Data Isolation**:
+   - Gaps are calculated strictly and exclusively from the authenticated user's own attempt records (`Attempt.user_id == current_user.id`). One student's mastery or weakness has zero effect on another student's gap recommendations.
+
 
 

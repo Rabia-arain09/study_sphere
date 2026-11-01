@@ -19,9 +19,10 @@ from sqlalchemy.orm import joinedload
 from app.extensions import db
 from app.models.topic import Topic
 from app.models.question import Question, QuestionType
-from app.models.attempt import Attempt
+from app.models.attempt import Attempt, MasteryLabel
 from app.models.attempt_answer import AttemptAnswer, SelfRating
 from app.services.label_service import label_attempt_record
+from app.services.gap_analysis import get_prerequisite_gaps
 from app.services.quiz_engine import (
     get_topic_quiz_questions,
     score_quiz,
@@ -276,6 +277,17 @@ def attempt_result(attempt_id: int):
         score_result = score_quiz(questions, {})
         details = score_result.details
 
+    # When the attempt mastery label is Weak, compute prerequisite gaps for remediation
+    prereq_gaps = []
+    if attempt.label:
+        lbl_val = (
+            attempt.label.value
+            if hasattr(attempt.label, "value")
+            else str(attempt.label)
+        )
+        if lbl_val == MasteryLabel.WEAK.value or lbl_val == "Weak":
+            prereq_gaps = get_prerequisite_gaps(attempt.topic_id, current_user.id)
+
     return render_template(
         "quiz/result.html",
         attempt=attempt,
@@ -283,6 +295,7 @@ def attempt_result(attempt_id: int):
         percentage=percentage,
         details=details,
         has_ungraded_theory=has_ungraded_theory,
+        prereq_gaps=prereq_gaps,
     )
 
 

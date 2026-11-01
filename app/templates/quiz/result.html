@@ -79,6 +79,69 @@
         </div>
     </header>
 
+    {% set attempt_lbl = attempt.label.value if (attempt.label and attempt.label.value is defined) else (attempt.label if attempt.label else '') %}
+    {% if attempt_lbl == 'Weak' %}
+        <!-- Revise these first card for Weak mastery -->
+        <section class="revise-first-card" style="margin-top: 1.5rem; margin-bottom: 2rem; background: white; border: 1px solid var(--danger-border); border-left: 4px solid var(--danger); border-radius: var(--radius); padding: 1.25rem 1.5rem; box-shadow: var(--shadow-sm);">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.75rem; flex-wrap: wrap; gap: 0.5rem;">
+                <h2 style="font-size: 1.15rem; font-weight: 700; color: var(--danger); margin: 0; display: flex; align-items: center; gap: 0.4rem;">
+                    <span>⚠️ Revise these first</span>
+                </h2>
+                <a href="{{ url_for('topics.revise_topic', topic_id=topic.id) }}" class="text-link small font-bold">
+                    See full list &rarr;
+                </a>
+            </div>
+
+            {% if prereq_gaps %}
+                <p class="text-xs text-muted" style="margin: 0 0 0.85rem 0;">
+                    Foundational concept gaps were detected in your attempt. Master these prerequisites before retaking this quiz:
+                </p>
+                <ul class="revise-card-list" style="list-style: none; padding: 0; margin: 0; display: flex; flex-direction: column; gap: 0.5rem;">
+                    {% for gap in prereq_gaps[:3] %}
+                        <li style="display: flex; justify-content: space-between; align-items: center; padding: 0.6rem 0.75rem; background: var(--neutral-50); border: 1px solid var(--neutral-200); border-radius: var(--radius-sm); gap: 0.75rem; flex-wrap: wrap;">
+                            <div style="display: flex; align-items: center; gap: 0.6rem; flex-wrap: wrap;">
+                                <span class="badge badge-subtle" style="font-size: 0.68rem; font-weight: 700;">#{{ loop.index }}</span>
+                                <a href="{{ url_for('topics.topic_detail', topic_id=gap.topic_id) }}" class="font-bold text-sm" style="color: var(--neutral-900); text-decoration: none;">
+                                    {{ gap.name }}
+                                </a>
+                                <span class="text-xs text-muted">({{ gap.course_name }})</span>
+                            </div>
+                            <div style="display: flex; align-items: center; gap: 0.5rem;">
+                                {% if gap.status == 'Weak' %}
+                                    <span class="badge badge-mastery-weak" style="font-size: 0.7rem;">
+                                        Weak{% if gap.latest_percentage is not none %} ({{ gap.latest_percentage }}%){% endif %}
+                                    </span>
+                                {% else %}
+                                    <span class="badge badge-subtle" style="font-size: 0.7rem;">Not attempted</span>
+                                {% endif %}
+                                <a href="{{ url_for('topics.topic_detail', topic_id=gap.topic_id) }}" class="btn btn-sm btn-outline" style="font-size: 0.72rem; padding: 0.2rem 0.5rem;">Notes</a>
+                                <a href="{{ url_for('quiz.topic_quiz', topic_id=gap.topic_id) }}" class="btn btn-sm btn-primary" style="font-size: 0.72rem; padding: 0.2rem 0.5rem;">Quiz</a>
+                            </div>
+                        </li>
+                    {% endfor %}
+                </ul>
+                <div style="margin-top: 0.85rem; text-align: right;">
+                    <a href="{{ url_for('topics.revise_topic', topic_id=topic.id) }}" class="text-link small font-bold">
+                        See full list &rarr;
+                    </a>
+                </div>
+            {% else %}
+                <p class="text-sm text-muted" style="margin: 0;">
+                    {% if not prereq_gaps.has_prerequisites %}
+                        This topic has no prerequisites. Review this topic's notes and retake the quiz.
+                    {% else %}
+                        Your prerequisites look fine. Review this topic's notes and retake the quiz.
+                    {% endif %}
+                </p>
+                <div style="margin-top: 0.6rem; text-align: right;">
+                    <a href="{{ url_for('topics.revise_topic', topic_id=topic.id) }}" class="text-link small font-bold">
+                        See full list &rarr;
+                    </a>
+                </div>
+            {% endif %}
+        </section>
+    {% endif %}
+
     <!-- Question by Question Review -->
     <section class="quiz-review-section">
         <div class="review-header">

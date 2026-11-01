@@ -70,6 +70,14 @@ from app.services.label_service import (
     LABEL_GUIDANCE,
     LABEL_BADGE_CLASSES,
 )
+from app.services.gap_analysis import (
+    GapList,
+    get_prerequisite_gaps,
+    find_prerequisite_gaps,
+    analyze_gaps,
+    build_prerequisite_graph,
+    traverse_prerequisites_bfs,
+)
 
 __all__: list[str] = [
     "CurriculumLoader",
@@ -120,4 +128,10 @@ __all__: list[str] = [
     "get_label_badge_class",
     "LABEL_GUIDANCE",
     "LABEL_BADGE_CLASSES",
+    "GapList",
+    "get_prerequisite_gaps",
+    "find_prerequisite_gaps",
+    "analyze_gaps",
+    "build_prerequisite_graph",
+    "traverse_prerequisites_bfs",
 ]

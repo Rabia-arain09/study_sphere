@@ -311,6 +311,9 @@ Generate and upgrade tables using Flask-Migrate:
 flask --app run.py db upgrade
 ```
 
+> **Supabase Migration Notice**:
+> Revision `b4f8a1e2c9d0` (`b4f8a1e2c9d0_add_attempt_answers_and_theory_self_rating.py`) introduces the `attempt_answers` table with cascading foreign keys (`attempt_id`, `question_id`), index on `attempt_id`, unique compound constraint `(attempt_id, question_id)`, theory `self_rating` check constraint, PostgreSQL Row Level Security (RLS), and alters `attempts.wrong_count` to `Float`. This migration has been applied locally on SQLite and **must be applied to Supabase PostgreSQL later using the existing migration workflow** (`flask --app run.py db upgrade`).
+
 ### 2. Curriculum Data Files (`data/`)
 StudySphere ingests curriculum content from four relational CSV files located in `data/` (encoded with `utf-8-sig`):
 - `courses.csv`: Defines accredited degree courses (`semester`, `course_code`, `title`, `domain`, `credit_hours`, `contact_hours`, `is_elective`).
@@ -610,6 +613,8 @@ StudySphere features a content-based recommendation engine (`ml/recommender.py` 
 - **Assessment Ingestion Pipeline and Idempotency**: Built `load-questions` CLI validating CSV headers, natural topic keys, and question type rubrics before transactions, guaranteeing idempotency via `(topic_id, type, question_text)` compound keys.
 - **Question Bank Generation & Balanced Option Distribution**: Generated exactly 6 note-grounded questions per topic (3 MCQ, 1 TF, 1 Short, 1 Theory) across all 165 Semester 5 topics strictly from lecture note content and Quick checks with cyclic A-D answer distribution (36 of each letter in 48-topic subjects) and pre-commit automated CSV schema validation.
 - **Tolerant Short-Answer Normalization & Variant Ground Truth**: Normalized short-answer submissions by converting hyphens/underscores to spaces, stripping non-symbol punctuation, collapsing whitespace, and stripping leading articles ('a', 'an', 'the') for strict equality against pipe-delimited variants, while joining accepted answers with ' or ' and eliminating raw '|' delimiters in attempt result reviews.
+- **Durable Quiz Answer Persistence & Session Decoupling**: Persisted per-question responses in `attempt_answers` with `(attempt_id, question_id)` unique constraint and cascading foreign keys, reading review data exclusively from the database, and eliminating transient quiz answer payload bloat from signed session cookies.
+- **Fractional Scoring & Mathematical Consistency**: Verified `Attempt.score` is already `sa.Float()` in schema and migrated `attempts.wrong_count` to `sa.Float()` so theory self-grading ("Got it" = 1.0 pt, "Partly" = 0.5 pt / 0.5 wrong, "Missed" = 0.0 pt / 1.0 wrong) maintains strict score-wrong-total invariant (`score + wrong_count == total_questions`) without schema bloat.
 
 ---
 

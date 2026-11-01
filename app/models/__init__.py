@@ -7,6 +7,7 @@ from app.models.prerequisite import Prerequisite
 from app.models.resource import Resource, ResourceType
 from app.models.question import Question, QuestionType, QuestionSource
 from app.models.attempt import Attempt, MasteryLabel
+from app.models.attempt_answer import AttemptAnswer, SelfRating
 
 __all__: list[str] = [
     "User",
@@ -22,4 +23,6 @@ __all__: list[str] = [
     "QuestionSource",
     "Attempt",
     "MasteryLabel",
+    "AttemptAnswer",
+    "SelfRating",
 ]

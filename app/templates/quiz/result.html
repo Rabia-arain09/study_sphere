@@ -28,10 +28,16 @@
 
         <h1 class="result-title">Quiz Results: {{ topic.name }}</h1>
 
+        {% if has_ungraded_theory %}
+            <div class="alert alert-warning theory-grading-alert" style="margin-top: 1rem; margin-bottom: 1.5rem; border-left: 4px solid #f59e0b; padding: 0.85rem 1.25rem; background: rgba(245, 158, 11, 0.12); border-radius: 6px;">
+                <strong>Notice:</strong> Rate your theory answers to complete your score
+            </div>
+        {% endif %}
+
         <div class="result-score-grid">
             <div class="score-card">
                 <span class="score-label">Score</span>
-                <span class="score-value">{{ attempt.score | int }} <span class="score-denominator">/ {{ attempt.total_questions }}</span></span>
+                <span class="score-value">{{ attempt.score if attempt.score % 1 != 0 else (attempt.score | int) }} <span class="score-denominator">/ {{ attempt.total_questions }}</span></span>
             </div>
 
             <div class="score-card">
@@ -41,7 +47,7 @@
 
             <div class="score-card">
                 <span class="score-label">Incorrect</span>
-                <span class="score-value">{{ attempt.wrong_count }}</span>
+                <span class="score-value">{{ attempt.wrong_count if attempt.wrong_count % 1 != 0 else (attempt.wrong_count | int) }}</span>
             </div>
 
             <div class="score-card">
@@ -78,8 +84,18 @@
                             <span class="badge badge-success">✓ Correct</span>
                         {% elif item.is_correct is false %}
                             <span class="badge badge-danger">✗ Incorrect</span>
+                        {% elif item.question_type == 'theory' %}
+                            {% if item.self_rating == 'got_it' %}
+                                <span class="badge badge-success">✓ Got it (+1.0 pt)</span>
+                            {% elif item.self_rating == 'partly' %}
+                                <span class="badge badge-warning">½ Partly (+0.5 pt)</span>
+                            {% elif item.self_rating == 'missed' %}
+                                <span class="badge badge-danger">✗ Missed (0 pt)</span>
+                            {% else %}
+                                <span class="badge badge-warning">📖 Theory Model Answer</span>
+                            {% endif %}
                         {% else %}
-                            <span class="badge badge-warning">📖 Theory Model Answer</span>
+                            <span class="badge badge-warning">📖 Reference Answer</span>
                         {% endif %}
                     </div>
 
@@ -118,6 +134,34 @@
                             </div>
                         </div>
                     </div>
+
+                    {% if item.question_type == 'theory' %}
+                        <div class="theory-self-grade-box" style="margin-top: 1.25rem; padding-top: 1rem; border-top: 1px dashed var(--border-color, #e5e7eb);">
+                            <div class="self-grade-header" style="margin-bottom: 0.5rem; display: flex; align-items: center; justify-content: space-between;">
+                                <span class="font-bold text-sm">Self-Assessment:</span>
+                                {% if item.self_rating %}
+                                    <span class="text-xs text-muted">
+                                        Current rating: <strong>{{ 'Got it (1 point)' if item.self_rating == 'got_it' else ('Partly (0.5)' if item.self_rating == 'partly' else 'Missed (0)') }}</strong>
+                                    </span>
+                                {% endif %}
+                            </div>
+                            <form method="POST" action="{{ url_for('quiz.self_grade', attempt_id=attempt.id) }}" class="self-grade-form">
+                                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                                <input type="hidden" name="question_id" value="{{ item.question_id }}">
+                                <div class="btn-group self-grade-btn-group" role="group" style="display: flex; gap: 0.5rem; flex-wrap: wrap;">
+                                    <button type="submit" name="rating" value="got_it" class="btn btn-sm {% if item.self_rating == 'got_it' %}btn-success{% else %}btn-outline{% endif %}">
+                                        Got it (1 point)
+                                    </button>
+                                    <button type="submit" name="rating" value="partly" class="btn btn-sm {% if item.self_rating == 'partly' %}btn-warning{% else %}btn-outline{% endif %}">
+                                        Partly (0.5)
+                                    </button>
+                                    <button type="submit" name="rating" value="missed" class="btn btn-sm {% if item.self_rating == 'missed' %}btn-danger{% else %}btn-outline{% endif %}">
+                                        Missed (0)
+                                    </button>
+                                </div>
+                            </form>
+                        </div>
+                    {% endif %}
                 </div>
             {% endfor %}
         </div>

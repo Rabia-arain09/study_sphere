@@ -59,6 +59,7 @@ class QuestionResultDetail:
     correct_answer: str
     is_correct: bool | None  # None for non-auto-scored theory questions
     options: dict[str, Any] | list[Any] | None = None
+    self_rating: str | None = None
 
     @property
     def formatted_correct_answer(self) -> str:

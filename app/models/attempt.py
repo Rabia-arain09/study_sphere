@@ -18,6 +18,7 @@ from app.extensions import db
 if TYPE_CHECKING:
     from app.models.topic import Topic
     from app.models.user import User
+    from app.models.attempt_answer import AttemptAnswer
 
 
 class MasteryLabel(str, enum.Enum):
@@ -59,7 +60,7 @@ class Attempt(db.Model):
     )
     score: Mapped[float] = mapped_column(Float, nullable=False)
     total_questions: Mapped[int] = mapped_column(Integer, nullable=False)
-    wrong_count: Mapped[int] = mapped_column(Integer, nullable=False)
+    wrong_count: Mapped[float] = mapped_column(Float, nullable=False)
     attempt_number: Mapped[int] = mapped_column(Integer, nullable=False)
     label: Mapped[MasteryLabel | None] = mapped_column(
         SQLEnum(
@@ -79,6 +80,12 @@ class Attempt(db.Model):
     # Relationships
     user: Mapped[User] = relationship("User", back_populates="attempts")
     topic: Mapped[Topic] = relationship("Topic", back_populates="attempts")
+    answers: Mapped[list[AttemptAnswer]] = relationship(
+        "AttemptAnswer",
+        back_populates="attempt",
+        cascade="all, delete-orphan",
+        order_by="AttemptAnswer.id",
+    )
 
     def __repr__(self) -> str:
         return (

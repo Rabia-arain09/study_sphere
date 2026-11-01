@@ -99,7 +99,7 @@
                         <div class="quiz-stat-row">
                             <span class="quiz-stat-label">Last Score:</span>
                             <span class="quiz-stat-value">
-                                {{ last_attempt.score | int }} / {{ last_attempt.total_questions }}
+                                {{ last_attempt.score if last_attempt.score % 1 != 0 else (last_attempt.score | int) }} / {{ last_attempt.total_questions }}
                                 {% if last_attempt.total_questions > 0 %}
                                     ({{ ((last_attempt.score / last_attempt.total_questions * 100)) | round(0) | int }}%)
                                 {% endif %}

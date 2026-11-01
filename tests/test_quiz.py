@@ -11,6 +11,7 @@ from app.models.course import Course
 from app.models.topic import Topic
 from app.models.question import Question, QuestionType, QuestionSource
 from app.models.attempt import Attempt
+from app.models.attempt_answer import AttemptAnswer, SelfRating
 from app.services.quiz_engine import (
     evaluate_single_answer,
     score_quiz,
@@ -722,3 +723,525 @@ def test_question_loader_cli_command(app: Flask):
     assert "StudySphere Questions Ingestion Summary" in result.output
     assert "Records Read    : 24" in result.output
     assert "DRY RUN" in result.output
+
+
+# ==============================================================================
+# 7. Phase 4 Step 3: Durable Quiz Answers & Theory Self-Check Tests
+# ==============================================================================
+
+def test_answers_saved_in_database_on_submit(
+    auth_client: FlaskClient, quiz_setup: dict, app: Flask
+) -> None:
+    """Verify that submitting a quiz saves one AttemptAnswer row per served question in DB."""
+    topic_id = quiz_setup["topic_id"]
+
+    # Start quiz to establish active session
+    r_start = auth_client.get(f"/quiz/topic/{topic_id}")
+    assert r_start.status_code == 200
+
+    post_data = {
+        f"question_{quiz_setup['q_mcq_id']}": "A",
+        f"question_{quiz_setup['q_tf_id']}": "True",
+        f"question_{quiz_setup['q_short_id']}": "supervised",
+        f"question_{quiz_setup['q_theory_id']}": "Classification is discrete, regression is continuous.",
+    }
+
+    r_submit = auth_client.post(
+        f"/quiz/topic/{topic_id}/submit",
+        data=post_data,
+        follow_redirects=True,
+    )
+    assert r_submit.status_code == 200
+
+    with app.app_context():
+        attempt = (
+            Attempt.query.filter_by(topic_id=topic_id)
+            .order_by(Attempt.id.desc())
+            .first()
+        )
+        assert attempt is not None
+
+        # Verify durable AttemptAnswer records in database
+        answers = AttemptAnswer.query.filter_by(attempt_id=attempt.id).all()
+        assert len(answers) == 4
+
+        ans_by_qid = {a.question_id: a for a in answers}
+
+        # MCQ: auto-scored correct
+        mcq_ans = ans_by_qid[quiz_setup["q_mcq_id"]]
+        assert mcq_ans.answer_text == "A"
+        assert mcq_ans.is_correct is True
+        assert mcq_ans.self_rating is None
+
+        # TF: auto-scored correct
+        tf_ans = ans_by_qid[quiz_setup["q_tf_id"]]
+        assert tf_ans.answer_text == "True"
+        assert tf_ans.is_correct is True
+        assert tf_ans.self_rating is None
+
+        # Short: auto-scored correct
+        short_ans = ans_by_qid[quiz_setup["q_short_id"]]
+        assert short_ans.answer_text == "supervised"
+        assert short_ans.is_correct is True
+        assert short_ans.self_rating is None
+
+        # Theory: NOT auto-scored, pending self-rating
+        theory_ans = ans_by_qid[quiz_setup["q_theory_id"]]
+        assert (
+            theory_ans.answer_text
+            == "Classification is discrete, regression is continuous."
+        )
+        assert theory_ans.is_correct is None
+        assert theory_ans.self_rating is None
+
+
+def test_result_page_works_with_empty_session(
+    auth_client: FlaskClient, quiz_setup: dict, app: Flask
+) -> None:
+    """Verify result page renders questions and student answers entirely from database with empty session."""
+    topic_id = quiz_setup["topic_id"]
+
+    auth_client.get(f"/quiz/topic/{topic_id}")
+    post_data = {
+        f"question_{quiz_setup['q_mcq_id']}": "A",
+        f"question_{quiz_setup['q_tf_id']}": "True",
+        f"question_{quiz_setup['q_short_id']}": "supervised",
+        f"question_{quiz_setup['q_theory_id']}": "Durable database review verification text.",
+    }
+    r_submit = auth_client.post(
+        f"/quiz/topic/{topic_id}/submit",
+        data=post_data,
+        follow_redirects=False,
+    )
+    assert r_submit.status_code == 302
+    target_url = r_submit.headers["Location"]
+
+    # Verify session does NOT retain answers or served question data
+    with auth_client.session_transaction() as sess:
+        assert "quiz_question_ids" not in sess
+        assert "quiz_topic_id" not in sess
+        # Explicitly empty the session to simulate cross-session / expired session
+        sess.clear()
+
+    # Load result page with a completely empty session
+    r_result = auth_client.get(target_url)
+    assert r_result.status_code == 200
+    html = r_result.data.decode("utf-8")
+
+    # Rendered content comes from DB AttemptAnswer rows
+    assert "Durable database review verification text." in html
+    assert "Classification predicts discrete classes" in html
+    assert "supervised or supervised learning" in html
+    assert "Rate your theory answers to complete your score" in html
+
+
+def test_long_answers_survive_and_respect_bounds(
+    auth_client: FlaskClient, quiz_setup: dict, app: Flask
+) -> None:
+    """Verify 5,000-character student answers persist in full while larger inputs are bounded."""
+    topic_id = quiz_setup["topic_id"]
+    auth_client.get(f"/quiz/topic/{topic_id}")
+
+    exact_5000 = "T" * 5000
+    oversized_7000 = "X" * 7000
+
+    post_data = {
+        f"question_{quiz_setup['q_mcq_id']}": "A",
+        f"question_{quiz_setup['q_tf_id']}": "True",
+        f"question_{quiz_setup['q_short_id']}": oversized_7000,
+        f"question_{quiz_setup['q_theory_id']}": exact_5000,
+    }
+
+    r_submit = auth_client.post(
+        f"/quiz/topic/{topic_id}/submit",
+        data=post_data,
+        follow_redirects=True,
+    )
+    assert r_submit.status_code == 200
+
+    with app.app_context():
+        attempt = (
+            Attempt.query.filter_by(topic_id=topic_id)
+            .order_by(Attempt.id.desc())
+            .first()
+        )
+        assert attempt is not None
+
+        theory_ans = AttemptAnswer.query.filter_by(
+            attempt_id=attempt.id, question_id=quiz_setup["q_theory_id"]
+        ).first()
+        assert theory_ans is not None
+        assert len(theory_ans.answer_text) == 5000
+        assert theory_ans.answer_text == exact_5000
+
+        short_ans = AttemptAnswer.query.filter_by(
+            attempt_id=attempt.id, question_id=quiz_setup["q_short_id"]
+        ).first()
+        assert short_ans is not None
+        assert len(short_ans.answer_text) == 5000
+
+
+def test_theory_self_grade_updates_score_and_percentage(
+    auth_client: FlaskClient, quiz_setup: dict, app: Flask
+) -> None:
+    """Verify self-grading theory questions updates attempt score, wrong count, and UI percentages."""
+    topic_id = quiz_setup["topic_id"]
+    q_theory_id = quiz_setup["q_theory_id"]
+
+    auth_client.get(f"/quiz/topic/{topic_id}")
+    # 2 correct (MCQ, TF), 1 wrong (SHORT), 1 theory
+    post_data = {
+        f"question_{quiz_setup['q_mcq_id']}": "A",
+        f"question_{quiz_setup['q_tf_id']}": "True",
+        f"question_{quiz_setup['q_short_id']}": "wrong_term",
+        f"question_{q_theory_id}": "My comprehensive theory response.",
+    }
+    r_sub = auth_client.post(
+        f"/quiz/topic/{topic_id}/submit",
+        data=post_data,
+        follow_redirects=True,
+    )
+    assert r_sub.status_code == 200
+
+    with app.app_context():
+        attempt = (
+            Attempt.query.filter_by(topic_id=topic_id)
+            .order_by(Attempt.id.desc())
+            .first()
+        )
+        assert attempt is not None
+        attempt_id = attempt.id
+        # Pre-grade state: 2 correct, 1 wrong, 3 total, theory excluded
+        assert attempt.score == 2.0
+        assert attempt.total_questions == 3
+        assert attempt.wrong_count == 1.0
+
+    # 1. Result page before self-grading must show completion prompt
+    r_res0 = auth_client.get(f"/quiz/attempt/{attempt_id}")
+    assert r_res0.status_code == 200
+    html0 = r_res0.data.decode("utf-8")
+    assert "Rate your theory answers to complete your score" in html0
+    assert "Got it (1 point)" in html0
+    assert "Partly (0.5)" in html0
+    assert "Missed (0)" in html0
+
+    # 2. Self-grade: "Got it" (+1.0 point, 0 wrong)
+    r_grade1 = auth_client.post(
+        f"/quiz/attempt/{attempt_id}/self-grade",
+        data={"question_id": q_theory_id, "rating": "got_it"},
+        follow_redirects=True,
+    )
+    assert r_grade1.status_code == 200
+    html1 = r_grade1.data.decode("utf-8")
+    assert "Rate your theory answers to complete your score" not in html1
+    assert "/ 4" in html1
+    assert "75.0" in html1
+
+    with app.app_context():
+        attempt = db.session.get(Attempt, attempt_id)
+        assert attempt.score == 3.0
+        assert attempt.total_questions == 4
+        assert attempt.wrong_count == 1.0
+
+    # Check topic page reflects updated score and percentage
+    r_topic1 = auth_client.get(f"/topics/{topic_id}")
+    html_topic1 = r_topic1.data.decode("utf-8")
+    assert "3 / 4" in html_topic1
+    assert "(75%)" in html_topic1
+
+    # 3. Change self-grade: "Partly" (+0.5 point, +0.5 wrong)
+    r_grade2 = auth_client.post(
+        f"/quiz/attempt/{attempt_id}/self-grade",
+        data={"question_id": q_theory_id, "rating": "partly"},
+        follow_redirects=True,
+    )
+    assert r_grade2.status_code == 200
+    html2 = r_grade2.data.decode("utf-8")
+    assert "2.5" in html2
+    assert "/ 4" in html2
+    assert "62.5" in html2
+
+    with app.app_context():
+        attempt = db.session.get(Attempt, attempt_id)
+        assert attempt.score == 2.5
+        assert attempt.total_questions == 4
+        assert attempt.wrong_count == 1.5
+        assert attempt.score + attempt.wrong_count == attempt.total_questions
+
+    # Topic page reflects fractional score
+    r_topic2 = auth_client.get(f"/topics/{topic_id}")
+    assert "2.5 / 4" in r_topic2.data.decode("utf-8")
+
+    # 4. Change self-grade: "Missed" (+0.0 point, +1.0 wrong)
+    r_grade3 = auth_client.post(
+        f"/quiz/attempt/{attempt_id}/self-grade",
+        data={"question_id": q_theory_id, "rating": "missed"},
+        follow_redirects=True,
+    )
+    assert r_grade3.status_code == 200
+    html3 = r_grade3.data.decode("utf-8")
+    assert "/ 4" in html3
+    assert "50.0" in html3
+
+    with app.app_context():
+        attempt = db.session.get(Attempt, attempt_id)
+        assert attempt.score == 2.0
+        assert attempt.total_questions == 4
+        assert attempt.wrong_count == 2.0
+        assert attempt.score + attempt.wrong_count == attempt.total_questions
+
+
+def test_self_grade_changing_rating_does_not_duplicate_rows(
+    auth_client: FlaskClient, quiz_setup: dict, app: Flask
+) -> None:
+    """Verify that updating a self-grade modifies the existing AttemptAnswer row without creating duplicates."""
+    topic_id = quiz_setup["topic_id"]
+    q_theory_id = quiz_setup["q_theory_id"]
+
+    auth_client.get(f"/quiz/topic/{topic_id}")
+    post_data = {
+        f"question_{quiz_setup['q_mcq_id']}": "A",
+        f"question_{quiz_setup['q_tf_id']}": "True",
+        f"question_{quiz_setup['q_short_id']}": "supervised",
+        f"question_{q_theory_id}": "Theory text",
+    }
+    auth_client.post(f"/quiz/topic/{topic_id}/submit", data=post_data)
+
+    with app.app_context():
+        attempt = (
+            Attempt.query.filter_by(topic_id=topic_id)
+            .order_by(Attempt.id.desc())
+            .first()
+        )
+        assert attempt is not None
+        attempt_id = attempt.id
+        initial_count = AttemptAnswer.query.filter_by(attempt_id=attempt_id).count()
+        assert initial_count == 4
+
+    # Multiple updates to the same question rating
+    for rating in ("got_it", "partly", "missed", "got_it", "partly"):
+        r = auth_client.post(
+            f"/quiz/attempt/{attempt_id}/self-grade",
+            data={"question_id": q_theory_id, "rating": rating},
+        )
+        assert r.status_code == 302
+
+        with app.app_context():
+            current_count = AttemptAnswer.query.filter_by(attempt_id=attempt_id).count()
+            assert current_count == initial_count
+
+            ans = AttemptAnswer.query.filter_by(
+                attempt_id=attempt_id, question_id=q_theory_id
+            ).first()
+            assert ans is not None
+            assert ans.self_rating == rating
+
+
+def test_self_grade_access_control_owner_only(
+    app: Flask, client: FlaskClient, quiz_setup: dict, test_user: User
+) -> None:
+    """Verify that self-grading an attempt returns 404 for any user other than the owner."""
+    topic_id = quiz_setup["topic_id"]
+    q_theory_id = quiz_setup["q_theory_id"]
+
+    with app.app_context():
+        attempt = Attempt(
+            user_id=test_user.id,
+            topic_id=topic_id,
+            score=2.0,
+            total_questions=3,
+            wrong_count=1.0,
+            attempt_number=1,
+            label=None,
+        )
+        db.session.add(attempt)
+        db.session.flush()
+
+        ans = AttemptAnswer(
+            attempt_id=attempt.id,
+            question_id=q_theory_id,
+            answer_text="Theory student response",
+            is_correct=None,
+            self_rating=None,
+        )
+        db.session.add(ans)
+
+        eve = User(name="Eve Intruder", email="eve_owner@example.com", semester=5)
+        eve.set_password("EveSecure123")
+        db.session.add(eve)
+        db.session.commit()
+        attempt_id = attempt.id
+
+    # Log in as Eve
+    r_login = client.post(
+        "/auth/login",
+        data={"email": "eve_owner@example.com", "password": "EveSecure123"},
+        follow_redirects=True,
+    )
+    assert r_login.status_code == 200
+
+    # Eve attempts to self-grade test_user's attempt -> must be 404
+    r_eve = client.post(
+        f"/quiz/attempt/{attempt_id}/self-grade",
+        data={"question_id": q_theory_id, "rating": "got_it"},
+    )
+    assert r_eve.status_code == 404
+
+    # Eve attempts to access result page -> must be 404
+    r_eve_get = client.get(f"/quiz/attempt/{attempt_id}")
+    assert r_eve_get.status_code == 404
+
+
+def test_self_grade_requires_login(client: FlaskClient) -> None:
+    """Verify that unauthenticated requests to self-grade endpoint redirect to login."""
+    resp = client.post(
+        "/quiz/attempt/1/self-grade",
+        data={"question_id": 1, "rating": "got_it"},
+    )
+    assert resp.status_code == 302
+    assert "/auth/login" in resp.headers["Location"]
+
+
+def test_self_grade_csrf_protection(tmp_path: Path) -> None:
+    """Verify that self-grade rejects POST requests lacking valid CSRF token when enabled."""
+    from app import create_app
+    import re
+
+    test_db = tmp_path / "csrf_test.db"
+    csrf_app = create_app("testing")
+    csrf_app.config["SQLALCHEMY_DATABASE_URI"] = f"sqlite:///{test_db.as_posix()}"
+    csrf_app.config["WTF_CSRF_ENABLED"] = True
+
+    with csrf_app.app_context():
+        db.create_all()
+        user = User(name="CSRF Student", email="csrf@example.com", semester=5)
+        user.set_password("CsrfSecure123")
+        db.session.add(user)
+        db.session.commit()
+
+        csrf_client = csrf_app.test_client()
+
+        # Fetch login page to extract CSRF token
+        r_login_page = csrf_client.get("/auth/login")
+        html = r_login_page.data.decode("utf-8")
+        token_match = re.search(r'name="csrf_token"\s+value="([^"]+)"', html)
+        token = token_match.group(1) if token_match else ""
+
+        # Authenticate with valid CSRF token
+        csrf_client.post(
+            "/auth/login",
+            data={
+                "email": "csrf@example.com",
+                "password": "CsrfSecure123",
+                "csrf_token": token,
+            },
+            follow_redirects=True,
+        )
+
+        # Attempt to self-grade WITHOUT csrf_token -> HTTP 400 Bad Request
+        r_no_csrf = csrf_client.post(
+            "/quiz/attempt/1/self-grade",
+            data={"question_id": 1, "rating": "got_it"},
+        )
+        assert r_no_csrf.status_code == 400
+
+
+def test_self_grade_ignores_unknown_and_non_theory_ids(
+    auth_client: FlaskClient, quiz_setup: dict, app: Flask
+) -> None:
+    """Verify self-grade ignores unknown question IDs and non-theory questions without corrupting score."""
+    topic_id = quiz_setup["topic_id"]
+    q_mcq_id = quiz_setup["q_mcq_id"]
+    q_theory_id = quiz_setup["q_theory_id"]
+
+    auth_client.get(f"/quiz/topic/{topic_id}")
+    post_data = {
+        f"question_{q_mcq_id}": "A",
+        f"question_{quiz_setup['q_tf_id']}": "True",
+        f"question_{quiz_setup['q_short_id']}": "supervised",
+        f"question_{q_theory_id}": "Theory text",
+    }
+    auth_client.post(f"/quiz/topic/{topic_id}/submit", data=post_data)
+
+    with app.app_context():
+        attempt = (
+            Attempt.query.filter_by(topic_id=topic_id)
+            .order_by(Attempt.id.desc())
+            .first()
+        )
+        assert attempt is not None
+        attempt_id = attempt.id
+        initial_score = attempt.score
+        initial_total = attempt.total_questions
+
+    # 1. Post rating for unknown question ID 888888
+    r1 = auth_client.post(
+        f"/quiz/attempt/{attempt_id}/self-grade",
+        data={"question_id": 888888, "rating": "got_it"},
+        follow_redirects=True,
+    )
+    assert r1.status_code == 200
+
+    # 2. Post rating for non-theory question (MCQ)
+    r2 = auth_client.post(
+        f"/quiz/attempt/{attempt_id}/self-grade",
+        data={"question_id": q_mcq_id, "rating": "got_it"},
+        follow_redirects=True,
+    )
+    assert r2.status_code == 200
+
+    with app.app_context():
+        attempt = db.session.get(Attempt, attempt_id)
+        assert attempt.score == initial_score
+        assert attempt.total_questions == initial_total
+
+        mcq_ans = AttemptAnswer.query.filter_by(
+            attempt_id=attempt_id, question_id=q_mcq_id
+        ).first()
+        assert mcq_ans.self_rating is None
+
+
+def test_migration_applies_on_fresh_sqlite_database(tmp_path: Path) -> None:
+    """Verify that all migrations including b4f8a1e2c9d0 apply cleanly on a fresh SQLite database."""
+    from flask_migrate import upgrade, downgrade
+    from sqlalchemy import inspect
+    from app import create_app
+
+    test_db_path = tmp_path / "fresh_migration_test.db"
+    fresh_app = create_app("testing")
+    fresh_app.config["SQLALCHEMY_DATABASE_URI"] = f"sqlite:///{test_db_path.as_posix()}"
+
+    with fresh_app.app_context():
+        # Apply all migrations up to head
+        upgrade()
+
+        inspector = inspect(db.engine)
+        table_names = set(inspector.get_table_names())
+
+        assert "attempt_answers" in table_names
+        assert "attempts" in table_names
+
+        # Verify attempt_answers columns
+        cols = {c["name"]: c for c in inspector.get_columns("attempt_answers")}
+        assert "id" in cols
+        assert "attempt_id" in cols
+        assert "question_id" in cols
+        assert "answer_text" in cols
+        assert "is_correct" in cols
+        assert "self_rating" in cols
+
+        # Verify index on attempt_id
+        indexes = inspector.get_indexes("attempt_answers")
+        index_names = {idx["name"] for idx in indexes}
+        assert "ix_attempt_answers_attempt_id" in index_names
+
+        # Verify rollback works cleanly
+        downgrade(revision="-1")
+        inspector_post_down = inspect(db.engine)
+        assert "attempt_answers" not in inspector_post_down.get_table_names()
+
+        # Re-upgrade to leave in clean state
+        upgrade()
+        inspector_re = inspect(db.engine)
+        assert "attempt_answers" in inspector_re.get_table_names()
+

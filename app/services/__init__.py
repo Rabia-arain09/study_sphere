@@ -48,6 +48,8 @@ from app.services.quiz_engine import (
     evaluate_single_answer,
     score_quiz,
     get_topic_quiz_questions,
+    AttemptHistoryItem,
+    calculate_attempts_history,
 )
 from app.services.question_loader import (
     QuestionLoader,
@@ -101,6 +103,8 @@ __all__: list[str] = [
     "evaluate_single_answer",
     "score_quiz",
     "get_topic_quiz_questions",
+    "AttemptHistoryItem",
+    "calculate_attempts_history",
     "QuestionLoader",
     "QuestionsSummary",
     "QuestionLoaderError",

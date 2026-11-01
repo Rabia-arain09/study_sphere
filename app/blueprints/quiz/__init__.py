@@ -1,6 +1,7 @@
 """Quiz blueprint for taking tests, recording attempts, and theory self-evaluation."""
 
 from __future__ import annotations
+import math
 from typing import Any
 from flask import (
     Blueprint,
@@ -26,6 +27,7 @@ from app.services.quiz_engine import (
     score_quiz,
     evaluate_single_answer,
     QuestionResultDetail,
+    calculate_attempts_history,
 )
 
 quiz_bp: Blueprint = Blueprint("quiz", __name__)
@@ -386,3 +388,105 @@ def self_grade(attempt_id: int):
 
     flash("Theory self-evaluation recorded successfully.", "success")
     return redirect(url_for("quiz.attempt_result", attempt_id=attempt.id))
+
+
+@quiz_bp.route("/topic/<int:topic_id>/history", methods=["GET"])
+@login_required
+def topic_quiz_history(topic_id: int):
+    """Render complete chronological quiz attempt history for the current user on a topic."""
+    topic = (
+        Topic.query.options(joinedload(Topic.course))
+        .filter_by(id=topic_id)
+        .first()
+    )
+    if topic is None:
+        abort(404)
+
+    # ONE query with joinedload for topic and course (no N+1)
+    user_attempts = (
+        Attempt.query.options(
+            joinedload(Attempt.topic).joinedload(Topic.course)
+        )
+        .filter(Attempt.user_id == current_user.id, Attempt.topic_id == topic.id)
+        .order_by(Attempt.attempt_number.asc(), Attempt.id.asc())
+        .all()
+    )
+
+    history_items = calculate_attempts_history(user_attempts)
+
+    return render_template(
+        "quiz/topic_history.html",
+        topic=topic,
+        history_items=history_items,
+        total_attempts=len(user_attempts),
+    )
+
+
+@quiz_bp.route("/history", methods=["GET"])
+@login_required
+def history():
+    """Render paginated global quiz attempt history across all topics for the current user."""
+    raw_page = request.args.get("page", "1")
+    try:
+        page = int(raw_page)
+        if page < 1:
+            page = 1
+    except (ValueError, TypeError):
+        page = 1
+
+    per_page = 20
+
+    # ONE query with joinedload for topic and course (no N+1)
+    attempts = (
+        Attempt.query.options(
+            joinedload(Attempt.topic).joinedload(Topic.course)
+        )
+        .filter(Attempt.user_id == current_user.id)
+        .order_by(Attempt.created_at.desc(), Attempt.id.desc())
+        .all()
+    )
+
+    total_attempts = len(attempts)
+    distinct_topic_ids = {a.topic_id for a in attempts}
+    topics_attempted_count = len(distinct_topic_ids)
+
+    percentages = [
+        round((a.score / a.total_questions * 100.0), 1)
+        for a in attempts
+        if a.total_questions > 0
+    ]
+    avg_percentage = (
+        round(sum(percentages) / len(percentages), 1) if percentages else 0.0
+    )
+
+    total_pages = max(1, math.ceil(total_attempts / per_page)) if total_attempts > 0 else 1
+    if page > total_pages:
+        page = total_pages
+
+    start_idx = (page - 1) * per_page
+    end_idx = start_idx + per_page
+    page_attempts = attempts[start_idx:end_idx]
+
+    items = [
+        {
+            "attempt": a,
+            "percentage": (
+                round((a.score / a.total_questions * 100.0), 1)
+                if a.total_questions > 0
+                else 0.0
+            ),
+        }
+        for a in page_attempts
+    ]
+
+    return render_template(
+        "quiz/history.html",
+        items=items,
+        total_attempts=total_attempts,
+        topics_attempted_count=topics_attempted_count,
+        avg_percentage=avg_percentage,
+        page=page,
+        total_pages=total_pages,
+        has_prev=page > 1,
+        has_next=page < total_pages,
+    )

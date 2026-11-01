@@ -1,0 +1,150 @@
+{% extends "base.html" %}
+
+{% block title %}Quiz History - StudySphere{% endblock %}
+
+{% block content %}
+<div class="history-page-container" style="max-width: 1100px; margin: 0 auto; padding: 1.5rem 1rem;">
+    <!-- Breadcrumb navigation -->
+    <div class="breadcrumb-nav">
+        <a href="{{ url_for('index') }}">Home</a>
+        <span class="breadcrumb-separator">/</span>
+        <a href="{{ url_for('topics.semester_picker') }}">Curriculum</a>
+        <span class="breadcrumb-separator">/</span>
+        <span class="breadcrumb-current">Quiz History</span>
+    </div>
+
+    <!-- History Hero Header -->
+    <header class="history-hero" style="margin-bottom: 1.75rem;">
+        <h1 class="page-title" style="font-size: 1.85rem; font-weight: 700; margin-bottom: 0.5rem;">
+            📊 Quiz History
+        </h1>
+        <p class="text-muted" style="margin-bottom: 1.25rem;">
+            Track your quiz attempts, conceptual progress, and mastery ratings across all curriculum topics.
+        </p>
+
+        <!-- Summary Metric Bar (Requirement 3) -->
+        <div class="history-summary-bar" style="display: flex; gap: 1rem; flex-wrap: wrap; background: white; border: 1px solid var(--neutral-200); border-radius: var(--radius); padding: 1rem 1.25rem; box-shadow: var(--shadow-sm);">
+            <div class="summary-metric" style="flex: 1; min-width: 140px;">
+                <span class="text-xs text-muted" style="text-transform: uppercase; letter-spacing: 0.05em; display: block;">Total Attempts</span>
+                <span class="metric-value font-bold" style="font-size: 1.4rem; color: var(--neutral-800);">{{ total_attempts }}</span>
+            </div>
+            <div class="summary-metric" style="flex: 1; min-width: 140px; border-left: 1px solid var(--neutral-200); padding-left: 1rem;">
+                <span class="text-xs text-muted" style="text-transform: uppercase; letter-spacing: 0.05em; display: block;">Topics Attempted</span>
+                <span class="metric-value font-bold" style="font-size: 1.4rem; color: var(--primary);">{{ topics_attempted_count }}</span>
+            </div>
+            <div class="summary-metric" style="flex: 1; min-width: 140px; border-left: 1px solid var(--neutral-200); padding-left: 1rem;">
+                <span class="text-xs text-muted" style="text-transform: uppercase; letter-spacing: 0.05em; display: block;">Average Score</span>
+                <span class="metric-value font-bold" style="font-size: 1.4rem; color: var(--success);">{{ avg_percentage }}%</span>
+            </div>
+        </div>
+    </header>
+
+    <!-- Attempts Table Section -->
+    <section class="card history-card" style="background: white; border: 1px solid var(--neutral-200); border-radius: var(--radius-lg); padding: 1.5rem; box-shadow: var(--shadow-sm);">
+        {% if items %}
+            <div class="table-responsive" style="overflow-x: auto;">
+                <table class="history-table" style="width: 100%; border-collapse: collapse; text-align: left;">
+                    <thead>
+                        <tr style="border-bottom: 2px solid var(--neutral-200); color: var(--neutral-700); font-size: 0.85rem; text-transform: uppercase; letter-spacing: 0.05em;">
+                            <th style="padding: 0.75rem 0.5rem;">Date</th>
+                            <th style="padding: 0.75rem 0.5rem;">Topic</th>
+                            <th style="padding: 0.75rem 0.5rem;">Course</th>
+                            <th style="padding: 0.75rem 0.5rem;">Attempt</th>
+                            <th style="padding: 0.75rem 0.5rem;">Score</th>
+                            <th style="padding: 0.75rem 0.5rem;">Percentage</th>
+                            <th style="padding: 0.75rem 0.5rem;">Mastery Label</th>
+                            <th style="padding: 0.75rem 0.5rem; text-align: right;">Action</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for entry in items %}
+                            {% set att = entry.attempt %}
+                            <tr style="border-bottom: 1px solid var(--neutral-200);">
+                                <td style="padding: 0.85rem 0.5rem; color: var(--neutral-600); white-space: nowrap;">
+                                    {{ att.created_at.strftime('%b %d, %Y %H:%M') }}
+                                </td>
+                                <td style="padding: 0.85rem 0.5rem; font-weight: 500;">
+                                    {% if att.topic %}
+                                        <a href="{{ url_for('topics.topic_detail', topic_id=att.topic_id) }}" class="text-link">
+                                            {{ att.topic.name }}
+                                        </a>
+                                    {% else %}
+                                        <span class="text-muted">Topic #{{ att.topic_id }}</span>
+                                    {% endif %}
+                                </td>
+                                <td style="padding: 0.85rem 0.5rem; color: var(--neutral-600); font-size: 0.9rem;">
+                                    {% if att.topic and att.topic.course %}
+                                        {{ att.topic.course.title }}
+                                    {% elif att.topic %}
+                                        {{ att.topic.subject }}
+                                    {% else %}
+                                        —
+                                    {% endif %}
+                                </td>
+                                <td style="padding: 0.85rem 0.5rem; font-weight: 600;">
+                                    #{{ att.attempt_number }}
+                                </td>
+                                <td style="padding: 0.85rem 0.5rem; white-space: nowrap;">
+                                    {{ att.score if att.score % 1 != 0 else (att.score | int) }} <span class="text-muted">/ {{ att.total_questions }}</span>
+                                </td>
+                                <td style="padding: 0.85rem 0.5rem; font-weight: 600;">
+                                    {{ entry.percentage }}%
+                                </td>
+                                <td style="padding: 0.85rem 0.5rem;">
+                                    {% if att.label %}
+                                        <span class="badge {{ att.label | label_badge_class }}">
+                                            {{ att.label.value if att.label.value is defined else att.label }}
+                                        </span>
+                                    {% else %}
+                                        <span class="badge badge-subtle">Unrated</span>
+                                    {% endif %}
+                                </td>
+                                <td style="padding: 0.85rem 0.5rem; text-align: right; white-space: nowrap;">
+                                    <a href="{{ url_for('quiz.attempt_result', attempt_id=att.id) }}" class="btn btn-outline btn-sm">
+                                        View result &rarr;
+                                    </a>
+                                </td>
+                            </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+
+            <!-- Pagination Controls (Requirement 3: simple Previous & Next links) -->
+            {% if total_pages > 1 %}
+                <div class="history-pagination" style="display: flex; justify-content: space-between; align-items: center; margin-top: 1.5rem; padding-top: 1rem; border-top: 1px solid var(--neutral-200);">
+                    <div>
+                        {% if has_prev %}
+                            <a href="{{ url_for('quiz.history', page=page-1) }}" class="btn btn-outline btn-sm">
+                                &larr; Previous
+                            </a>
+                        {% endif %}
+                    </div>
+                    <span class="text-sm text-muted font-bold">
+                        Page {{ page }} of {{ total_pages }}
+                    </span>
+                    <div>
+                        {% if has_next %}
+                            <a href="{{ url_for('quiz.history', page=page+1) }}" class="btn btn-outline btn-sm">
+                                Next &rarr;
+                            </a>
+                        {% endif %}
+                    </div>
+                </div>
+            {% endif %}
+        {% else %}
+            <!-- Friendly empty state -->
+            <div class="empty-history-state" style="text-align: center; padding: 3.5rem 1.5rem;">
+                <div style="font-size: 2.75rem; margin-bottom: 1rem;">📝</div>
+                <h3 style="margin-bottom: 0.5rem; font-size: 1.35rem;">No quiz history yet</h3>
+                <p class="text-muted" style="max-width: 500px; margin: 0 auto 1.5rem auto;">
+                    You haven't completed any quizzes yet. Start testing your knowledge to track your mastery progress!
+                </p>
+                <a href="{{ url_for('topics.semester_picker') }}" class="btn btn-primary">
+                    Browse Curriculum Topics
+                </a>
+            </div>
+        {% endif %}
+    </section>
+</div>
+{% endblock %}

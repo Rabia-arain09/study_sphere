@@ -90,7 +90,7 @@
                 <h3 class="sidebar-card-title">📝 Topic Quiz</h3>
                 <p class="sidebar-card-desc">Evaluate your mastery of this concept:</p>
 
-                {% if last_attempt %}
+                {% if recent_attempts %}
                     <div class="sidebar-quiz-stats">
                         <div class="quiz-stat-row">
                             <span class="quiz-stat-label">Total Attempts:</span>
@@ -127,15 +127,71 @@
                                 {{ last_attempt.label | label_guidance }}
                             </div>
                         {% endif %}
-                        <div class="quiz-stat-row">
-                            <span class="quiz-stat-label">Last Taken:</span>
-                            <span class="quiz-stat-value text-muted">{{ last_attempt.created_at.strftime('%b %d, %Y') }}</span>
-                        </div>
                         <div class="quiz-last-link">
                             <a href="{{ url_for('quiz.attempt_result', attempt_id=last_attempt.id) }}" class="text-link small">
                                 View last attempt result &rarr;
                             </a>
                         </div>
+                    </div>
+
+                    <div class="topic-attempts-wrapper" style="margin-top: 0.85rem; margin-bottom: 0.85rem;">
+                        <div class="topic-attempts-header" style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.4rem;">
+                            <h4 class="font-bold text-sm" style="margin: 0;">Your attempts</h4>
+                            {% if attempt_count > 5 %}
+                                <a href="{{ url_for('quiz.topic_quiz_history', topic_id=topic.id) }}" class="text-link text-xs">View all attempts &rarr;</a>
+                            {% endif %}
+                        </div>
+                        <div class="table-responsive" style="overflow-x: auto;">
+                            <table class="attempts-table" style="width: 100%; border-collapse: collapse; font-size: 0.78rem;">
+                                <thead>
+                                    <tr style="border-bottom: 1px solid var(--neutral-200); text-align: left; color: var(--neutral-600);">
+                                        <th style="padding: 0.35rem 0.25rem;">#</th>
+                                        <th style="padding: 0.35rem 0.25rem;">Date</th>
+                                        <th style="padding: 0.35rem 0.25rem;">Score</th>
+                                        <th style="padding: 0.35rem 0.25rem;">%</th>
+                                        <th style="padding: 0.35rem 0.25rem;">Label</th>
+                                        <th style="padding: 0.35rem 0.25rem;">Change</th>
+                                        <th style="padding: 0.35rem 0.25rem; text-align: right;">Action</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {% for item in recent_attempts %}
+                                        <tr style="border-bottom: 1px solid var(--neutral-100);">
+                                            <td style="padding: 0.35rem 0.25rem; font-weight: 600;">#{{ item.attempt.attempt_number }}</td>
+                                            <td style="padding: 0.35rem 0.25rem; color: var(--neutral-500); white-space: nowrap;">{{ item.attempt.created_at.strftime('%b %d') }}</td>
+                                            <td style="padding: 0.35rem 0.25rem; white-space: nowrap;">{{ item.attempt.score if item.attempt.score % 1 != 0 else (item.attempt.score | int) }} / {{ item.attempt.total_questions }}</td>
+                                            <td style="padding: 0.35rem 0.25rem; font-weight: 600;">{{ item.percentage }}%</td>
+                                            <td style="padding: 0.35rem 0.25rem;">
+                                                {% if item.attempt.label %}
+                                                    <span class="badge {{ item.attempt.label | label_badge_class }}" style="font-size: 0.68rem; padding: 0.15rem 0.35rem;">{{ item.attempt.label.value if item.attempt.label.value is defined else item.attempt.label }}</span>
+                                                {% else %}
+                                                    <span class="badge badge-subtle" style="font-size: 0.68rem; padding: 0.15rem 0.35rem;">Unrated</span>
+                                                {% endif %}
+                                            </td>
+                                            <td style="padding: 0.35rem 0.25rem; white-space: nowrap;">
+                                                {% if item.change is none %}
+                                                    <span class="text-muted">—</span>
+                                                {% elif item.change > 0 %}
+                                                    <span style="color: var(--success); font-weight: 600;">↑ +{{ item.change }}%</span>
+                                                {% elif item.change < 0 %}
+                                                    <span style="color: var(--danger); font-weight: 600;">↓ {{ item.change }}%</span>
+                                                {% else %}
+                                                    <span style="color: var(--neutral-500); font-weight: 600;">= 0.0%</span>
+                                                {% endif %}
+                                            </td>
+                                            <td style="padding: 0.35rem 0.25rem; text-align: right; white-space: nowrap;">
+                                                <a href="{{ url_for('quiz.attempt_result', attempt_id=item.attempt.id) }}" class="text-link small">View result</a>
+                                            </td>
+                                        </tr>
+                                    {% endfor %}
+                                </tbody>
+                            </table>
+                        </div>
+                        {% if attempt_count > 5 %}
+                            <div style="margin-top: 0.4rem; text-align: right;">
+                                <a href="{{ url_for('quiz.topic_quiz_history', topic_id=topic.id) }}" class="text-link small">View all attempts ({{ attempt_count }}) &rarr;</a>
+                            </div>
+                        {% endif %}
                     </div>
                 {% else %}
                     <div class="sidebar-empty-state">

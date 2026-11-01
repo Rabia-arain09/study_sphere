@@ -1,0 +1,128 @@
+{% extends "base.html" %}
+
+{% block title %}Quiz Attempts: {{ topic.name }} - StudySphere{% endblock %}
+
+{% block content %}
+<div class="quiz-container">
+    <!-- Breadcrumb navigation -->
+    <div class="breadcrumb-nav">
+        <a href="{{ url_for('topics.semester_picker') }}">Curriculum</a>
+        <span class="breadcrumb-separator">/</span>
+        <a href="{{ url_for('topics.semester_view', semester=topic.semester) }}">Semester {{ topic.semester }}</a>
+        <span class="breadcrumb-separator">/</span>
+        <a href="{{ url_for('topics.course_topics', course_id=topic.course_id) }}">{{ topic.course.title if topic.course else topic.subject }}</a>
+        <span class="breadcrumb-separator">/</span>
+        <a href="{{ url_for('topics.topic_detail', topic_id=topic.id) }}">{{ topic.name }}</a>
+        <span class="breadcrumb-separator">/</span>
+        <span class="breadcrumb-current">Attempt History</span>
+    </div>
+
+    <!-- Topic History Header -->
+    <header class="quiz-result-hero" style="margin-bottom: 2rem;">
+        <div class="result-hero-meta">
+            <span class="badge badge-primary">{{ topic.course.title if topic.course else topic.subject }}</span>
+            <span class="badge badge-subtle">Semester {{ topic.semester }}</span>
+            <span class="badge badge-subtle">{{ total_attempts }} Total Attempt{{ 's' if total_attempts != 1 else '' }}</span>
+        </div>
+
+        <h1 class="result-title">Quiz Attempt History: {{ topic.name }}</h1>
+        <p class="text-muted" style="margin-top: 0.5rem; margin-bottom: 1.5rem;">
+            Review your sequential mastery trajectory, score changes, and evaluation tiers over time.
+        </p>
+
+        <div class="quiz-submit-bar" style="margin: 0; padding: 0; background: transparent; border: none; display: flex; gap: 0.75rem; flex-wrap: wrap;">
+            <a href="{{ url_for('quiz.topic_quiz', topic_id=topic.id) }}" class="btn btn-primary">
+                Take Quiz
+            </a>
+            <a href="{{ url_for('topics.topic_detail', topic_id=topic.id) }}" class="btn btn-outline">
+                Back to {{ topic.name }} Notes
+            </a>
+            <a href="{{ url_for('quiz.history') }}" class="btn btn-outline">
+                All Quiz History &rarr;
+            </a>
+        </div>
+    </header>
+
+    <!-- History Table Section -->
+    <section class="card history-card" style="background: white; border: 1px solid var(--neutral-200); border-radius: var(--radius-lg); padding: 1.5rem; box-shadow: var(--shadow-sm);">
+        {% if history_items %}
+            <div class="table-responsive" style="overflow-x: auto;">
+                <table class="history-table" style="width: 100%; border-collapse: collapse; text-align: left;">
+                    <thead>
+                        <tr style="border-bottom: 2px solid var(--neutral-200); color: var(--neutral-700); font-size: 0.85rem; text-transform: uppercase; letter-spacing: 0.05em;">
+                            <th style="padding: 0.75rem 0.5rem;">Attempt</th>
+                            <th style="padding: 0.75rem 0.5rem;">Date &amp; Time</th>
+                            <th style="padding: 0.75rem 0.5rem;">Score</th>
+                            <th style="padding: 0.75rem 0.5rem;">Percentage</th>
+                            <th style="padding: 0.75rem 0.5rem;">Mastery Label</th>
+                            <th style="padding: 0.75rem 0.5rem;">Change</th>
+                            <th style="padding: 0.75rem 0.5rem; text-align: right;">Action</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for item in history_items %}
+                            <tr style="border-bottom: 1px solid var(--neutral-200);">
+                                <td style="padding: 0.85rem 0.5rem; font-weight: 600;">
+                                    Attempt #{{ item.attempt.attempt_number }}
+                                </td>
+                                <td style="padding: 0.85rem 0.5rem; color: var(--neutral-600); white-space: nowrap;">
+                                    {{ item.attempt.created_at.strftime('%b %d, %Y %H:%M') }}
+                                </td>
+                                <td style="padding: 0.85rem 0.5rem; white-space: nowrap;">
+                                    {{ item.attempt.score if item.attempt.score % 1 != 0 else (item.attempt.score | int) }} <span class="text-muted">/ {{ item.attempt.total_questions }}</span>
+                                </td>
+                                <td style="padding: 0.85rem 0.5rem; font-weight: 600;">
+                                    {{ item.percentage }}%
+                                </td>
+                                <td style="padding: 0.85rem 0.5rem;">
+                                    {% if item.attempt.label %}
+                                        <span class="badge {{ item.attempt.label | label_badge_class }}">
+                                            {{ item.attempt.label.value if item.attempt.label.value is defined else item.attempt.label }}
+                                        </span>
+                                    {% else %}
+                                        <span class="badge badge-subtle">Unrated</span>
+                                    {% endif %}
+                                </td>
+                                <td style="padding: 0.85rem 0.5rem; white-space: nowrap;">
+                                    {% if item.change is none %}
+                                        <span class="text-muted" title="First attempt on this topic">—</span>
+                                    {% elif item.change > 0 %}
+                                        <span class="attempt-change change-up" style="color: var(--success); font-weight: 600;">
+                                            ↑ +{{ item.change }}%
+                                        </span>
+                                    {% elif item.change < 0 %}
+                                        <span class="attempt-change change-down" style="color: var(--danger); font-weight: 600;">
+                                            ↓ {{ item.change }}%
+                                        </span>
+                                    {% else %}
+                                        <span class="attempt-change change-equal" style="color: var(--neutral-500); font-weight: 600;">
+                                            = 0.0%
+                                        </span>
+                                    {% endif %}
+                                </td>
+                                <td style="padding: 0.85rem 0.5rem; text-align: right; white-space: nowrap;">
+                                    <a href="{{ url_for('quiz.attempt_result', attempt_id=item.attempt.id) }}" class="btn btn-outline btn-sm">
+                                        View result &rarr;
+                                    </a>
+                                </td>
+                            </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        {% else %}
+            <!-- Friendly empty state -->
+            <div class="empty-history-state" style="text-align: center; padding: 3rem 1.5rem;">
+                <div style="font-size: 2.5rem; margin-bottom: 1rem;">📝</div>
+                <h3 style="margin-bottom: 0.5rem; font-size: 1.25rem;">No quiz attempts recorded yet</h3>
+                <p class="text-muted" style="max-width: 480px; margin: 0 auto 1.5rem auto;">
+                    You haven't attempted any quizzes for <strong>{{ topic.name }}</strong> yet. Test your understanding to evaluate your mastery!
+                </p>
+                <a href="{{ url_for('quiz.topic_quiz', topic_id=topic.id) }}" class="btn btn-primary">
+                    Take Quiz Now
+                </a>
+            </div>
+        {% endif %}
+    </section>
+</div>
+{% endblock %}

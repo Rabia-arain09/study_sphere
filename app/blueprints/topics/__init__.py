@@ -16,6 +16,7 @@ from app.services.markdown_renderer import (
     calculate_reading_time,
     render_topic_markdown,
 )
+from app.services.quiz_engine import calculate_attempts_history
 from app.services.recommendation_service import (
     get_recommendations,
     get_related_topics,
@@ -248,11 +249,14 @@ def topic_detail(topic_id: int):
 
     # Fetch user's quiz attempt history for this topic in a single indexed query (no N+1)
     user_attempts = (
-        Attempt.query.filter_by(user_id=current_user.id, topic_id=topic.id)
-        .order_by(Attempt.created_at.desc(), Attempt.id.desc())
+        Attempt.query.options(joinedload(Attempt.topic).joinedload(Topic.course))
+        .filter_by(user_id=current_user.id, topic_id=topic.id)
+        .order_by(Attempt.attempt_number.asc(), Attempt.id.asc())
         .all()
     )
-    last_attempt = user_attempts[0] if user_attempts else None
+    attempts_history = calculate_attempts_history(user_attempts)
+    recent_attempts = attempts_history[:5]
+    last_attempt = attempts_history[0].attempt if attempts_history else None
     attempt_count = len(user_attempts)
 
     return render_template(
@@ -265,6 +269,7 @@ def topic_detail(topic_id: int):
         reading_time=reading_time,
         last_attempt=last_attempt,
         attempt_count=attempt_count,
+        recent_attempts=recent_attempts,
     )
 
 

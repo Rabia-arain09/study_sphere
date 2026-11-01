@@ -619,6 +619,8 @@ StudySphere features a content-based recommendation engine (`ml/recommender.py` 
 - **Atomic In-Transaction Mastery Label Assignment**: Assigned `Attempt.label` inside the active database transaction during `submit_quiz` using auto-scored questions, and dynamically recomputed the label in `self-grade` after theory self-ratings update scores, wrong counts, and totals.
 - **Indexed Prior Attempt Resolution for Monotonic Inference**: Utilized the compound database index `ix_attempts_user_id_topic_id` (`user_id`, `topic_id`) to resolve the student's prior attempt in a single query (<1ms) to derive `previous_score_ratio` and `improvement`.
 - **Phase 5 Test Assertion Progression**: Upgraded `test_attempt_number_increments_for_same_user_and_topic` to verify that `Attempt.label` is populated with a valid `MasteryLabel` upon quiz submission rather than remaining `None` (which was a Phase 4 placeholder).
+- **In-Memory Sequential Delta Calculation**: Computed attempt score percentage changes relative to the prior attempt sequentially in pure Python using `calculate_attempts_history`, eliminating secondary database queries and keeping queries strictly $O(1)$.
+- **Compact Sidebar Metric Preservation & Multi-Attempt History Table**: Retained latest attempt summary metrics on the topic sidebar while integrating the 5-attempt table with directional delta arrows and conditional 'View all attempts' links to maintain backward compatibility with existing topic summary checks.
 
 ---
 

@@ -242,3 +242,56 @@ def get_topic_quiz_questions(
         return selected
 
     return random.sample(questions, limit)
+
+
+@dataclass
+class AttemptHistoryItem:
+    """Enriched attempt representation for history display with sequential percentage delta."""
+
+    attempt: Any
+    percentage: float
+    change: float | None
+
+
+def calculate_attempts_history(attempts: list[Any]) -> list[AttemptHistoryItem]:
+    """Calculate percentage and sequential score change for a list of attempt records.
+
+    Computes deltas strictly in Python from loaded rows ordered by attempt_number,
+    eliminating redundant database queries (no N+1).
+
+    Args:
+        attempts: Sequence of Attempt records belonging to the same topic.
+
+    Returns:
+        list[AttemptHistoryItem]: Chronologically ordered records (newest first).
+    """
+    sorted_attempts = sorted(
+        attempts,
+        key=lambda a: (
+            getattr(a, "attempt_number", 0) or 0,
+            getattr(a, "id", 0) or 0,
+        ),
+    )
+    items: list[AttemptHistoryItem] = []
+    prev_pct: float | None = None
+
+    for att in sorted_attempts:
+        total_q = getattr(att, "total_questions", 0) or 0
+        score = getattr(att, "score", 0.0) or 0.0
+        pct = round((score / total_q * 100.0), 1) if total_q > 0 else 0.0
+        if prev_pct is None:
+            change = None
+        else:
+            change = round(pct - prev_pct, 1)
+        prev_pct = pct
+
+        items.append(
+            AttemptHistoryItem(
+                attempt=att,
+                percentage=pct,
+                change=change,
+            )
+        )
+
+    items.reverse()
+    return items

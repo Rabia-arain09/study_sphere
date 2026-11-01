@@ -1863,3 +1863,34 @@ body {
     margin: 0 auto;
 }
 
+/* Attempt History Styles */
+.attempts-table th,
+.history-table th {
+    font-weight: 600;
+}
+
+.attempts-table tr:hover,
+.history-table tr:hover {
+    background-color: var(--neutral-50);
+}
+
+.attempt-change {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.2rem;
+    font-size: 0.82rem;
+}
+
+.attempt-change.change-up {
+    color: var(--success);
+}
+
+.attempt-change.change-down {
+    color: var(--danger);
+}
+
+.attempt-change.change-equal {
+    color: var(--neutral-500);
+}
+
+

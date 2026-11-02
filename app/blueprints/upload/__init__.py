@@ -42,6 +42,7 @@ def index() -> Any:
     if request.method == "POST":
         source_type = (request.form.get("source_type") or "").strip().lower()
         title = (request.form.get("title") or "").strip() or None
+        user_request = (request.form.get("user_request") or "").strip() or None
 
         try:
             if source_type == UploadSourceType.TEXT.value:
@@ -50,6 +51,7 @@ def index() -> Any:
                     user_id=current_user.id,
                     raw_text=raw_text,
                     title=title,
+                    user_request=user_request,
                 )
             elif source_type == UploadSourceType.IMAGE.value:
                 file = request.files.get("image_file")
@@ -61,6 +63,7 @@ def index() -> Any:
                     file_bytes=file_bytes,
                     filename=file.filename,
                     title=title,
+                    user_request=user_request,
                 )
             elif source_type == UploadSourceType.URL.value:
                 raw_url = (request.form.get("url_content") or "").strip()
@@ -70,6 +73,7 @@ def index() -> Any:
                     user_id=current_user.id,
                     url=raw_url,
                     title=title,
+                    user_request=user_request,
                 )
             else:
                 raise UploadValidationError(
@@ -104,6 +108,7 @@ def index() -> Any:
                     "upload/index.html",
                     active_tab=source_type or "text",
                     title_input=title or "",
+                    user_request_input=user_request or "",
                     text_input=request.form.get("text_content", ""),
                     url_input=request.form.get("url_content", ""),
                 ),
@@ -120,6 +125,7 @@ def index() -> Any:
                     "upload/index.html",
                     active_tab=source_type or "text",
                     title_input=title or "",
+                    user_request_input=user_request or "",
                     text_input=request.form.get("text_content", ""),
                     url_input=request.form.get("url_content", ""),
                 ),

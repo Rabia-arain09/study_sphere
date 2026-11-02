@@ -43,6 +43,7 @@ class Upload(db.Model):
     source_ref: Mapped[str | None] = mapped_column(String(500), nullable=True)
     title: Mapped[str] = mapped_column(String(200), nullable=False)
     content_hash: Mapped[str] = mapped_column(String(64), nullable=False, index=True)
+    user_request: Mapped[str | None] = mapped_column(Text, nullable=True)
     extracted_text: Mapped[str] = mapped_column(Text, nullable=False)
     summary: Mapped[list[str]] = mapped_column(JSON, nullable=False)
     simple_explanation: Mapped[str] = mapped_column(Text, nullable=False)

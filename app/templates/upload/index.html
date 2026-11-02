@@ -44,12 +44,43 @@
                        id="title"
                        name="title"
                        class="form-input"
-                       placeholder="e.g. Distributed Consensus in Raft, Renal Physiology..."
+                       placeholder="e.g. Distributed Consensus in Raft, Renal Physiology, Graph Algorithms..."
                        value="{{ title_input or '' }}"
                        maxlength="200"
                        style="width: 100%; padding: 0.65rem 0.85rem; border: 1px solid var(--neutral-300); border-radius: var(--radius); font-size: 0.95rem;">
                 <span style="font-size: 0.8rem; color: var(--neutral-500); margin-top: 0.25rem; display: block;">
-                    Leave blank to let the AI generate an appropriate title from your content.
+                    Give your material a concise topic title, or leave blank to let AI generate one.
+                </span>
+            </div>
+
+            <!-- What do you want to do with this material? (Optional) -->
+            <div style="margin-bottom: 1.5rem;">
+                <div style="display: flex; justify-content: space-between; align-items: baseline; margin-bottom: 0.4rem;">
+                    <label for="user_request" style="font-weight: 600; font-size: 0.9rem; color: var(--neutral-800);">
+                        What do you want to do with this material? <span style="font-weight: 400; color: var(--neutral-500);">(Optional)</span>
+                    </label>
+                    <span id="userRequestCharCount" style="font-size: 0.8rem; color: var(--neutral-500);">0 / 500 chars</span>
+                </div>
+                <textarea id="user_request"
+                          name="user_request"
+                          rows="3"
+                          maxlength="500"
+                          placeholder="e.g. Explain this simply, focus on definitions and key terms, or tailor the quiz to prepare me for an exam..."
+                          style="width: 100%; padding: 0.65rem 0.85rem; border: 1px solid var(--neutral-300); border-radius: var(--radius); font-size: 0.92rem; font-family: var(--font-sans); line-height: 1.45; resize: vertical;">{{ user_request_input or '' }}</textarea>
+                <div style="margin-top: 0.5rem; display: flex; align-items: center; gap: 0.5rem; flex-wrap: wrap;">
+                    <span style="font-size: 0.8rem; color: var(--neutral-600); font-weight: 500;">Quick presets:</span>
+                    <button type="button" class="preset-chip" onclick="applyPreset('Explain this simply')">
+                        Explain this simply
+                    </button>
+                    <button type="button" class="preset-chip" onclick="applyPreset('Focus on definitions and key terms')">
+                        Focus on definitions and key terms
+                    </button>
+                    <button type="button" class="preset-chip" onclick="applyPreset('Prepare me for an exam')">
+                        Prepare me for an exam
+                    </button>
+                </div>
+                <span style="font-size: 0.8rem; color: var(--neutral-500); margin-top: 0.35rem; display: block;">
+                    Applies to text, image, and URL uploads. Shapes the summary focus, explanation style, and quiz questions.
                 </span>
             </div>
 
@@ -161,6 +192,21 @@
     border-color: var(--primary) !important;
     color: var(--primary) !important;
 }
+.preset-chip {
+    background: var(--neutral-100);
+    border: 1px solid var(--neutral-300);
+    border-radius: 999px;
+    padding: 0.25rem 0.75rem;
+    font-size: 0.82rem;
+    color: var(--neutral-700);
+    cursor: pointer;
+    transition: all 0.15s ease;
+}
+.preset-chip:hover {
+    background-color: var(--primary-light) !important;
+    border-color: var(--primary) !important;
+    color: var(--primary) !important;
+}
 @keyframes spin {
     0% { transform: rotate(0deg); }
     100% { transform: rotate(360deg); }
@@ -182,6 +228,29 @@ function selectTab(tabName) {
             btn.classList.remove('active');
         }
     });
+}
+
+// Preset chip helper
+function applyPreset(text) {
+    var reqArea = document.getElementById('user_request');
+    if (reqArea) {
+        reqArea.value = text;
+        updateUserRequestCounter();
+        reqArea.focus();
+    }
+}
+
+// Live character counter for user request textarea
+var userReqArea = document.getElementById('user_request');
+var userReqCounter = document.getElementById('userRequestCharCount');
+function updateUserRequestCounter() {
+    if (userReqArea && userReqCounter) {
+        userReqCounter.textContent = userReqArea.value.length.toLocaleString() + ' / 500 chars';
+    }
+}
+if (userReqArea) {
+    userReqArea.addEventListener('input', updateUserRequestCounter);
+    updateUserRequestCounter();
 }
 
 // Live character counter for textarea

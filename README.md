@@ -917,14 +917,15 @@ GEMINI_MODEL=gemini-3.5-flash-lite
 
 ## Database Migration & Supabase Production Deployment
 
-Phase 7 introduces the `Upload` table managed under Flask-Migrate:
-- **Migration File**: `migrations/versions/c7f91a2b3d4e_create_uploads_table.py`
-- **Revision Chain**: `b4f8a1e2c9d0` &rarr; `c7f91a2b3d4e`
-- **Schema Features**: Includes foreign key to `users.id` with `ON DELETE CASCADE`, indexed `content_hash` for $O(1)$ duplicate lookups, JSON columns for structured summaries, key terms, and question banks, and PostgreSQL Row Level Security (RLS) enforcement.
+Phase 7 introduces the `Upload` table and user custom instruction field managed under Flask-Migrate:
+- **Migration Files**:
+  - `migrations/versions/c7f91a2b3d4e_create_uploads_table.py` (`b4f8a1e2c9d0` &rarr; `c7f91a2b3d4e`)
+  - `migrations/versions/d8a1b2c3e4f5_add_user_request_to_uploads.py` (`c7f91a2b3d4e` &rarr; `d8a1b2c3e4f5`)
+- **Schema Features**: Includes foreign key to `users.id` with `ON DELETE CASCADE`, indexed `content_hash` for $O(1)$ duplicate lookups, JSON columns for structured summaries, key terms, and question banks, nullable `user_request` column for custom learning instructions, and PostgreSQL Row Level Security (RLS) enforcement.
 
 > [!IMPORTANT]
 > **Supabase Deployment Note**:
-> While verified locally on SQLite via environment overrides, this migration must be applied to the production Supabase PostgreSQL instance during production deployment:
+> While verified and applied locally on SQLite via environment overrides, revisions `c7f91a2b3d4e` and `d8a1b2c3e4f5` must be applied to the production Supabase PostgreSQL instance during production deployment:
 > ```bash
 > flask --app run.py db upgrade
 > ```
@@ -953,4 +954,11 @@ Quizzes generated from uploaded study material use the platform's core evaluatio
 - **Parallel Sub-Request Generation**: Partitioned generation into two concurrent asynchronous tasks via `ThreadPoolExecutor(max_workers=2)` for study guide synthesis and quiz generation, reducing latency while preserving transactional consistency and daily quota accounting.
 - **Optimized Timeout and Retry Policy**: Configured `GEMINI_TIMEOUT` to 120s read timeout and 10s connect timeout without read-timeout retries, reserving single-attempt backoff retries for 429 rate limits, 5xx gateway faults, and unsupported `generationConfig` fields.
 - **Cross-Part Monolithic Payload Fallback**: Maintained backward compatibility with monolithic test mocks by extracting guide and quiz artifacts from unified responses when available.
+- **URL SSRF Hostname vs. IP Literal Separation**: Resolved the GeeksForGeeks false-positive by separating IP literal parsing from DNS hostname resolution in `resolve_and_verify_host` and ensuring `is_ip_blocked` does not treat non-IP hostnames as blocked IPs.
+- **SSRF Connected Peer Verification vs. Raw IP Trade-off**: Re-verified the connected socket's peer IP address via `sock.getpeername()` after connection rather than rewriting URLs directly to raw IPs, preventing DNS rebinding attacks while preserving TLS Server Name Indication (SNI) and HTTP virtual hosting compatibility for CDNs like AWS CloudFront and Cloudflare.
+- **Friendly URL Extraction Failure Diagnostics**: Mapped HTTP 401/403 responses to clear user guidance suggesting direct copy-pasting for anti-bot protected sites, while distinguishing private/blocked IP violations, size limits, timeouts, and non-HTML content types.
+- **User Instruction Prompt Isolation**: Sandboxed the optional "What do you want to do with this material?" instruction inside `<<<USER_REQUEST_START>>> ... <<<USER_REQUEST_END>>>` blocks in both study guide and quiz prompts with strict system instructions prohibiting role or schema overrides, and sanitizing output via HTML escaping.
+- **Instruction-Aware Content Deduplication**: Extended `compute_upload_content_hash` to include the normalized user instruction as `sha256(text + "|||" + user_request)` while falling back to `sha256(text)` for empty instructions, preserving duplicate reuse for legacy uploads while generating fresh artifacts when instructions differ.
+- **Nullable User Request Column & Supabase Migration**: Added nullable `user_request` text column to `Upload` via batch migration `d8a1b2c3e4f5_add_user_request_to_uploads.py`, applied locally to SQLite, which must be executed on Supabase PostgreSQL in production via `flask --app run.py db upgrade`.
+
 

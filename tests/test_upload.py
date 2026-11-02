@@ -3,6 +3,8 @@
 from __future__ import annotations
 import io
 import json
+from pathlib import Path
+import socket
 import struct
 import zlib
 from unittest.mock import MagicMock, patch
@@ -31,6 +33,8 @@ from app.services.upload_service import (
     URLValidationError,
     UploadValidationError,
     clean_text_input,
+    clean_user_request,
+    compute_upload_content_hash,
     fetch_url_content,
     generate_study_artifacts,
     is_ip_blocked,
@@ -650,3 +654,333 @@ def test_gemini_client_error_never_exposes_key() -> None:
         err_msg = str(exc_info.value)
         assert secret not in err_msg
         assert "[REDACTED_API_KEY]" in err_msg
+
+
+# ==============================================================================
+# 16. URL Bug Fix and SSRF Defense Regression Tests
+# ==============================================================================
+
+
+def test_geeksforgeeks_dns_resolution_and_fetch() -> None:
+    """Verify public domain (www.geeksforgeeks.org) with 4 Amazon IPs is allowed and fetched."""
+    gfg_addrs = [
+        (socket.AF_INET, socket.SOCK_STREAM, 6, "", ("18.64.141.118", 443)),
+        (socket.AF_INET, socket.SOCK_STREAM, 6, "", ("18.64.141.43", 443)),
+        (socket.AF_INET, socket.SOCK_STREAM, 6, "", ("18.64.141.92", 443)),
+        (socket.AF_INET, socket.SOCK_STREAM, 6, "", ("18.64.141.97", 443)),
+    ]
+    html_content = (
+        "<html><body><main><h1>Breadth First Search (BFS)</h1>"
+        "<p>Breadth First Search is a graph traversal algorithm that explores all vertices at the "
+        "present depth before moving on to the vertices at the next depth level.</p></main></body></html>"
+    )
+    mock_resp = MagicMock()
+    mock_resp.status_code = 200
+    mock_resp.headers = {"Content-Type": "text/html; charset=utf-8"}
+    mock_resp.iter_content = lambda chunk_size: [html_content.encode("utf-8")]
+    mock_resp.encoding = "utf-8"
+
+    with patch("socket.getaddrinfo", return_value=gfg_addrs):
+        with patch("requests.Session.get", return_value=mock_resp):
+            extracted = fetch_url_content(
+                "https://www.geeksforgeeks.org/dsa/breadth-first-search-or-bfs-for-a-graph/"
+            )
+            assert "Breadth First Search" in extracted
+            assert "graph traversal algorithm" in extracted
+
+
+def test_public_to_public_redirect_passes() -> None:
+    """Verify redirect from one public host to another public host succeeds."""
+    addrs_map = {
+        ("host1.example.com", 80): [
+            (socket.AF_INET, socket.SOCK_STREAM, 6, "", ("93.184.216.34", 80))
+        ],
+        ("host2.example.com", 80): [
+            (socket.AF_INET, socket.SOCK_STREAM, 6, "", ("151.101.1.69", 80))
+        ],
+    }
+
+    def fake_getaddrinfo(host, port, *args, **kwargs):
+        if (host, port) in addrs_map:
+            return addrs_map[(host, port)]
+        return [(socket.AF_INET, socket.SOCK_STREAM, 6, "", ("93.184.216.34", port))]
+
+    mock_resp1 = MagicMock()
+    mock_resp1.status_code = 302
+    mock_resp1.headers = {"Location": "http://host2.example.com/target"}
+
+    mock_resp2 = MagicMock()
+    mock_resp2.status_code = 200
+    mock_resp2.headers = {"Content-Type": "text/html; charset=utf-8"}
+    mock_resp2.iter_content = lambda chunk_size: [
+        b"<html><body><h1>Redirected Public Article</h1><p>Public educational material content.</p></body></html>"
+    ]
+    mock_resp2.encoding = "utf-8"
+
+    with patch("socket.getaddrinfo", side_effect=fake_getaddrinfo):
+        with patch("requests.Session.get", side_effect=[mock_resp1, mock_resp2]):
+            content = fetch_url_content("http://host1.example.com/initial")
+            assert "Redirected Public Article" in content
+
+
+@pytest.mark.parametrize(
+    "private_redirect_url",
+    [
+        "http://127.0.0.1/admin",
+        "http://10.0.0.1/internal-status",
+        "http://169.254.169.254/latest/meta-data/",
+    ],
+)
+def test_redirect_to_blocked_destinations(private_redirect_url: str) -> None:
+    """Verify redirects to 127.0.0.1, 10.x, or 169.254.169.254 are blocked."""
+    mock_resp = MagicMock()
+    mock_resp.status_code = 302
+    mock_resp.headers = {"Location": private_redirect_url}
+
+    with patch(
+        "socket.getaddrinfo",
+        return_value=[(socket.AF_INET, socket.SOCK_STREAM, 6, "", ("93.184.216.34", 80))],
+    ):
+        with patch("requests.Session.get", return_value=mock_resp):
+            with pytest.raises(SSRFProtectionError, match="blocked for security reasons"):
+                fetch_url_content("http://public.example.com/start")
+
+
+def test_host_resolving_to_mixed_public_and_private_is_blocked() -> None:
+    """Ensure host resolving to 1 public and 1 private address is completely blocked."""
+    mixed_addrs = [
+        (socket.AF_INET, socket.SOCK_STREAM, 6, "", ("18.64.141.118", 443)),
+        (socket.AF_INET, socket.SOCK_STREAM, 6, "", ("192.168.1.1", 443)),
+    ]
+    with patch("socket.getaddrinfo", return_value=mixed_addrs):
+        with pytest.raises(SSRFProtectionError) as exc_info:
+            resolve_and_verify_host("mixed.example.com", 443)
+        assert "blocked address '192.168.1.1'" in str(exc_info.value)
+        assert "private-network" in str(exc_info.value)
+
+
+@pytest.mark.parametrize(
+    "ipv6_blocked",
+    [
+        "::1",
+        "::ffff:127.0.0.1",
+        "::ffff:192.168.1.1",
+        "::ffff:169.254.169.254",
+        "::ffff:8.8.8.8",
+    ],
+)
+def test_ipv6_loopback_and_ipv4_mapped_ipv6_blocked(ipv6_blocked: str) -> None:
+    """Verify IPv6 loopback and IPv4-mapped IPv6 are blocked."""
+    assert is_ip_blocked(ipv6_blocked) is True
+    with pytest.raises(SSRFProtectionError, match="blocked for security reasons"):
+        resolve_and_verify_host(ipv6_blocked, 80)
+
+
+def test_error_message_distinguishes_host_from_ip() -> None:
+    """Ensure host name is never called an IP address in error messages."""
+    # 1. Hostname blocked
+    with pytest.raises(SSRFProtectionError) as exc_host:
+        resolve_and_verify_host("internal.localhost", 80)
+    msg_host = str(exc_host.value)
+    assert "Access to host 'internal.localhost'" in msg_host
+    assert "Access to IP address" not in msg_host
+    assert "points to a private or blocked network" in msg_host
+
+    # 2. IP literal blocked
+    with pytest.raises(SSRFProtectionError) as exc_ip:
+        resolve_and_verify_host("127.0.0.1", 80)
+    msg_ip = str(exc_ip.value)
+    assert "Access to IP address '127.0.0.1'" in msg_ip
+    assert "private or blocked network" in msg_ip
+
+
+def test_friendly_error_on_http_403_and_401() -> None:
+    """Ensure 403 / 401 returns friendly message suggesting pasting text directly."""
+    mock_403 = MagicMock()
+    mock_403.status_code = 403
+    with patch(
+        "socket.getaddrinfo",
+        return_value=[(socket.AF_INET, socket.SOCK_STREAM, 6, "", ("93.184.216.34", 80))],
+    ):
+        with patch("requests.Session.get", return_value=mock_403):
+            with pytest.raises(URLValidationError) as exc:
+                fetch_url_content("http://protected-site.com/doc")
+            err_text = str(exc.value)
+            assert "refused the request (HTTP 403)" in err_text
+            assert "paste the text directly" in err_text
+
+
+# ==============================================================================
+# 17. User Request ("What do you want to do with this material?") Tests
+# ==============================================================================
+
+
+def test_instruction_passed_to_both_prompts_inside_delimiters() -> None:
+    """Verify user request instruction is passed to both study guide and quiz prompts inside delimiters."""
+    guide_resp = json.dumps({
+        "title": "Computer Networking",
+        "extracted_text": "",
+        "summary": ["Point 1", "Point 2", "Point 3", "Point 4", "Point 5"],
+        "simple_explanation": "Simple explanation.",
+        "key_terms": [{"term": "TCP", "meaning": "Transmission Control Protocol."}],
+    })
+    quiz_resp = json.dumps({
+        "questions": [
+            {"id": 1, "type": "mcq", "question_text": "Q1", "options": {"A": "1", "B": "2", "C": "3", "D": "4"}, "correct_answer": "A", "explanation": "E"},
+            {"id": 2, "type": "mcq", "question_text": "Q2", "options": {"A": "1", "B": "2", "C": "3", "D": "4"}, "correct_answer": "B", "explanation": "E"},
+            {"id": 3, "type": "mcq", "question_text": "Q3", "options": {"A": "1", "B": "2", "C": "3", "D": "4"}, "correct_answer": "C", "explanation": "E"},
+            {"id": 4, "type": "tf", "question_text": "Q4", "options": {"True": "True", "False": "False"}, "correct_answer": "True", "explanation": "E"},
+            {"id": 5, "type": "short", "question_text": "Q5", "correct_answer": "ans", "explanation": "E"},
+            {"id": 6, "type": "theory", "question_text": "Q6", "correct_answer": "model answer", "explanation": "E"},
+        ]
+    })
+    mock_client = MagicMock()
+    mock_client.generate.side_effect = [guide_resp, quiz_resp]
+
+    user_req = "Focus on definitions and key terms"
+    generate_study_artifacts(
+        material_text="Computer networking fundamentals notes.",
+        client=mock_client,
+        user_request=user_req,
+    )
+
+    assert mock_client.generate.call_count == 2
+    for call in mock_client.generate.call_args_list:
+        prompt_arg = call.kwargs.get("prompt") or call.args[0]
+        assert "<<<USER_REQUEST_START>>>" in prompt_arg
+        assert user_req in prompt_arg
+        assert "<<<USER_REQUEST_END>>>" in prompt_arg
+        assert "USER REQUEST RULES:" in prompt_arg
+        assert "prompt-injection defense remains absolute" in prompt_arg
+
+
+def test_instruction_length_limited_and_escaped_on_view(
+    auth_client: FlaskClient, app: Flask, test_user: User
+) -> None:
+    """Ensure user request is capped at 500 chars and HTML is properly escaped on view page."""
+    long_request = ("Explain simply and clearly. " * 30)[:600]
+    raw_xss_request = "<script>alert('xss')</script> Focus on exam review."
+
+    with app.app_context():
+        u1, _ = process_text_upload(
+            test_user.id,
+            "Valid educational text content about distributed systems.",
+            user_request=long_request,
+        )
+        assert len(u1.user_request) <= 500
+
+        u2, _ = process_text_upload(
+            test_user.id,
+            "Another educational text content about algorithms.",
+            user_request=raw_xss_request,
+        )
+        u2_id = u2.id
+
+    resp = auth_client.get(f"/upload/{u2_id}")
+    assert resp.status_code == 200
+    body = resp.data.decode("utf-8")
+    assert "Your request:" in body
+    # Verify script tag was escaped and not rendered executable
+    assert "<script>alert" not in body
+    assert "Focus on exam review" in body
+
+
+def test_different_instruction_creates_new_upload_and_same_reuses(
+    app: Flask, test_user: User
+) -> None:
+    """Verify different instructions create new uploads, while identical instruction reuses existing."""
+    material = "Database indexing using B-Trees and Hash indexes for fast point queries."
+
+    with app.app_context():
+        # First upload with instruction A
+        u1, is_new1 = process_text_upload(
+            test_user.id,
+            material,
+            user_request="Explain this simply",
+        )
+        assert is_new1 is True
+
+        # Same text with same instruction A reuses u1
+        u1_again, is_new1_again = process_text_upload(
+            test_user.id,
+            material,
+            user_request="Explain this simply",
+        )
+        assert is_new1_again is False
+        assert u1_again.id == u1.id
+
+        # Same text with different instruction B creates new upload u2
+        u2, is_new2 = process_text_upload(
+            test_user.id,
+            material,
+            user_request="Prepare me for an exam",
+        )
+        assert is_new2 is True
+        assert u2.id != u1.id
+
+
+def test_existing_uploads_without_instruction_continue_to_work(
+    app: Flask, test_user: User, auth_client: FlaskClient
+) -> None:
+    """Verify backward compatibility: uploads without instruction match legacy hashes and view safely."""
+    material = "Software engineering principles including modularity, cohesion, and coupling."
+
+    with app.app_context():
+        # Legacy upload with user_request=None
+        u_legacy = Upload(
+            user_id=test_user.id,
+            source_type="text",
+            source_ref=None,
+            title="Software Engineering Principles",
+            content_hash=compute_upload_content_hash(clean_text_input(material)),
+            user_request=None,
+            extracted_text=material,
+            summary=["Summary point 1", "Summary point 2", "Summary point 3", "Summary point 4", "Summary point 5"],
+            simple_explanation="Modularity is like building with Lego blocks.",
+            key_terms=[{"term": "Cohesion", "meaning": "How closely related elements are."}],
+            questions=[],
+        )
+        db.session.add(u_legacy)
+        db.session.commit()
+        legacy_id = u_legacy.id
+
+        # Verify that process_text_upload without user_request reuses this upload
+        u_matched, is_new = process_text_upload(
+            test_user.id,
+            material,
+            user_request=None,
+        )
+        assert is_new is False
+        assert u_matched.id == legacy_id
+
+    # View page renders properly without crashing when user_request is None
+    resp = auth_client.get(f"/upload/{legacy_id}")
+    assert resp.status_code == 200
+    assert b"Software Engineering Principles" in resp.data
+    assert b"Your request:" not in resp.data
+
+
+def test_migration_applies_on_fresh_sqlite(tmp_path: Path) -> None:
+    """Verify all migrations apply cleanly on a fresh SQLite database."""
+    from app.config import TestingConfig
+    fresh_db = tmp_path / "fresh_migration_test.db"
+    orig_uri = TestingConfig.SQLALCHEMY_DATABASE_URI
+    TestingConfig.SQLALCHEMY_DATABASE_URI = f"sqlite:///{fresh_db.as_posix()}"
+    try:
+        test_app = create_app("testing")
+        with test_app.app_context():
+            from flask_migrate import upgrade
+            upgrade()
+            test_app.extensions["migrate"].db.engine.dispose()
+    finally:
+        TestingConfig.SQLALCHEMY_DATABASE_URI = orig_uri
+
+    # Verify uploads table exists with user_request column
+    import sqlite3
+    con = sqlite3.connect(fresh_db.as_posix())
+    cur = con.cursor()
+    columns = [col[1] for col in cur.execute("PRAGMA table_info(uploads)").fetchall()]
+    con.close()
+    assert "user_request" in columns
+    assert "content_hash" in columns
+    assert "summary" in columns

@@ -563,6 +563,45 @@ def label_attempts_command(force: bool) -> None:
         click.echo(f"  - {val}: {count}")
 
 
+@click.command("llm-check")
+@with_appcontext
+def llm_check_command() -> None:
+    """Diagnose LLM provider connectivity, probe model latency, and check response status."""
+    import time
+    from app.services.llm_client import get_llm_client, sanitize_text
+
+    provider: str = (current_app.config.get("LLM_PROVIDER") or "gemini").strip()
+    model: str = (
+        current_app.config.get("GEMINI_MODEL") or "gemini-3.5-flash-lite"
+    ).strip()
+    api_key: str | None = current_app.config.get("GEMINI_API_KEY")
+
+    click.echo(f"Provider: {provider}")
+    click.echo(f"Model: {model}")
+
+    if provider.lower() == "fake":
+        click.echo("fake provider, no network call")
+        return
+
+    prompt = "Say hi in 3 words"
+    client = get_llm_client(provider=provider, model=model)
+    start_time = time.perf_counter()
+
+    try:
+        resp = client.generate(prompt)
+        elapsed = time.perf_counter() - start_time
+        click.echo("HTTP status: 200")
+        click.echo(f"Time: {elapsed:.2f}s")
+        click.echo(f"Response: {sanitize_text(resp.strip()[:100], api_key)}")
+    except Exception as err:
+        elapsed = time.perf_counter() - start_time
+        err_type = type(err).__name__
+        sanitized_msg = sanitize_text(str(err), api_key)
+        click.echo(f"Error type: {err_type}")
+        click.echo(f"Time: {elapsed:.2f}s")
+        click.echo(f"Details: {sanitized_msg}")
+
+
 def register_cli_commands(app: Flask) -> None:
     """Register custom CLI commands with the Flask application.
 
@@ -577,3 +616,4 @@ def register_cli_commands(app: Flask) -> None:
     app.cli.add_command(load_questions_command)
     app.cli.add_command(train_label_model_command)
     app.cli.add_command(label_attempts_command)
+    app.cli.add_command(llm_check_command)

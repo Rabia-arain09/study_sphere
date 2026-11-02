@@ -132,6 +132,13 @@
                 🎯 {% if upload.attempts_count > 0 %}Retake Quiz Assessment{% else %}Take Quiz Assessment{% endif %}
             </a>
         </section>
+
+        <!-- Result Page Footer: Model Name -->
+        <footer style="margin-top: 2rem; padding-top: 1rem; border-top: 1px solid var(--neutral-200); text-align: center;">
+            <p style="font-size: 0.8rem; color: var(--neutral-500); margin: 0;">
+                Model: <code>{{ model_name or config.get('GEMINI_MODEL', 'gemini-3.5-flash-lite') }}</code>
+            </p>
+        </footer>
     </div>
 </div>
 {% endblock %}

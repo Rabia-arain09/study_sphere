@@ -181,7 +181,13 @@ class Config:
     )
     LLM_API_KEY: str | None = os.getenv("LLM_API_KEY")
     GEMINI_API_KEY: str | None = os.getenv("GEMINI_API_KEY") or os.getenv("LLM_API_KEY")
-    GEMINI_MODEL: str = os.getenv("GEMINI_MODEL", "gemini-1.5-flash")
+    GEMINI_MODEL: str = os.getenv("GEMINI_MODEL", "gemini-3.5-flash-lite")
+    GEMINI_CONNECT_TIMEOUT: int = int(os.getenv("GEMINI_CONNECT_TIMEOUT", "10"))
+    GEMINI_READ_TIMEOUT: int = int(os.getenv("GEMINI_TIMEOUT", "120"))
+    GEMINI_TIMEOUT: tuple[int, int] = (
+        int(os.getenv("GEMINI_CONNECT_TIMEOUT", "10")),
+        int(os.getenv("GEMINI_TIMEOUT", "120")),
+    )
     LLM_PROVIDER: str = os.getenv("LLM_PROVIDER", "gemini")
     UPLOAD_MAX_TEXT_CHARS: int = int(os.getenv("UPLOAD_MAX_TEXT_CHARS", "20000"))
     UPLOAD_MAX_IMAGE_MB: int = int(os.getenv("UPLOAD_MAX_IMAGE_MB", "4"))
@@ -209,7 +215,7 @@ class TestingConfig(Config):
         SQLALCHEMY_DATABASE_URI
     )
     WTF_CSRF_ENABLED: bool = False
-    LLM_PROVIDER: str = os.getenv("LLM_PROVIDER", "fake")
+    LLM_PROVIDER: str = os.getenv("TEST_LLM_PROVIDER", "fake")
 
 
 class ProductionConfig(Config):

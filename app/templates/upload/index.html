@@ -205,11 +205,12 @@ var generatingStatus = document.getElementById('generatingStatus');
 if (form && submitBtn) {
     form.addEventListener('submit', function() {
         submitBtn.disabled = true;
-        btnText.textContent = 'Generating...';
+        btnText.textContent = 'Generating... this can take up to 1-2 minutes';
         btnIcon.textContent = '⏳';
         submitBtn.style.opacity = '0.75';
         submitBtn.style.cursor = 'not-allowed';
         if (generatingStatus) {
+            generatingStatus.textContent = '⏳ Generating... this can take up to 1-2 minutes';
             generatingStatus.style.display = 'inline-block';
         }
     });

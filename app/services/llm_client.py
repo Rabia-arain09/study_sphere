@@ -45,6 +45,24 @@ def sanitize_text(text: str | None, secret_key: str | None = None) -> str:
     return cleaned
 
 
+def normalize_timeout(
+    val: tuple[int | float, int | float] | int | float | None,
+) -> tuple[float, float]:
+    """Ensure timeout is a (connect_timeout, read_timeout) tuple in seconds.
+
+    Args:
+        val: Raw timeout value (tuple, number, or None).
+
+    Returns:
+        tuple[float, float]: Validated (connect_timeout, read_timeout).
+    """
+    if isinstance(val, (tuple, list)) and len(val) >= 2:
+        return (float(val[0]), float(val[1]))
+    if isinstance(val, (int, float)):
+        return (10.0, float(val))
+    return (10.0, 120.0)
+
+
 class LLMClient(ABC):
     """Abstract base class for Large Language Model clients."""
 
@@ -54,6 +72,7 @@ class LLMClient(ABC):
         prompt: str,
         image_bytes: bytes | None = None,
         mime_type: str | None = None,
+        response_schema: dict[str, Any] | None = None,
     ) -> str:
         """Send prompt and optional image bytes to LLM and return raw response text.
 
@@ -61,6 +80,7 @@ class LLMClient(ABC):
             prompt: Text prompt with instructional delimiters.
             image_bytes: Optional binary content of uploaded image.
             mime_type: MIME type of the image (e.g., 'image/png').
+            response_schema: Optional JSON schema dictionary for structured output.
 
         Returns:
             str: Raw textual response (typically JSON).
@@ -75,26 +95,40 @@ class GeminiClient(LLMClient):
 
     DEFAULT_ENDPOINT = "https://generativelanguage.googleapis.com/v1beta/models/{model}:generateContent"
 
+    # Process-wide memory for unsupported generationConfig fields (e.g. thinkingConfig, responseSchema)
+    _unsupported_fields: set[str] = set()
+
     def __init__(
         self,
         api_key: str | None = None,
         model: str | None = None,
-        timeout: int = 30,
+        timeout: tuple[int | float, int | float] | int | float | None = None,
     ) -> None:
         """Initialize Gemini client.
 
         Args:
             api_key: Gemini API key. Defaults to app config GEMINI_API_KEY.
-            model: Model name. Defaults to app config GEMINI_MODEL or 'gemini-1.5-flash'.
-            timeout: HTTP request timeout in seconds.
+            model: Model name. Defaults to app config GEMINI_MODEL or 'gemini-3.5-flash-lite'.
+            timeout: HTTP request timeout (connect, read) tuple or float in seconds.
         """
         self.api_key = api_key or (
             current_app.config.get("GEMINI_API_KEY") if current_app else None
         )
         self.model = model or (
             current_app.config.get("GEMINI_MODEL") if current_app else None
-        ) or "gemini-1.5-flash"
-        self.timeout = timeout
+        ) or "gemini-3.5-flash-lite"
+
+        if timeout is not None:
+            self.timeout = timeout
+        elif current_app and current_app.config.get("GEMINI_TIMEOUT") is not None:
+            self.timeout = current_app.config.get("GEMINI_TIMEOUT")
+        else:
+            self.timeout = (10.0, 120.0)
+
+    @classmethod
+    def reset_unsupported_fields(cls) -> None:
+        """Clear cached unsupported generationConfig fields (used for testing)."""
+        cls._unsupported_fields.clear()
 
     def _sanitize(self, msg: str) -> str:
         """Scrub this client's API key from output strings."""
@@ -105,6 +139,7 @@ class GeminiClient(LLMClient):
         prompt: str,
         image_bytes: bytes | None = None,
         mime_type: str | None = None,
+        response_schema: dict[str, Any] | None = None,
     ) -> str:
         """Execute generateContent call against Gemini REST API with retry.
 
@@ -112,12 +147,15 @@ class GeminiClient(LLMClient):
             prompt: Text prompt instructions and study content.
             image_bytes: Optional binary image data.
             mime_type: Optional image MIME type.
+            response_schema: Optional JSON schema dictionary for structured output.
 
         Returns:
             str: Raw JSON text returned by the model.
 
         Raises:
             LLMError: On API failure, bad responses, or rate limit exhaustion.
+            LLMTimeoutError: On network or read timeout without retry.
+            LLMRateLimitError: On rate limit exhaustion (HTTP 429).
         """
         if not self.api_key:
             raise LLMError(
@@ -138,30 +176,43 @@ class GeminiClient(LLMClient):
                 }
             )
 
-        payload = {
+        # Build generationConfig requesting JSON output and lowest thinking setting
+        generation_config: dict[str, Any] = {
+            "temperature": 0.2,
+            "responseMimeType": "application/json",
+        }
+        if "thinkingConfig" not in self._unsupported_fields:
+            # Lowest thinking setting supported by Gemini reasoning models
+            generation_config["thinkingConfig"] = {"thinkingBudget": 0}
+
+        if response_schema and "responseSchema" not in self._unsupported_fields:
+            generation_config["responseSchema"] = response_schema
+
+        payload: dict[str, Any] = {
             "contents": [
                 {
                     "parts": parts,
                 }
             ],
-            "generationConfig": {
-                "temperature": 0.2,
-                "responseMimeType": "application/json",
-            },
+            "generationConfig": dict(generation_config),
         }
 
         url = f"https://generativelanguage.googleapis.com/v1beta/models/{self.model}:generateContent?key={self.api_key}"
         headers = {"Content-Type": "application/json"}
+        effective_timeout = normalize_timeout(self.timeout)
 
-        last_err: Exception | None = None
-        for attempt in range(2):
+        retried_400_field = False
+        retried_transient_error = False
+
+        while True:
             try:
                 resp = requests.post(
                     url,
                     json=payload,
                     headers=headers,
-                    timeout=self.timeout,
+                    timeout=effective_timeout,
                 )
+
                 if resp.status_code == 200:
                     try:
                         data = resp.json()
@@ -177,8 +228,50 @@ class GeminiClient(LLMClient):
                             f"Failed to parse Gemini API JSON response: {self._sanitize(str(parse_err))}"
                         ) from parse_err
 
-                # Retry on 429 or 5xx once
-                if resp.status_code in {429, 500, 502, 503, 504} and attempt == 0:
+                # Check if 400 is caused by generationConfig (responseSchema, thinkingConfig, etc.)
+                if resp.status_code == 400 and not retried_400_field:
+                    err_msg = resp.text.lower()
+                    field_to_drop: str | None = None
+
+                    if "thinkingconfig" in err_msg or "thinking_budget" in err_msg or "thinking" in err_msg:
+                        if "thinkingConfig" in generation_config:
+                            field_to_drop = "thinkingConfig"
+
+                    if not field_to_drop and ("responseschema" in err_msg or "response_schema" in err_msg or "schema" in err_msg):
+                        if "responseSchema" in generation_config:
+                            field_to_drop = "responseSchema"
+
+                    if not field_to_drop:
+                        for k in list(generation_config.keys()):
+                            if k in {"temperature", "responseMimeType"}:
+                                continue
+                            if k.lower() in err_msg:
+                                field_to_drop = k
+                                break
+
+                    if not field_to_drop:
+                        if "responseSchema" in generation_config:
+                            field_to_drop = "responseSchema"
+                        elif "thinkingConfig" in generation_config:
+                            field_to_drop = "thinkingConfig"
+
+                    if field_to_drop and field_to_drop in generation_config:
+                        self._unsupported_fields.add(field_to_drop)
+                        generation_config.pop(field_to_drop, None)
+                        payload = {
+                            "contents": [{"parts": parts}],
+                            "generationConfig": dict(generation_config),
+                        }
+                        retried_400_field = True
+                        logger.info(
+                            "Gemini returned 400 on generationConfig; retrying once without field '%s'.",
+                            field_to_drop,
+                        )
+                        continue
+
+                # Retry on 429 or 5xx once with backoff
+                if resp.status_code in {429, 500, 502, 503, 504} and not retried_transient_error:
+                    retried_transient_error = True
                     time.sleep(1.0)
                     continue
 
@@ -191,21 +284,26 @@ class GeminiClient(LLMClient):
                     f"Gemini API returned HTTP status {resp.status_code}: {clean_text}"
                 )
 
-            except (requests.Timeout, requests.ConnectionError) as net_err:
-                last_err = net_err
-                if attempt == 0:
+            except requests.exceptions.ReadTimeout as read_err:
+                # Do NOT retry after a read timeout (it only doubles the wait)
+                clean_read = self._sanitize(str(read_err))
+                raise LLMTimeoutError(
+                    f"Gemini API request timed out waiting for model response: {clean_read}"
+                ) from read_err
+
+            except (requests.exceptions.ConnectTimeout, requests.exceptions.ConnectionError) as conn_err:
+                if not retried_transient_error:
+                    retried_transient_error = True
                     time.sleep(1.0)
                     continue
-                clean_net = self._sanitize(str(net_err))
+                clean_conn = self._sanitize(str(conn_err))
                 raise LLMTimeoutError(
-                    f"Gemini API request failed due to network timeout or connection error: {clean_net}"
-                ) from net_err
+                    f"Gemini API connection error: {clean_conn}"
+                ) from conn_err
+
             except requests.RequestException as req_err:
                 clean_req = self._sanitize(str(req_err))
                 raise LLMError(f"Gemini API request failed: {clean_req}") from req_err
-
-        sanitized_last = self._sanitize(str(last_err)) if last_err else "unknown error"
-        raise LLMError(f"Gemini API request failed after retry: {sanitized_last}")
 
 
 class FakeLLMClient(LLMClient):
@@ -224,6 +322,7 @@ class FakeLLMClient(LLMClient):
         prompt: str,
         image_bytes: bytes | None = None,
         mime_type: str | None = None,
+        response_schema: dict[str, Any] | None = None,
     ) -> str:
         """Return a deterministic, clearly labelled sample JSON payload.
 

@@ -137,7 +137,8 @@ def view_upload(upload_id: int) -> Any:
     if not upload or upload.user_id != current_user.id:
         abort(404)
 
-    return render_template("upload/view.html", upload=upload)
+    model_name = current_app.config.get("GEMINI_MODEL", "gemini-3.5-flash-lite")
+    return render_template("upload/view.html", upload=upload, model_name=model_name)
 
 
 @upload_bp.route("/<int:upload_id>/quiz", methods=["GET"])

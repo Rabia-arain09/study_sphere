@@ -823,7 +823,7 @@ When a student struggles on a quiz and receives a **Weak** mastery assessment, S
 
 ### Viva Preparation & Pipeline Architecture
 > [!IMPORTANT]
-> **Viva Concept Clarity**: Large Language Model (LLM) text summarization, explanation synthesis, and document image OCR/transcription are performed using Google's pre-trained Gemini foundation model accessed via the official Google Generative Language REST API (`gemini-1.5-flash` or configurable). **We did not train or fine-tune this foundation model from scratch.**
+> **Viva Concept Clarity**: Large Language Model (LLM) text summarization, explanation synthesis, and document image OCR/transcription are performed using Google's pre-trained Gemini foundation model accessed via the official Google Generative Language REST API (`gemini-3.5-flash-lite` or configurable). **We did not train or fine-tune this foundation model from scratch.**
 > What we designed and implemented is the complete engineering pipeline, including:
 > 1. Multi-modal ingestion for raw text, binary slide/whiteboard images, and educational web pages.
 > 2. Zero-trust defense against Server-Side Request Forgery (SSRF), multi-hop redirect manipulation, and payload bloat.
@@ -894,7 +894,8 @@ The following parameters govern Phase 7 ingestion and generation:
 | Environment Variable | Default | Purpose & Constraints |
 | :--- | :--- | :--- |
 | `GEMINI_API_KEY` | *(None)* | Google Gemini API key from Google AI Studio. Stored in `.env` only. |
-| `GEMINI_MODEL` | `gemini-1.5-flash` | Configurable model identifier. Free-tier compatible models include `gemini-1.5-flash`, `gemini-2.0-flash`, `gemini-1.5-flash-8b`. |
+| `GEMINI_MODEL` | `gemini-3.5-flash-lite` | Configurable model identifier. Free-tier compatible models include `gemini-3.5-flash-lite`, `gemini-3.1-flash-lite`. |
+| `GEMINI_TIMEOUT` | `120` | HTTP request timeout in seconds (120s read timeout, 10s connect timeout). |
 | `LLM_PROVIDER` | `gemini` | `gemini` for live API synthesis; `fake` for deterministic offline testing. |
 | `UPLOAD_MAX_TEXT_CHARS` | `20000` | Maximum character limit for pasted study material notes. |
 | `UPLOAD_MAX_IMAGE_MB` | `4` | Maximum file size in MB for uploaded slide or whiteboard images. |
@@ -904,13 +905,12 @@ The following parameters govern Phase 7 ingestion and generation:
 
 ### Choosing a Current Free-Tier Model
 Google AI Studio offers a free tier for developers with rate limits (RPM and TPM) that require no credit card billing:
-1. `gemini-1.5-flash`: Recommended default. High-speed multimodal processing with strong structured output adherence.
-2. `gemini-2.0-flash`: Next-generation multimodal model with enhanced reasoning and rapid response generation.
-3. `gemini-1.5-flash-8b`: Highly lightweight, cost-effective model suitable for simple text and note summarization.
+1. `gemini-3.5-flash-lite`: Recommended default. High-speed multimodal processing with strong structured output adherence and low latency.
+2. `gemini-3.1-flash-lite`: Alternative lightweight model for fast generation.
 
 Configure your desired model in `.env`:
 ```bash
-GEMINI_MODEL=gemini-1.5-flash
+GEMINI_MODEL=gemini-3.5-flash-lite
 ```
 
 ---
@@ -950,4 +950,7 @@ Quizzes generated from uploaded study material use the platform's core evaluatio
 - **Dynamic Multi-Hop SSRF Defense**: Disabled automatic redirect following in favor of per-hop DNS resolution to prevent attackers from bypassing SSRF filters via external 302 redirects to internal microservices.
 - **Navbar Navigation Integration**: Added a direct "My material" navigation link in the top bar for authenticated users pointing to `/upload/` with reciprocal links between material creation and upload history.
 - **Decoupled Assessment Persistence**: Tracked assessment performance metrics (`attempts_count`, `last_score`, `last_total`) directly on the `Upload` record rather than creating curriculum `Attempt` records, preserving the mathematical integrity of the Decision Tree classification model.
+- **Parallel Sub-Request Generation**: Partitioned generation into two concurrent asynchronous tasks via `ThreadPoolExecutor(max_workers=2)` for study guide synthesis and quiz generation, reducing latency while preserving transactional consistency and daily quota accounting.
+- **Optimized Timeout and Retry Policy**: Configured `GEMINI_TIMEOUT` to 120s read timeout and 10s connect timeout without read-timeout retries, reserving single-attempt backoff retries for 429 rate limits, 5xx gateway faults, and unsupported `generationConfig` fields.
+- **Cross-Part Monolithic Payload Fallback**: Maintained backward compatibility with monolithic test mocks by extracting guide and quiz artifacts from unified responses when available.
 

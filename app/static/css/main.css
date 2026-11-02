@@ -1893,4 +1893,316 @@ body {
     color: var(--neutral-500);
 }
 
+/* Phase 8 Dashboard Styles */
+.dashboard-container {
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 1.5rem 1rem 3rem;
+}
+
+.dashboard-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 1rem;
+    margin-bottom: 2rem;
+}
+
+.dashboard-title {
+    font-size: 1.85rem;
+    font-weight: 700;
+    color: var(--neutral-900);
+    letter-spacing: -0.02em;
+}
+
+.dashboard-subtitle {
+    font-size: 0.95rem;
+    color: var(--neutral-600);
+    margin-top: 0.25rem;
+}
+
+/* Empty State Card */
+.empty-state-card {
+    background: #ffffff;
+    border: 1px solid var(--neutral-200);
+    border-radius: var(--radius-lg);
+    padding: 2.5rem 2rem;
+    text-align: center;
+    margin-bottom: 2rem;
+    box-shadow: var(--shadow-sm);
+}
+
+.empty-state-icon {
+    font-size: 2.5rem;
+    margin-bottom: 0.75rem;
+}
+
+.empty-state-title {
+    font-size: 1.35rem;
+    font-weight: 700;
+    color: var(--neutral-900);
+    margin-bottom: 0.5rem;
+}
+
+.empty-state-desc {
+    max-width: 650px;
+    margin: 0 auto 1.5rem;
+    color: var(--neutral-600);
+    font-size: 0.95rem;
+    line-height: 1.5;
+}
+
+/* Summary Metrics Cards Grid */
+.summary-cards-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(170px, 1fr));
+    gap: 1rem;
+    margin-bottom: 2rem;
+}
+
+.metric-card {
+    background: #ffffff;
+    border: 1px solid var(--neutral-200);
+    border-radius: var(--radius);
+    padding: 1.15rem 1rem;
+    display: flex;
+    align-items: center;
+    gap: 0.85rem;
+    box-shadow: var(--shadow-sm);
+    transition: transform 0.15s ease, box-shadow 0.15s ease;
+}
+
+.metric-card:hover {
+    transform: translateY(-2px);
+    box-shadow: var(--shadow);
+}
+
+.metric-icon {
+    font-size: 1.65rem;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 44px;
+    height: 44px;
+    border-radius: var(--radius-sm);
+    background-color: var(--neutral-100);
+    flex-shrink: 0;
+}
+
+.metric-icon-primary { background-color: var(--primary-light); }
+.metric-icon-secondary { background-color: #f3e8ff; }
+.metric-icon-info { background-color: #e0f2fe; }
+.metric-icon-success { background-color: var(--success-bg); }
+.metric-icon-danger { background-color: var(--danger-bg); }
+.metric-icon-warning { background-color: var(--warning-bg); }
+
+.metric-value {
+    font-size: 1.45rem;
+    font-weight: 700;
+    color: var(--neutral-900);
+    line-height: 1.2;
+}
+
+.metric-label {
+    font-size: 0.78rem;
+    font-weight: 500;
+    color: var(--neutral-500);
+    text-transform: uppercase;
+    letter-spacing: 0.03em;
+    margin-top: 0.15rem;
+}
+
+/* Charts Grid */
+.charts-grid {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 1.5rem;
+    margin-bottom: 2rem;
+}
+
+.chart-card {
+    background: #ffffff;
+    border: 1px solid var(--neutral-200);
+    border-radius: var(--radius-lg);
+    padding: 1.25rem;
+    box-shadow: var(--shadow-sm);
+    display: flex;
+    flex-direction: column;
+}
+
+.chart-card-full {
+    grid-column: 1 / -1;
+}
+
+.chart-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 1rem;
+}
+
+.chart-title {
+    font-size: 1.05rem;
+    font-weight: 600;
+    color: var(--neutral-800);
+}
+
+.chart-body {
+    position: relative;
+    height: 250px;
+    width: 100%;
+}
+
+.chart-card-full .chart-body {
+    height: 280px;
+}
+
+/* Columns Grid (Revise First & Next) */
+.dashboard-columns-grid {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 1.5rem;
+}
+
+.dashboard-card {
+    background: #ffffff;
+    border: 1px solid var(--neutral-200);
+    border-radius: var(--radius-lg);
+    padding: 1.5rem;
+    box-shadow: var(--shadow-sm);
+    display: flex;
+    flex-direction: column;
+    height: 100%;
+}
+
+.revise-card {
+    border-top: 4px solid var(--danger);
+}
+
+.next-card {
+    border-top: 4px solid var(--primary);
+}
+
+.card-title-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 0.5rem;
+}
+
+.card-section-title {
+    font-size: 1.15rem;
+    font-weight: 700;
+    color: var(--neutral-900);
+}
+
+.card-section-desc {
+    font-size: 0.85rem;
+    color: var(--neutral-500);
+    margin-bottom: 1.25rem;
+    line-height: 1.4;
+}
+
+.dashboard-topic-list {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 0.85rem;
+}
+
+.dashboard-topic-item {
+    background: var(--neutral-50);
+    border: 1px solid var(--neutral-200);
+    border-radius: var(--radius);
+    padding: 0.85rem 1rem;
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+    transition: border-color 0.15s ease;
+}
+
+.dashboard-topic-item:hover {
+    border-color: var(--neutral-400);
+}
+
+.topic-item-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+}
+
+.topic-item-title-group {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    flex-wrap: wrap;
+}
+
+.topic-item-name {
+    color: var(--neutral-900);
+    text-decoration: none;
+    font-size: 0.95rem;
+}
+
+.topic-item-name:hover {
+    color: var(--primary);
+    text-decoration: underline;
+}
+
+.topic-item-gap-notice {
+    font-size: 0.8rem;
+    color: var(--danger);
+    display: flex;
+    align-items: center;
+    gap: 0.4rem;
+}
+
+.topic-item-reason {
+    font-size: 0.82rem;
+    color: var(--neutral-600);
+    display: flex;
+    align-items: baseline;
+    gap: 0.4rem;
+    background: #ffffff;
+    border: 1px solid var(--neutral-200);
+    padding: 0.35rem 0.6rem;
+    border-radius: var(--radius-sm);
+}
+
+.reason-indicator {
+    font-size: 0.85rem;
+}
+
+.topic-item-actions {
+    display: flex;
+    justify-content: flex-end;
+    gap: 0.5rem;
+    margin-top: 0.25rem;
+}
+
+.empty-col-message {
+    padding: 2.5rem 1rem;
+    text-align: center;
+    color: var(--neutral-500);
+}
+
+.empty-col-message .check-icon {
+    font-size: 2rem;
+    display: block;
+    margin-bottom: 0.5rem;
+}
+
+@media (max-width: 900px) {
+    .charts-grid,
+    .dashboard-columns-grid {
+        grid-template-columns: 1fr;
+    }
+}
+
+
 

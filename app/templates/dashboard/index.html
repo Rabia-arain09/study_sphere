@@ -1,0 +1,400 @@
+{% extends "base.html" %}
+
+{% block title %}Dashboard - StudySphere{% endblock %}
+
+{% block content %}
+<div class="dashboard-container">
+    <!-- Dashboard Header -->
+    <header class="dashboard-header">
+        <div class="dashboard-header-text">
+            <h1 class="dashboard-title">📊 Learning Dashboard</h1>
+            <p class="dashboard-subtitle">
+                Adaptive mastery analytics, knowledge gaps, and study goals for <strong>Semester {{ current_user.semester }}</strong>.
+            </p>
+        </div>
+        <div class="dashboard-header-actions">
+            <a href="{{ url_for('topics.semester_picker') }}" class="btn btn-outline">
+                Browse Curriculum &rarr;
+            </a>
+        </div>
+    </header>
+
+    <!-- Empty State for Brand New Users -->
+    {% if total_attempts == 0 %}
+        <div class="empty-state-card">
+            <div class="empty-state-icon">🚀</div>
+            <h2 class="empty-state-title">Take your first quiz to see your progress</h2>
+            <p class="empty-state-desc">
+                Welcome to StudySphere! You haven't taken any topic quizzes yet. Once you complete your first quiz, our machine learning models will analyze your topic mastery, track foundational knowledge gaps, and recommend your optimal learning path.
+            </p>
+            <div class="empty-state-actions">
+                <a href="{{ url_for('topics.semester_view', semester=current_user.semester) }}" class="btn btn-primary btn-lg">
+                    Browse Semester {{ current_user.semester }} Subjects &rarr;
+                </a>
+            </div>
+        </div>
+    {% endif %}
+
+    <!-- Summary Metrics Cards (6 metrics) -->
+    <div class="summary-cards-grid">
+        <div class="metric-card">
+            <div class="metric-icon metric-icon-primary">🎯</div>
+            <div class="metric-content">
+                <div class="metric-value">{{ total_attempts }}</div>
+                <div class="metric-label">Total Attempts</div>
+            </div>
+        </div>
+        <div class="metric-card">
+            <div class="metric-icon metric-icon-secondary">📚</div>
+            <div class="metric-content">
+                <div class="metric-value">{{ topics_attempted }}</div>
+                <div class="metric-label">Topics Attempted</div>
+            </div>
+        </div>
+        <div class="metric-card">
+            <div class="metric-icon metric-icon-info">📈</div>
+            <div class="metric-content">
+                <div class="metric-value">{{ average_percentage }}%</div>
+                <div class="metric-label">Average Score</div>
+            </div>
+        </div>
+        <div class="metric-card">
+            <div class="metric-icon metric-icon-success">🏆</div>
+            <div class="metric-content">
+                <div class="metric-value">{{ mastered_topics }}</div>
+                <div class="metric-label">Mastered Topics</div>
+            </div>
+        </div>
+        <div class="metric-card">
+            <div class="metric-icon metric-icon-danger">⚠️</div>
+            <div class="metric-content">
+                <div class="metric-value">{{ weak_topics }}</div>
+                <div class="metric-label">Weak Topics</div>
+            </div>
+        </div>
+        <div class="metric-card">
+            <div class="metric-icon metric-icon-warning">📁</div>
+            <div class="metric-content">
+                <div class="metric-value">{{ uploads_count }}</div>
+                <div class="metric-label">Study Uploads</div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Charts Row (3 Charts) -->
+    <div class="charts-grid">
+        <!-- Chart 1: Doughnut Mastery Distribution -->
+        <div class="chart-card">
+            <div class="chart-header">
+                <h3 class="chart-title">Topic Mastery Distribution</h3>
+                <span class="text-xs text-muted">Latest quiz label per topic</span>
+            </div>
+            <div class="chart-body">
+                <canvas id="chartMasteryDistribution"></canvas>
+            </div>
+        </div>
+
+        <!-- Chart 2: Line Progress Over Time -->
+        <div class="chart-card">
+            <div class="chart-header">
+                <h3 class="chart-title">Progress Over Time</h3>
+                <span class="text-xs text-muted">Last {{ chart_progress_data.percentages | length }} quiz scores</span>
+            </div>
+            <div class="chart-body">
+                <canvas id="chartProgressOverTime"></canvas>
+            </div>
+        </div>
+
+        <!-- Chart 3: Horizontal Bar Per-Course Progress -->
+        <div class="chart-card chart-card-full">
+            <div class="chart-header">
+                <h3 class="chart-title">Semester {{ current_user.semester }} Course Progress</h3>
+                <span class="text-xs text-muted">Topics attempted vs total &amp; average percentage</span>
+            </div>
+            <div class="chart-body">
+                <canvas id="chartCourseProgress"></canvas>
+            </div>
+        </div>
+    </div>
+
+    <!-- Recommendations & Remediation Row -->
+    <div class="dashboard-columns-grid">
+        <!-- "Revise First" Column -->
+        <div class="dashboard-col">
+            <div class="dashboard-card revise-card">
+                <div class="card-title-row">
+                    <h2 class="card-section-title text-danger">⚠️ Revise First</h2>
+                    <span class="badge badge-mastery-weak">{{ revise_first_list | length }} to retake</span>
+                </div>
+                <p class="card-section-desc">
+                    Topics where you scored Weak on your latest quiz, alongside top foundational gaps to remediate:
+                </p>
+
+                {% if revise_first_list %}
+                    <ul class="dashboard-topic-list">
+                        {% for item in revise_first_list %}
+                            <li class="dashboard-topic-item">
+                                <div class="topic-item-header">
+                                    <div class="topic-item-title-group">
+                                        <a href="{{ url_for('topics.topic_detail', topic_id=item.id) }}" class="topic-item-name font-bold">
+                                            {{ item.name }}
+                                        </a>
+                                        <span class="badge badge-subtle">{{ item.course }}</span>
+                                    </div>
+                                    <span class="badge badge-mastery-weak">Weak</span>
+                                </div>
+                                {% if item.top_gap %}
+                                    <div class="topic-item-gap-notice">
+                                        <span class="gap-icon">🔗</span>
+                                        <span>Top foundational gap: <strong>{{ item.top_gap.name }}</strong> ({{ item.top_gap.status }})</span>
+                                    </div>
+                                {% else %}
+                                    <div class="topic-item-gap-notice text-muted">
+                                        <span>No prerequisite gaps detected. Review notes and retake quiz.</span>
+                                    </div>
+                                {% endif %}
+                                <div class="topic-item-actions">
+                                    <a href="{{ url_for('topics.revise_topic', topic_id=item.id) }}" class="btn btn-outline btn-sm">
+                                        Revise Prerequisites &rarr;
+                                    </a>
+                                    <a href="{{ url_for('quiz.topic_quiz', topic_id=item.id) }}" class="btn btn-primary btn-sm">
+                                        Retake Quiz
+                                    </a>
+                                </div>
+                            </li>
+                        {% endfor %}
+                    </ul>
+                {% else %}
+                    <div class="empty-col-message">
+                        <span class="check-icon">✅</span>
+                        <p class="font-bold">No weak topics found!</p>
+                        <p class="text-xs text-muted">You have no active knowledge gaps in your attempted topics.</p>
+                    </div>
+                {% endif %}
+            </div>
+        </div>
+
+        <!-- "Recommended Next" Column -->
+        <div class="dashboard-col">
+            <div class="dashboard-card next-card">
+                <div class="card-title-row">
+                    <h2 class="card-section-title text-primary">🎯 Recommended Next</h2>
+                    <span class="badge badge-subtle">{{ recommended_next | length }} recommended</span>
+                </div>
+                <p class="card-section-desc">
+                    Personalized next-step topics prioritized by knowledge gap remediation, syllabus readiness, and practice needs:
+                </p>
+
+                {% if recommended_next %}
+                    <ul class="dashboard-topic-list">
+                        {% for item in recommended_next %}
+                            <li class="dashboard-topic-item">
+                                <div class="topic-item-header">
+                                    <div class="topic-item-title-group">
+                                        <a href="{{ url_for('topics.topic_detail', topic_id=item.id) }}" class="topic-item-name font-bold">
+                                            {{ item.name }}
+                                        </a>
+                                        <span class="badge badge-subtle">{{ item.course }}</span>
+                                        <span class="difficulty-meter diff-{{ item.difficulty }}" style="font-size: 0.68rem; padding: 0.1rem 0.35rem;">
+                                            Diff {{ item.difficulty }}/5
+                                        </span>
+                                    </div>
+                                    {% if item.label and item.label != 'Not attempted' %}
+                                        <span class="badge {{ item.label | label_badge_class }}">{{ item.label }}</span>
+                                    {% else %}
+                                        <span class="badge badge-subtle">New</span>
+                                    {% endif %}
+                                </div>
+                                <div class="topic-item-reason">
+                                    <span class="reason-indicator">💡</span>
+                                    <span class="reason-text">{{ item.reason }}</span>
+                                </div>
+                                <div class="topic-item-actions">
+                                    <a href="{{ url_for('topics.topic_detail', topic_id=item.id) }}" class="btn btn-outline btn-sm">
+                                        📖 Notes
+                                    </a>
+                                    <a href="{{ url_for('quiz.topic_quiz', topic_id=item.id) }}" class="btn btn-primary btn-sm">
+                                        📝 Quiz
+                                    </a>
+                                </div>
+                            </li>
+                        {% endfor %}
+                    </ul>
+                {% else %}
+                    <div class="empty-col-message">
+                        <p class="text-muted">No recommendations available at this time.</p>
+                    </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Locally Vendored Chart.js (NO CDN) -->
+<script src="{{ url_for('static', filename='js/vendor/chart.umd.min.js') }}"></script>
+<script>
+    // Pass JSON data safely escaped from server (no inline user HTML)
+    const labelsData = {{ chart_labels_data | tojson }};
+    const progressData = {{ chart_progress_data | tojson }};
+    const courseData = {{ chart_course_data | tojson }};
+
+    document.addEventListener("DOMContentLoaded", function() {
+        if (typeof Chart === "undefined") {
+            console.error("Chart.js failed to load from local vendor script.");
+            return;
+        }
+
+        // 1. Chart 1: Mastery Distribution (Doughnut)
+        const ctxDoughnut = document.getElementById("chartMasteryDistribution");
+        if (ctxDoughnut) {
+            const hasData = labelsData.data && labelsData.data.some(val => val > 0);
+            new Chart(ctxDoughnut, {
+                type: "doughnut",
+                data: {
+                    labels: labelsData.labels,
+                    datasets: [{
+                        data: hasData ? labelsData.data : [1, 1, 1, 1],
+                        backgroundColor: hasData
+                            ? labelsData.colors
+                            : ["#f1f5f9", "#f1f5f9", "#f1f5f9", "#f1f5f9"],
+                        borderColor: "#ffffff",
+                        borderWidth: 2,
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: {
+                            position: "bottom",
+                            labels: {
+                                boxWidth: 12,
+                                padding: 12,
+                                font: { family: "'Inter', sans-serif", size: 12 }
+                            }
+                        },
+                        tooltip: {
+                            enabled: hasData,
+                            callbacks: {
+                                label: function(context) {
+                                    return ` ${context.label}: ${context.raw} topics`;
+                                }
+                            }
+                        }
+                    },
+                    cutout: "68%"
+                }
+            });
+        }
+
+        // 2. Chart 2: Progress Over Time (Line)
+        const ctxLine = document.getElementById("chartProgressOverTime");
+        if (ctxLine) {
+            const hasAttempts = progressData.percentages && progressData.percentages.length > 0;
+            new Chart(ctxLine, {
+                type: "line",
+                data: {
+                    labels: hasAttempts ? progressData.labels : ["No attempts"],
+                    datasets: [{
+                        label: "Score (%)",
+                        data: hasAttempts ? progressData.percentages : [0],
+                        borderColor: "#2563eb",
+                        backgroundColor: "rgba(37, 99, 235, 0.1)",
+                        fill: true,
+                        tension: 0.3,
+                        pointBackgroundColor: "#2563eb",
+                        pointRadius: hasAttempts ? 4 : 0,
+                        pointHoverRadius: 6,
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    scales: {
+                        y: {
+                            min: 0,
+                            max: 100,
+                            ticks: {
+                                callback: val => val + "%",
+                                font: { family: "'Inter', sans-serif" }
+                            },
+                            grid: { color: "#f1f5f9" }
+                        },
+                        x: {
+                            ticks: {
+                                maxRotation: 45,
+                                minRotation: 0,
+                                font: { family: "'Inter', sans-serif", size: 10 }
+                            },
+                            grid: { display: false }
+                        }
+                    },
+                    plugins: {
+                        legend: { display: false },
+                        tooltip: {
+                            callbacks: {
+                                label: context => ` ${context.parsed.y}%`
+                            }
+                        }
+                    }
+                }
+            });
+        }
+
+        // 3. Chart 3: Course Progress (Horizontal Bar)
+        const ctxBar = document.getElementById("chartCourseProgress");
+        if (ctxBar) {
+            new Chart(ctxBar, {
+                type: "bar",
+                data: {
+                    labels: courseData.labels,
+                    datasets: [
+                        {
+                            label: "Attempted Topics",
+                            data: courseData.attempted,
+                            backgroundColor: "#2563eb",
+                            borderRadius: 4,
+                        },
+                        {
+                            label: "Total Topics",
+                            data: courseData.total,
+                            backgroundColor: "#e2e8f0",
+                            borderRadius: 4,
+                        },
+                        {
+                            label: "Average Score (%)",
+                            data: courseData.avg_percentages,
+                            backgroundColor: "#16a34a",
+                            borderRadius: 4,
+                        }
+                    ]
+                },
+                options: {
+                    indexAxis: "y",
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    scales: {
+                        x: {
+                            beginAtZero: true,
+                            grid: { color: "#f1f5f9" }
+                        },
+                        y: {
+                            grid: { display: false },
+                            ticks: { font: { family: "'Inter', sans-serif", weight: 600 } }
+                        }
+                    },
+                    plugins: {
+                        legend: {
+                            position: "top",
+                            labels: {
+                                boxWidth: 12,
+                                font: { family: "'Inter', sans-serif", size: 12 }
+                            }
+                        }
+                    }
+                }
+            });
+        }
+    });
+</script>
+{% endblock %}

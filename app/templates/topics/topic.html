@@ -268,7 +268,14 @@
                         {% for rel in related_topics %}
                             <li class="prereq-list-item">
                                 <a href="{{ url_for('topics.topic_detail', topic_id=rel.id) }}" class="prereq-link">
-                                    <div class="prereq-link-name">{{ rel.name }}</div>
+                                    <div class="prereq-link-name" style="display: flex; justify-content: space-between; align-items: center; gap: 0.5rem;">
+                                        <span>{{ rel.name }}</span>
+                                        {% if rel.label and rel.label != 'Not attempted' %}
+                                            <span class="badge {{ rel.label | label_badge_class }}" style="font-size: 0.68rem; padding: 0.1rem 0.35rem;">{{ rel.label }}</span>
+                                        {% else %}
+                                            <span class="badge badge-subtle" style="font-size: 0.68rem; padding: 0.1rem 0.35rem;">New</span>
+                                        {% endif %}
+                                    </div>
                                     <div class="prereq-link-course">{{ rel.course }}{% if rel.week %} &bull; Wk {{ rel.week }}{% endif %} &bull; {{ (rel.score * 100) | round(0) | int }}% match</div>
                                 </a>
                             </li>

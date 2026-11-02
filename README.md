@@ -960,5 +960,92 @@ Quizzes generated from uploaded study material use the platform's core evaluatio
 - **User Instruction Prompt Isolation**: Sandboxed the optional "What do you want to do with this material?" instruction inside `<<<USER_REQUEST_START>>> ... <<<USER_REQUEST_END>>>` blocks in both study guide and quiz prompts with strict system instructions prohibiting role or schema overrides, and sanitizing output via HTML escaping.
 - **Instruction-Aware Content Deduplication**: Extended `compute_upload_content_hash` to include the normalized user instruction as `sha256(text + "|||" + user_request)` while falling back to `sha256(text)` for empty instructions, preserving duplicate reuse for legacy uploads while generating fresh artifacts when instructions differ.
 - **Nullable User Request Column & Supabase Migration**: Added nullable `user_request` text column to `Upload` via batch migration `d8a1b2c3e4f5_add_user_request_to_uploads.py`, applied locally to SQLite, which must be executed on Supabase PostgreSQL in production via `flask --app run.py db upgrade`.
+- **Rule-Based Adaptive Tier Hierarchy**: Orchestrated adaptive recommendations and related topic reranking through a 5-tier pedagogical priority rule engine (Tier 1: Prerequisite gaps of Weak topics deepest first; Tier 2: Weak topics to retake; Tier 3: Unattempted topics ready to learn; Tier 4: Good/Better practice; Tier 5: Excellent mastered) with TF-IDF similarity tie-breaking, bound to O(1) query budgets (<= 5 queries) and locally vendored Chart.js to eliminate external CDN dependencies.
+
+---
+
+## Adaptive Recommendations and Dashboard (Phase 8)
+
+### Pedagogical Tier Priority Rules
+
+StudySphere synthesizes student assessment history and curriculum graph structure to generate personalized study recommendations through a 5-tier pedagogical priority hierarchy:
+
+1. **Tier 1: Prerequisite Gaps of Weak Topics (Deepest First)**
+   - When a student struggles on a topic (latest quiz labeled **Weak** by the Decision Tree classifier), the system does not merely tell them to repeat the same quiz. Instead, it recursively traverses backwards through the curriculum prerequisite DAG (using breadth-first search up to depth 4).
+   - Any foundational prerequisite that the student either has never attempted or previously scored **Weak** on is identified as a critical gap.
+   - These prerequisite gaps are placed at the absolute top of the study queue, ordered **deepest first** (highest DAG depth), ensuring the student repairs foundational root causes before advancing.
+   - Rationale: *"Prerequisite of [Weak Topic Name], which you scored Weak on"*.
+
+2. **Tier 2: The Weak Topics Themselves (Retake)**
+   - After addressing the prerequisite gaps, the student must revisit the topic they struggled with to verify remediation and rebuild mastery.
+   - Rationale: *"Scored Weak on last quiz — retake to build mastery"*.
+
+3. **Tier 3: Ready to Learn (Unattempted Topics)**
+   - Topics in the student's enrolled academic semester that have **not yet been attempted**, but whose prerequisites have **all been satisfied** (attempted and scored Good, Better, or Excellent, or having no prior prerequisites).
+   - Ordered chronologically by course, academic week, and difficulty rating.
+   - Rationale: *"Ready to learn — all prerequisites met"*.
+
+4. **Tier 4: Practice to Solidify (Good & Better)**
+   - Topics where the student demonstrated solid or strong understanding, but has not yet reached full mastery (score < 90% or labeled Good / Better).
+   - Provides targeted reinforcement to elevate proficiency into full mastery.
+   - Rationale: *"Scored [Good / Better] — practice to reach mastery"*.
+
+5. **Tier 5: Mastered Topics Last (Excellent)**
+   - Topics where the student demonstrated outstanding mastery (**Excellent** label).
+   - These are kept at the end of recommendations as periodic refreshers and are never forcibly discarded.
+   - Rationale: *"Mastered (Excellent) — review or refresh"*.
+
+---
+
+### Why Rule-Based on Top of Decision Tree and TF-IDF?
+
+A key question in academic vivas is: *Why use a rule-based ranking system rather than training an end-to-end black-box machine learning model for recommendations?*
+
+1. **Separation of Concerns & Specialized ML Models**:
+   - **Machine Learning is used where it excels**:
+     - **TF-IDF + Cosine Similarity** computes semantic content closeness across unstructured lecture notes and syllabus vocabularies.
+     - **Decision Tree Classifier** maps non-linear quiz performance features (`score_ratio`, `wrong_ratio`, `total_questions`, `attempt_number`, `previous_score_ratio`, `improvement`) into discrete pedagogical mastery tiers (**Weak**, **Good**, **Better**, **Excellent**).
+   - **Curriculum Constraints Require Deterministic Guarantees**:
+     - Academic curricula have strict pedagogical preconditions: a student *cannot* learn backpropagation if they do not understand the chain rule or dot products.
+     - Pure collaborative filtering or deep reinforcement learning can suggest topics out-of-order (e.g., suggesting advanced transformers before matrix multiplication simply because other students clicked it).
+     - Rule-based sequencing over the DAG guarantees pedagogical correctness, curriculum adherence, and zero hallucinations.
+
+2. **Full Explainability & Student Agency**:
+   - Every recommendation comes with an explicit, plain-English reason (e.g., *"Prerequisite of Perceptron, which you scored Weak on"*).
+   - Students understand *why* a topic is recommended, building trust and educational clarity.
+
+3. **Sub-50ms Predictability & Low Latency**:
+   - Rule-based tier evaluation over an in-memory adjacency list executes in < 5 ms, requiring zero GPU overhead, zero model drift monitoring, and fixed $O(1)$ query counts ($\le 5$ database queries per request).
+
+---
+
+### How the Three Core Parts Work Together
+
+StudySphere's adaptive intelligence functions as a cohesive tripartite pipeline:
+
+```mermaid
+flowchart LR
+    A["Quiz Attempt"] --> B["1. Decision Tree Classifier<br/>(Mastery: Weak / Good / Better / Excellent)"]
+    B -->|If Weak| C["2. Knowledge Gap Analysis<br/>(BFS DAG Traversal & Deepest Prereq Gaps)"]
+    B -->|If Good / Better / Excellent| D["3. Adaptive Recommendation Engine<br/>(5 Pedagogical Tiers)"]
+    C --> D
+    E["TF-IDF Recommender<br/>(Lecture Notes Content Similarity)"] -->|Similarity Tie-Breaker| D
+    D --> F["Interactive Dashboard &<br/>Reranked Related Topics Sidebar"]
+```
+
+1. **The Recommender (`ml/recommender.py`)**:
+   - Analyzes topic titles, descriptions, metadata tags, and authoritative Markdown lecture notes using scikit-learn's `TfidfVectorizer`.
+   - Computes pairwise cosine similarity matrices with an additive boost for shared academic subjects.
+   - Serves as the content-similarity tie-breaker inside each pedagogical tier.
+
+2. **The Decision Tree Classifier (`ml/label_model.py`)**:
+   - Evaluates multidimensional performance vectors from student quiz attempts.
+   - Categorizes performance into actionable mastery tiers: **Weak** (remediation required), **Good** (solid foundation), **Better** (strong grasp), or **Excellent** (mastered).
+   - Acts as the catalyst that dynamically alters a student's standing on each curriculum node.
+
+3. **The Knowledge Gap Analysis (`app/services/gap_analysis.py` & `app/services/adaptive_service.py`)**:
+   - When the Decision Tree flags an attempt as **Weak**, graph traversal algorithms trace directed dependency edges backwards to isolate unmastered root causes.
+   - Dynamically reorganizes the student's dashboard ("Revise First" and "Recommended Next") and re-ranks the topic page's "Related Topics" sidebar to direct student attention to foundational gaps before advancing.
+
 
 

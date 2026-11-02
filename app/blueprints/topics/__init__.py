@@ -22,6 +22,11 @@ from app.services.recommendation_service import (
     get_related_topics,
 )
 from app.services.gap_analysis import get_prerequisite_gaps
+from app.services.adaptive_service import (
+    normalize_label,
+    rerank_related,
+    get_user_latest_topic_attempts,
+)
 
 topics_bp: Blueprint = Blueprint("topics", __name__)
 
@@ -247,6 +252,11 @@ def topic_detail(topic_id: int):
     ]
 
     related_topics = get_related_topics(topic.id, k=5)
+    if current_user.is_authenticated:
+        related_topics = rerank_related(current_user, related_topics)
+    else:
+        for item in related_topics:
+            item.setdefault("label", "Not attempted")
 
     # Fetch user's quiz attempt history for this topic in a single indexed query (no N+1)
     user_attempts = (
@@ -366,6 +376,21 @@ def related_topics(topic_id: int):
                 "difficulty": t.difficulty,
                 "score": round(score, 4),
             })
+
+    is_adaptive = request.args.get("adaptive") in ("1", "true", "True")
+    if is_adaptive and current_user.is_authenticated:
+        results = rerank_related(current_user, results)
+    else:
+        # Default order preserved; attach optional label field
+        attempts_map = (
+            get_user_latest_topic_attempts(current_user.id)
+            if current_user.is_authenticated
+            else {}
+        )
+        for r in results:
+            att = attempts_map.get(r["id"])
+            lbl = normalize_label(att.label) if att else "Not attempted"
+            r["label"] = lbl or "Not attempted"
 
     return jsonify(results)
 

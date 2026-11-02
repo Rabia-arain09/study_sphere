@@ -12,6 +12,7 @@ from app.extensions import db
 if TYPE_CHECKING:
     from app.models.attempt import Attempt
     from app.models.question import Question
+    from app.models.upload import Upload
 
 
 class User(UserMixin, db.Model):
@@ -51,6 +52,12 @@ class User(UserMixin, db.Model):
         "Question",
         back_populates="creator",
         foreign_keys="Question.created_by",
+    )
+    uploads: Mapped[list[Upload]] = relationship(
+        "Upload",
+        back_populates="user",
+        cascade="all, delete-orphan",
+        order_by="Upload.created_at.desc()",
     )
 
     def set_password(self, password: str) -> None:

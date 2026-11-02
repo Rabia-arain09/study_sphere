@@ -1,0 +1,142 @@
+{% extends "base.html" %}
+
+{% block title %}Quiz Results: {{ upload.title }} - StudySphere{% endblock %}
+
+{% block content %}
+<div class="quiz-result-container" style="max-width: 860px; margin: 2rem auto; padding: 0 1rem;">
+    <!-- Top breadcrumb -->
+    <div style="display: flex; align-items: center; gap: 0.5rem; font-size: 0.9rem; color: var(--neutral-600); margin-bottom: 1.25rem;">
+        <a href="{{ url_for('upload.index') }}" style="color: var(--primary); text-decoration: none;">Upload</a>
+        <span>/</span>
+        <a href="{{ url_for('upload.view_upload', upload_id=upload.id) }}" style="color: var(--primary); text-decoration: none;">{{ upload.title }}</a>
+        <span>/</span>
+        <span style="color: var(--neutral-800); font-weight: 500;">Results</span>
+    </div>
+
+    <!-- Score Summary Card -->
+    <div class="card" style="background: #ffffff; border: 1px solid var(--neutral-200); border-radius: var(--radius-lg); padding: 2rem; margin-bottom: 2rem; text-align: center; box-shadow: var(--shadow-sm);">
+        <span style="font-size: 2.5rem; display: block; margin-bottom: 0.5rem;">
+            {% if result.percentage >= 80 %}🎉{% elif result.percentage >= 60 %}👍{% else %}💡{% endif %}
+        </span>
+        <h1 style="font-size: 1.85rem; font-weight: 700; color: var(--neutral-900); margin-bottom: 0.25rem;">
+            Quiz Complete!
+        </h1>
+        <p style="color: var(--neutral-600); font-size: 0.95rem; margin-bottom: 1.5rem;">
+            {{ upload.title }}
+        </p>
+
+        <div style="display: flex; justify-content: center; gap: 2rem; flex-wrap: wrap; margin-bottom: 1.5rem;">
+            <div style="padding: 1rem 1.5rem; background: var(--neutral-50); border-radius: var(--radius); border: 1px solid var(--neutral-200); min-width: 140px;">
+                <div style="font-size: 0.8rem; text-transform: uppercase; letter-spacing: 0.05em; color: var(--neutral-500); font-weight: 600;">
+                    Score
+                </div>
+                <div style="font-size: 1.75rem; font-weight: 700; color: var(--primary); margin-top: 0.2rem;">
+                    {{ result.score }} / {{ result.total_questions }}
+                </div>
+            </div>
+            <div style="padding: 1rem 1.5rem; background: var(--neutral-50); border-radius: var(--radius); border: 1px solid var(--neutral-200); min-width: 140px;">
+                <div style="font-size: 0.8rem; text-transform: uppercase; letter-spacing: 0.05em; color: var(--neutral-500); font-weight: 600;">
+                    Percentage
+                </div>
+                <div style="font-size: 1.75rem; font-weight: 700; color: {% if result.percentage >= 80 %}var(--success){% elif result.percentage >= 60 %}var(--warning){% else %}var(--danger){% endif %}; margin-top: 0.2rem;">
+                    {{ result.percentage }}%
+                </div>
+            </div>
+            <div style="padding: 1rem 1.5rem; background: var(--neutral-50); border-radius: var(--radius); border: 1px solid var(--neutral-200); min-width: 140px;">
+                <div style="font-size: 0.8rem; text-transform: uppercase; letter-spacing: 0.05em; color: var(--neutral-500); font-weight: 600;">
+                    Attempts
+                </div>
+                <div style="font-size: 1.75rem; font-weight: 700; color: var(--neutral-800); margin-top: 0.2rem;">
+                    {{ upload.attempts_count }}
+                </div>
+            </div>
+        </div>
+
+        <div style="display: flex; justify-content: center; gap: 1rem; flex-wrap: wrap;">
+            <a href="{{ url_for('upload.take_quiz', upload_id=upload.id) }}" class="btn btn-primary btn-sm">
+                🔄 Retake Quiz
+            </a>
+            <a href="{{ url_for('upload.view_upload', upload_id=upload.id) }}" class="btn btn-outline btn-sm">
+                📖 Study Guide
+            </a>
+            <a href="{{ url_for('upload.history') }}" class="btn btn-outline btn-sm">
+                📜 My Material History
+            </a>
+        </div>
+    </div>
+
+    <!-- Question by Question Review -->
+    <h2 style="font-size: 1.35rem; font-weight: 700; color: var(--neutral-900); margin-bottom: 1rem;">
+        Question Breakdown & Review
+    </h2>
+
+    <div style="display: flex; flex-direction: column; gap: 1.5rem;">
+        {% for item in result.details %}
+            <div class="card" style="background: #ffffff; border: 1px solid {% if item.is_correct is true %}var(--success-border){% elif item.is_correct is false %}var(--danger-border){% else %}var(--neutral-300){% endif %}; border-radius: var(--radius-lg); padding: 1.5rem; box-shadow: var(--shadow-sm);">
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.75rem;">
+                    <span style="font-weight: 700; font-size: 0.9rem; color: var(--neutral-700);">
+                        Question {{ loop.index }}
+                        <span style="font-weight: 400; color: var(--neutral-500);">({{ item.type | upper }})</span>
+                    </span>
+                    {% if item.is_correct is true %}
+                        <span class="badge" style="background: var(--success-bg); color: var(--success); border: 1px solid var(--success-border);">
+                            ✓ Correct
+                        </span>
+                    {% elif item.is_correct is false %}
+                        <span class="badge" style="background: var(--danger-bg); color: var(--danger); border: 1px solid var(--danger-border);">
+                            ✗ Incorrect
+                        </span>
+                    {% else %}
+                        <span class="badge" style="background: var(--neutral-100); color: var(--neutral-700); border: 1px solid var(--neutral-300);">
+                            Model Answer
+                        </span>
+                    {% endif %}
+                </div>
+
+                <div style="font-size: 1.05rem; font-weight: 600; color: var(--neutral-900); margin-bottom: 1rem; line-height: 1.45;">
+                    {{ item.question_text }}
+                </div>
+
+                <!-- Answer Review -->
+                <div style="background: var(--neutral-50); border-radius: var(--radius); padding: 1rem; margin-bottom: 0.85rem; display: flex; flex-direction: column; gap: 0.5rem; font-size: 0.92rem;">
+                    <div>
+                        <strong style="color: var(--neutral-600);">Your Answer:</strong>
+                        <span style="margin-left: 0.4rem; color: {% if item.is_correct is true %}var(--success){% elif item.is_correct is false %}var(--danger){% else %}var(--neutral-900){% endif %}; font-weight: 600;">
+                            {{ item.student_answer or "(No answer submitted)" }}
+                        </span>
+                    </div>
+
+                    {% if item.type != 'theory' %}
+                        <div>
+                            <strong style="color: var(--neutral-600);">Correct Answer:</strong>
+                            <span style="margin-left: 0.4rem; color: var(--success); font-weight: 600;">
+                                {% if item.type == 'mcq' and item.options and item.correct_answer in item.options %}
+                                    {{ item.correct_answer }}. {{ item.options[item.correct_answer] }}
+                                {% else %}
+                                    {{ item.correct_answer }}
+                                {% endif %}
+                            </span>
+                        </div>
+                    {% else %}
+                        <div style="margin-top: 0.5rem; padding-top: 0.5rem; border-top: 1px solid var(--neutral-200);">
+                            <strong style="color: var(--neutral-800); display: block; margin-bottom: 0.25rem;">
+                                Reference Model Answer:
+                            </strong>
+                            <p style="color: var(--neutral-700); line-height: 1.5; white-space: pre-line;">
+                                {{ item.correct_answer }}
+                            </p>
+                        </div>
+                    {% endif %}
+                </div>
+
+                <!-- Explanation -->
+                {% if item.explanation %}
+                    <div style="font-size: 0.88rem; color: var(--neutral-600); line-height: 1.45;">
+                        <strong style="color: var(--neutral-700);">Explanation:</strong> {{ item.explanation }}
+                    </div>
+                {% endif %}
+            </div>
+        {% endfor %}
+    </div>
+</div>
+{% endblock %}

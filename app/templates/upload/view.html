@@ -1,0 +1,137 @@
+{% extends "base.html" %}
+
+{% block title %}{{ upload.title }} - StudySphere{% endblock %}
+
+{% block content %}
+<div class="upload-view-container" style="max-width: 900px; margin: 2rem auto; padding: 0 1rem;">
+    <!-- Top breadcrumb / navigation -->
+    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.5rem;">
+        <div style="display: flex; align-items: center; gap: 0.5rem; font-size: 0.9rem; color: var(--neutral-600);">
+            <a href="{{ url_for('upload.index') }}" style="color: var(--primary); text-decoration: none;">Upload</a>
+            <span>/</span>
+            <a href="{{ url_for('upload.history') }}" style="color: var(--primary); text-decoration: none;">My Material</a>
+            <span>/</span>
+            <span style="color: var(--neutral-800); font-weight: 500;">{{ upload.title }}</span>
+        </div>
+        <div style="display: flex; gap: 0.75rem;">
+            <a href="{{ url_for('upload.take_quiz', upload_id=upload.id) }}" class="btn btn-primary btn-sm">
+                🎯 {% if upload.attempts_count > 0 %}Retake Quiz{% else %}Take Quiz{% endif %}
+            </a>
+            <a href="{{ url_for('upload.index') }}" class="btn btn-outline btn-sm">
+                ➕ New Upload
+            </a>
+        </div>
+    </div>
+
+    <!-- Header Card -->
+    <header class="card" style="background: #ffffff; border: 1px solid var(--neutral-200); border-radius: var(--radius-lg); padding: 1.75rem; margin-bottom: 1.75rem; box-shadow: var(--shadow-sm);">
+        <div style="display: flex; gap: 0.6rem; align-items: center; margin-bottom: 0.6rem; flex-wrap: wrap;">
+            <span class="badge badge-primary" style="text-transform: uppercase;">
+                {{ upload.source_type }}
+            </span>
+            {% if upload.source_ref %}
+                <span class="badge badge-subtle" title="{{ upload.source_ref }}">
+                    Ref: {{ upload.source_ref[:45] }}{% if upload.source_ref | length > 45 %}...{% endif %}
+                </span>
+            {% endif %}
+            <span style="font-size: 0.85rem; color: var(--neutral-500);">
+                Uploaded {{ upload.created_at.strftime('%b %d, %Y at %H:%M') }}
+            </span>
+        </div>
+
+        <h1 style="font-size: 1.85rem; font-weight: 700; color: var(--neutral-900); margin-bottom: 0.75rem; line-height: 1.3;">
+            {{ upload.title }}
+        </h1>
+
+        <!-- Mandated AI Honesty Notice -->
+        <div class="ai-honesty-banner" style="display: flex; align-items: center; gap: 0.6rem; background: var(--neutral-100); border: 1px solid var(--neutral-300); border-radius: var(--radius); padding: 0.6rem 0.85rem; font-size: 0.85rem; color: var(--neutral-700);">
+            <span style="font-size: 1.1rem;">🤖</span>
+            <span>
+                <strong>AI-generated from your upload, check it against your notes.</strong>
+                This material was distilled using Gemini to support your study flow.
+            </span>
+        </div>
+
+        <!-- Quiz Performance Summary (if attempted) -->
+        {% if upload.attempts_count > 0 %}
+            <div style="margin-top: 1.25rem; padding-top: 1rem; border-top: 1px solid var(--neutral-200); display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 0.75rem;">
+                <div style="font-size: 0.9rem; color: var(--neutral-700);">
+                    <span>Quiz Performance:</span>
+                    <strong style="margin-left: 0.35rem; color: var(--primary);">
+                        {{ upload.last_score }} / {{ upload.last_total }}
+                        {% if upload.last_total > 0 %}
+                            ({{ (upload.last_score / upload.last_total * 100) | round(1) }}%)
+                        {% endif %}
+                    </strong>
+                    <span style="color: var(--neutral-500); margin-left: 0.5rem;">
+                        ({{ upload.attempts_count }} attempt{{ 's' if upload.attempts_count != 1 else '' }})
+                    </span>
+                </div>
+                <a href="{{ url_for('upload.take_quiz', upload_id=upload.id) }}" class="btn btn-outline btn-sm">
+                    Retake Quiz
+                </a>
+            </div>
+        {% endif %}
+    </header>
+
+    <!-- Main Content Grid -->
+    <div style="display: flex; flex-direction: column; gap: 1.75rem;">
+        <!-- 1. Key Takeaways Summary -->
+        <section class="card" style="background: #ffffff; border: 1px solid var(--neutral-200); border-radius: var(--radius-lg); padding: 1.75rem; box-shadow: var(--shadow-sm);">
+            <h2 style="font-size: 1.25rem; font-weight: 700; color: var(--neutral-900); margin-bottom: 1rem; display: flex; align-items: center; gap: 0.5rem;">
+                <span>📌</span> Key Summary Points
+            </h2>
+            <ul style="list-style: none; padding: 0; margin: 0; display: flex; flex-direction: column; gap: 0.75rem;">
+                {% for point in upload.summary %}
+                    <li style="display: flex; gap: 0.75rem; align-items: flex-start; font-size: 0.95rem; line-height: 1.5; color: var(--neutral-800);">
+                        <span style="color: var(--primary); font-weight: 700; line-height: 1.5;">•</span>
+                        <span>{{ point }}</span>
+                    </li>
+                {% endfor %}
+            </ul>
+        </section>
+
+        <!-- 2. Explain Simply -->
+        <section class="card" style="background: #ffffff; border: 1px solid var(--neutral-200); border-radius: var(--radius-lg); padding: 1.75rem; box-shadow: var(--shadow-sm);">
+            <h2 style="font-size: 1.25rem; font-weight: 700; color: var(--neutral-900); margin-bottom: 1rem; display: flex; align-items: center; gap: 0.5rem;">
+                <span>💡</span> Explain Simply
+            </h2>
+            <div style="font-size: 0.98rem; line-height: 1.65; color: var(--neutral-800); white-space: pre-line;">
+                {{ upload.simple_explanation }}
+            </div>
+        </section>
+
+        <!-- 3. Key Terms -->
+        <section class="card" style="background: #ffffff; border: 1px solid var(--neutral-200); border-radius: var(--radius-lg); padding: 1.75rem; box-shadow: var(--shadow-sm);">
+            <h2 style="font-size: 1.25rem; font-weight: 700; color: var(--neutral-900); margin-bottom: 1rem; display: flex; align-items: center; gap: 0.5rem;">
+                <span>📖</span> Core Glossary & Key Terms
+            </h2>
+            <div style="display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap: 1rem;">
+                {% for item in upload.key_terms %}
+                    <div style="background: var(--neutral-50); border: 1px solid var(--neutral-200); border-radius: var(--radius); padding: 1rem;">
+                        <div style="font-weight: 700; font-size: 0.95rem; color: var(--primary); margin-bottom: 0.35rem;">
+                            {{ item.term }}
+                        </div>
+                        <div style="font-size: 0.88rem; color: var(--neutral-700); line-height: 1.45;">
+                            {{ item.meaning }}
+                        </div>
+                    </div>
+                {% endfor %}
+            </div>
+        </section>
+
+        <!-- 4. Quiz Prompt Callout -->
+        <section style="background: linear-gradient(135deg, var(--primary-light) 0%, #ffffff 100%); border: 1px solid var(--primary-border); border-radius: var(--radius-lg); padding: 1.75rem; text-align: center; margin-top: 0.5rem;">
+            <h3 style="font-size: 1.25rem; font-weight: 700; color: var(--neutral-900); margin-bottom: 0.5rem;">
+                Ready to Test Your Knowledge?
+            </h3>
+            <p style="color: var(--neutral-600); font-size: 0.92rem; max-width: 550px; margin: 0 auto 1.25rem auto;">
+                Assess your retention with 6 targeted questions (3 Multiple Choice, 1 True/False, 1 Short Answer, and 1 Theory analysis).
+            </p>
+            <a href="{{ url_for('upload.take_quiz', upload_id=upload.id) }}" class="btn btn-primary" style="padding: 0.75rem 2rem; font-size: 1rem; font-weight: 600;">
+                🎯 {% if upload.attempts_count > 0 %}Retake Quiz Assessment{% else %}Take Quiz Assessment{% endif %}
+            </a>
+        </section>
+    </div>
+</div>
+{% endblock %}

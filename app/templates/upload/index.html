@@ -1,0 +1,218 @@
+{% extends "base.html" %}
+
+{% block title %}Upload Study Material - StudySphere{% endblock %}
+
+{% block content %}
+<div class="upload-container" style="max-width: 860px; margin: 2rem auto; padding: 0 1rem;">
+    <!-- Navigation header -->
+    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.5rem;">
+        <div>
+            <h1 style="font-size: 1.85rem; font-weight: 700; color: var(--neutral-900); margin-bottom: 0.25rem;">
+                📚 Upload Study Material
+            </h1>
+            <p style="color: var(--neutral-600); font-size: 0.95rem;">
+                Transform your notes, slides, or educational articles into structured summaries and interactive quizzes.
+            </p>
+        </div>
+        <a href="{{ url_for('upload.history') }}" class="btn btn-outline btn-sm">
+            📜 My Material History
+        </a>
+    </div>
+
+    <!-- Gemini API Disclosure Notice -->
+    <div class="alert alert-info" style="margin-bottom: 1.5rem; display: flex; gap: 0.75rem; align-items: flex-start;">
+        <span style="font-size: 1.25rem;">ℹ️</span>
+        <div>
+            <strong style="display: block; margin-bottom: 0.2rem;">AI Processing & Privacy Notice</strong>
+            <span style="font-size: 0.88rem; line-height: 1.4; color: var(--neutral-700);">
+                Your uploaded study content is processed securely and sent to Google's Gemini API to generate summaries, explanations, and quizzes. Please do not submit confidential information, credentials, or personal private records.
+            </span>
+        </div>
+    </div>
+
+    <!-- Upload Card -->
+    <div class="card" style="background: #ffffff; border: 1px solid var(--neutral-200); border-radius: var(--radius-lg); padding: 1.75rem; box-shadow: var(--shadow-sm);">
+        <form id="uploadForm" method="POST" action="{{ url_for('upload.index') }}" enctype="multipart/form-data" novalidate>
+            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+
+            <!-- Topic Title (Optional) -->
+            <div style="margin-bottom: 1.5rem;">
+                <label for="title" style="display: block; font-weight: 600; font-size: 0.9rem; margin-bottom: 0.4rem; color: var(--neutral-800);">
+                    Topic Title <span style="font-weight: 400; color: var(--neutral-500);">(Optional)</span>
+                </label>
+                <input type="text"
+                       id="title"
+                       name="title"
+                       class="form-input"
+                       placeholder="e.g. Distributed Consensus in Raft, Renal Physiology..."
+                       value="{{ title_input or '' }}"
+                       maxlength="200"
+                       style="width: 100%; padding: 0.65rem 0.85rem; border: 1px solid var(--neutral-300); border-radius: var(--radius); font-size: 0.95rem;">
+                <span style="font-size: 0.8rem; color: var(--neutral-500); margin-top: 0.25rem; display: block;">
+                    Leave blank to let the AI generate an appropriate title from your content.
+                </span>
+            </div>
+
+            <!-- Source Type Tabs -->
+            <div style="margin-bottom: 1.5rem;">
+                <label style="display: block; font-weight: 600; font-size: 0.9rem; margin-bottom: 0.5rem; color: var(--neutral-800);">
+                    Choose Input Method
+                </label>
+                <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 0.5rem; margin-bottom: 1.25rem;" role="tablist">
+                    <button type="button"
+                            id="tab-btn-text"
+                            class="tab-btn {% if active_tab == 'text' %}active{% endif %}"
+                            onclick="selectTab('text')"
+                            style="padding: 0.75rem; border: 1px solid var(--neutral-300); border-radius: var(--radius); background: #ffffff; font-weight: 600; font-size: 0.9rem; cursor: pointer; text-align: center; transition: all 0.15s ease;">
+                        ✍️ Paste Text
+                    </button>
+                    <button type="button"
+                            id="tab-btn-image"
+                            class="tab-btn {% if active_tab == 'image' %}active{% endif %}"
+                            onclick="selectTab('image')"
+                            style="padding: 0.75rem; border: 1px solid var(--neutral-300); border-radius: var(--radius); background: #ffffff; font-weight: 600; font-size: 0.9rem; cursor: pointer; text-align: center; transition: all 0.15s ease;">
+                        🖼️ Upload Image
+                    </button>
+                    <button type="button"
+                            id="tab-btn-url"
+                            class="tab-btn {% if active_tab == 'url' %}active{% endif %}"
+                            onclick="selectTab('url')"
+                            style="padding: 0.75rem; border: 1px solid var(--neutral-300); border-radius: var(--radius); background: #ffffff; font-weight: 600; font-size: 0.9rem; cursor: pointer; text-align: center; transition: all 0.15s ease;">
+                        🔗 Enter URL
+                    </button>
+                </div>
+                <input type="hidden" id="source_type" name="source_type" value="{{ active_tab or 'text' }}">
+            </div>
+
+            <!-- Tab 1: Text Input -->
+            <div id="panel-text" class="tab-panel" style="display: {% if active_tab == 'text' %}block{% else %}none{% endif %}; margin-bottom: 1.5rem;">
+                <label for="text_content" style="display: block; font-weight: 600; font-size: 0.9rem; margin-bottom: 0.4rem; color: var(--neutral-800);">
+                    Paste Study Notes or Lecture Text
+                </label>
+                <textarea id="text_content"
+                          name="text_content"
+                          rows="10"
+                          placeholder="Paste your syllabus notes, textbook excerpts, or lecture summaries here (up to 20,000 characters)..."
+                          maxlength="20000"
+                          style="width: 100%; padding: 0.75rem; border: 1px solid var(--neutral-300); border-radius: var(--radius); font-family: var(--font-sans); font-size: 0.95rem; line-height: 1.5; resize: vertical;">{{ text_input or '' }}</textarea>
+                <div style="display: flex; justify-content: space-between; font-size: 0.8rem; color: var(--neutral-500); margin-top: 0.35rem;">
+                    <span>Minimum 20 characters required.</span>
+                    <span id="charCount">0 / 20,000 chars</span>
+                </div>
+            </div>
+
+            <!-- Tab 2: Image Input -->
+            <div id="panel-image" class="tab-panel" style="display: {% if active_tab == 'image' %}block{% else %}none{% endif %}; margin-bottom: 1.5rem;">
+                <label for="image_file" style="display: block; font-weight: 600; font-size: 0.9rem; margin-bottom: 0.4rem; color: var(--neutral-800);">
+                    Upload Lecture Slide, Diagram, or Whiteboard Photo
+                </label>
+                <div style="border: 2px dashed var(--neutral-300); border-radius: var(--radius-lg); padding: 2rem 1rem; text-align: center; background: var(--neutral-50);">
+                    <input type="file"
+                           id="image_file"
+                           name="image_file"
+                           accept=".png,.jpg,.jpeg,.webp"
+                           style="margin-bottom: 0.75rem;">
+                    <p style="font-size: 0.85rem; color: var(--neutral-600); margin-top: 0.5rem;">
+                        Accepted formats: <strong>PNG, JPEG, WEBP</strong>. Maximum file size: <strong>4 MB</strong>.
+                    </p>
+                    <p style="font-size: 0.8rem; color: var(--neutral-500); margin-top: 0.25rem;">
+                        Gemini reads text and diagrams directly from the image. Images are never stored permanently.
+                    </p>
+                </div>
+            </div>
+
+            <!-- Tab 3: URL Input -->
+            <div id="panel-url" class="tab-panel" style="display: {% if active_tab == 'url' %}block{% else %}none{% endif %}; margin-bottom: 1.5rem;">
+                <label for="url_content" style="display: block; font-weight: 600; font-size: 0.9rem; margin-bottom: 0.4rem; color: var(--neutral-800);">
+                    Article, Documentation, or Educational Page URL
+                </label>
+                <input type="url"
+                       id="url_content"
+                       name="url_content"
+                       class="form-input"
+                       placeholder="https://en.wikipedia.org/wiki/Distributed_computing"
+                       value="{{ url_input or '' }}"
+                       style="width: 100%; padding: 0.65rem 0.85rem; border: 1px solid var(--neutral-300); border-radius: var(--radius); font-size: 0.95rem;">
+                <span style="font-size: 0.8rem; color: var(--neutral-500); margin-top: 0.35rem; display: block;">
+                    Must start with http:// or https://. Private IPs and localhost addresses are automatically blocked.
+                </span>
+            </div>
+
+            <!-- Submit Action -->
+            <div style="display: flex; justify-content: flex-end; align-items: center; gap: 1rem; margin-top: 1.75rem; padding-top: 1.25rem; border-top: 1px solid var(--neutral-200);">
+                <span id="generatingStatus" style="display: none; color: var(--primary); font-size: 0.9rem; font-weight: 500;">
+                    <span style="display: inline-block; animation: spin 1s linear infinite;">⏳</span> Generating study guide and quiz...
+                </span>
+                <button type="submit"
+                        id="submitBtn"
+                        class="btn btn-primary"
+                        style="padding: 0.75rem 1.75rem; font-size: 1rem; font-weight: 600; display: inline-flex; align-items: center; gap: 0.5rem;">
+                    <span id="btnIcon">⚡</span>
+                    <span id="btnText">Generate Study Guide</span>
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<style>
+.tab-btn.active {
+    background-color: var(--primary-light) !important;
+    border-color: var(--primary) !important;
+    color: var(--primary) !important;
+}
+@keyframes spin {
+    0% { transform: rotate(0deg); }
+    100% { transform: rotate(360deg); }
+}
+</style>
+
+<script>
+function selectTab(tabName) {
+    document.getElementById('source_type').value = tabName;
+    
+    ['text', 'image', 'url'].forEach(function(t) {
+        var panel = document.getElementById('panel-' + t);
+        var btn = document.getElementById('tab-btn-' + t);
+        if (t === tabName) {
+            panel.style.display = 'block';
+            btn.classList.add('active');
+        } else {
+            panel.style.display = 'none';
+            btn.classList.remove('active');
+        }
+    });
+}
+
+// Live character counter for textarea
+var textarea = document.getElementById('text_content');
+var charCounter = document.getElementById('charCount');
+if (textarea && charCounter) {
+    function updateCounter() {
+        charCounter.textContent = textarea.value.length.toLocaleString() + ' / 20,000 chars';
+    }
+    textarea.addEventListener('input', updateCounter);
+    updateCounter();
+}
+
+// Form submit state management
+var form = document.getElementById('uploadForm');
+var submitBtn = document.getElementById('submitBtn');
+var btnText = document.getElementById('btnText');
+var btnIcon = document.getElementById('btnIcon');
+var generatingStatus = document.getElementById('generatingStatus');
+
+if (form && submitBtn) {
+    form.addEventListener('submit', function() {
+        submitBtn.disabled = true;
+        btnText.textContent = 'Generating...';
+        btnIcon.textContent = '⏳';
+        submitBtn.style.opacity = '0.75';
+        submitBtn.style.cursor = 'not-allowed';
+        if (generatingStatus) {
+            generatingStatus.style.display = 'inline-block';
+        }
+    });
+}
+</script>
+{% endblock %}

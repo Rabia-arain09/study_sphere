@@ -8,6 +8,7 @@ from app.models.resource import Resource, ResourceType
 from app.models.question import Question, QuestionType, QuestionSource
 from app.models.attempt import Attempt, MasteryLabel
 from app.models.attempt_answer import AttemptAnswer, SelfRating
+from app.models.upload import Upload, UploadSourceType
 
 __all__: list[str] = [
     "User",
@@ -25,4 +26,6 @@ __all__: list[str] = [
     "MasteryLabel",
     "AttemptAnswer",
     "SelfRating",
+    "Upload",
+    "UploadSourceType",
 ]

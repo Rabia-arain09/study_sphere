@@ -817,5 +817,137 @@ When a student struggles on a quiz and receives a **Weak** mastery assessment, S
 6. **Student Data Isolation**:
    - Gaps are calculated strictly and exclusively from the authenticated user's own attempt records (`Attempt.user_id == current_user.id`). One student's mastery or weakness has zero effect on another student's gap recommendations.
 
+---
 
+## Upload and LLM (Phase 7)
+
+### Viva Preparation & Pipeline Architecture
+> [!IMPORTANT]
+> **Viva Concept Clarity**: Large Language Model (LLM) text summarization, explanation synthesis, and document image OCR/transcription are performed using Google's pre-trained Gemini foundation model accessed via the official Google Generative Language REST API (`gemini-1.5-flash` or configurable). **We did not train or fine-tune this foundation model from scratch.**
+> What we designed and implemented is the complete engineering pipeline, including:
+> 1. Multi-modal ingestion for raw text, binary slide/whiteboard images, and educational web pages.
+> 2. Zero-trust defense against Server-Side Request Forgery (SSRF), multi-hop redirect manipulation, and payload bloat.
+> 3. True binary image signature verification and chunk validation without heavy local OCR runtime dependencies.
+> 4. Prompt injection boundary isolation and strict instructional encapsulation.
+> 5. Deterministic JSON schema enforcement, automatic schema repair, and single-hop retry fallback.
+> 6. Dual-client architecture featuring `GeminiClient` with rate-limiting backoff and `FakeLLMClient` for offline deterministic testing.
+> 7. Assessment quiz generation and answer evaluation engine with tolerant short-answer normalization.
+
+### Security Architecture & Hardening Measures
+
+1. **Server-Side Request Forgery (SSRF) Defense**:
+   - URL inputs are strictly restricted to `http` and `https` schemes (schemes like `ftp://`, `file:///`, `gopher://`, or `javascript:` are rejected upfront).
+   - Proactive DNS pre-flight verification resolves target hostnames to concrete IP addresses prior to initiating any HTTP connection.
+   - All addresses in private, loopback, link-local, carrier-grade NAT, and reserved subnets are strictly blocked:
+     - Loopback (`127.0.0.0/8`, `::1`)
+     - RFC 1918 Private networks (`10.0.0.0/8`, `172.16.0.0/12`, `192.168.0.0/16`, `fc00::/7`)
+     - Link-local and cloud metadata services (`169.254.0.0/16`, `fe80::/10`)
+     - Carrier-Grade NAT (`100.64.0.0/10`)
+     - Broadcast, multicast, unspecified (`0.0.0.0`, `224.0.0.0/4`, `255.255.255.255`)
+     - IPv4-mapped IPv6 aliases (`::ffff:127.0.0.1`, `::ffff:192.168.x.x`)
+   - **Multi-Hop Redirect Re-Inspection**: Automatic redirects are disabled. For any redirect response (`301`, `302`, `303`, `307`, `308`), the destination URL is re-resolved through DNS and evaluated against the blocked subnet list before each subsequent request hop (capped at 3 maximum redirects).
+
+2. **Strict Size Limits & Streaming Controls**:
+   - **Pasted Text**: Enforces character boundary checks between 20 and 20,000 characters (`UPLOAD_MAX_TEXT_CHARS`).
+   - **Uploaded Images**: Maximum binary size capped at 4 MB (`UPLOAD_MAX_IMAGE_MB`). Images are processed in-memory and never stored on disk or persistent database storage; only extracted text is retained.
+   - **URL Fetching**: Streamed in 8 KB chunks with early termination if total content exceeds 2,000,000 bytes (2 MB, `URL_MAX_BYTES`).
+   - **Network Timeout**: URL fetches enforce a strict 10-second socket timeout (`URL_FETCH_TIMEOUT`).
+   - **Content-Type Restriction**: Validates `Content-Type` header; non-HTML/non-plain-text responses (e.g. PDFs, binary executables, audio, video) are rejected before reading data.
+
+3. **Binary Image Signature & Structural Verification**:
+   - Validates file signatures via real magic bytes rather than trusting client-provided file extensions:
+     - **PNG**: 8-byte magic header (`\x89PNG\r\n\x1a\n`) followed by verified `IHDR` chunk length, type string, and CRC check. Fake PNG headers with random or truncated payloads are rejected.
+     - **JPEG**: `\xff\xd8\xff` SOI markers followed by recognized segment markers (`JFIF`, `Exif`, `DQT`, `SOF0`).
+     - **WEBP**: `RIFF` container header, `WEBP` fourCC, and recognized `VP8 ` / `VP8L` / `VP8X` format chunk.
+
+4. **Prompt Injection Defense**:
+   - Untrusted user study content is encapsulated within unambiguous delimiters:
+     `<<<STUDY_MATERIAL_START>>>` and `<<<STUDY_MATERIAL_END>>>`.
+   - The LLM prompt explicitly commands the foundation model to treat content inside delimiters strictly as passive study material to summarize, and to disregard any embedded instructions, commands, system role changes, or jailbreak overrides.
+
+5. **Strict JSON Schema Validation & Automated Repair**:
+   - LLM responses are parsed and validated against a strict schema:
+     - `title`: String capped at 200 characters.
+     - `summary`: Array containing between 5 and 8 concise bullet points (each capped at 500 characters).
+     - `simple_explanation`: Plain-language explanation with short paragraphs and exactly one real-world analogy (capped at 3,000 characters).
+     - `key_terms`: Between 1 and 10 items, each with `term` (<= 100 chars) and `meaning` (<= 300 chars).
+     - `questions`: Exactly 6 questions (3 MCQ with 4 options each, 1 True/False, 1 Short Answer, and 1 Theory question with a model reference answer).
+   - If an output is malformed or violates counts, an automated single-attempt retry request with error feedback is sent to the LLM.
+
+6. **Defense-in-Depth HTML Sanitization**:
+   - Every string returned from the LLM is sanitized with `nh3.clean` and `html.escape` to neutralize any potential stored Cross-Site Scripting (XSS) vectors.
+
+7. **Per-User Quotas & Content Deduplication**:
+   - Students are limited to 10 upload generations per 24 hours (`UPLOAD_DAILY_LIMIT=10`), with clear feedback upon reaching the limit.
+   - Cleaned text content is hashed using SHA-256 (`content_hash`). Identical content uploaded by the same student immediately retrieves and reuses the existing `Upload` record without invoking the external LLM or consuming daily quota.
+
+8. **Credential Security**:
+   - `GEMINI_API_KEY` is loaded strictly from environment variables (`.env`).
+   - The key is never rendered into templates, never stored in client JavaScript, and is scrubbed via sanitization filters from all error messages, outgoing URL logs, and exception tracebacks (`[REDACTED_API_KEY]`).
+
+---
+
+## Configuration Reference (Phase 7)
+
+The following parameters govern Phase 7 ingestion and generation:
+
+| Environment Variable | Default | Purpose & Constraints |
+| :--- | :--- | :--- |
+| `GEMINI_API_KEY` | *(None)* | Google Gemini API key from Google AI Studio. Stored in `.env` only. |
+| `GEMINI_MODEL` | `gemini-1.5-flash` | Configurable model identifier. Free-tier compatible models include `gemini-1.5-flash`, `gemini-2.0-flash`, `gemini-1.5-flash-8b`. |
+| `LLM_PROVIDER` | `gemini` | `gemini` for live API synthesis; `fake` for deterministic offline testing. |
+| `UPLOAD_MAX_TEXT_CHARS` | `20000` | Maximum character limit for pasted study material notes. |
+| `UPLOAD_MAX_IMAGE_MB` | `4` | Maximum file size in MB for uploaded slide or whiteboard images. |
+| `URL_FETCH_TIMEOUT` | `10` | Maximum socket timeout in seconds for fetching external URLs. |
+| `URL_MAX_BYTES` | `2000000` | Maximum byte count (2 MB) downloaded during URL article extraction. |
+| `UPLOAD_DAILY_LIMIT` | `10` | Daily generation quota per user to regulate external API usage. |
+
+### Choosing a Current Free-Tier Model
+Google AI Studio offers a free tier for developers with rate limits (RPM and TPM) that require no credit card billing:
+1. `gemini-1.5-flash`: Recommended default. High-speed multimodal processing with strong structured output adherence.
+2. `gemini-2.0-flash`: Next-generation multimodal model with enhanced reasoning and rapid response generation.
+3. `gemini-1.5-flash-8b`: Highly lightweight, cost-effective model suitable for simple text and note summarization.
+
+Configure your desired model in `.env`:
+```bash
+GEMINI_MODEL=gemini-1.5-flash
+```
+
+---
+
+## Database Migration & Supabase Production Deployment
+
+Phase 7 introduces the `Upload` table managed under Flask-Migrate:
+- **Migration File**: `migrations/versions/c7f91a2b3d4e_create_uploads_table.py`
+- **Revision Chain**: `b4f8a1e2c9d0` &rarr; `c7f91a2b3d4e`
+- **Schema Features**: Includes foreign key to `users.id` with `ON DELETE CASCADE`, indexed `content_hash` for $O(1)$ duplicate lookups, JSON columns for structured summaries, key terms, and question banks, and PostgreSQL Row Level Security (RLS) enforcement.
+
+> [!IMPORTANT]
+> **Supabase Deployment Note**:
+> While verified locally on SQLite via environment overrides, this migration must be applied to the production Supabase PostgreSQL instance during production deployment:
+> ```bash
+> flask --app run.py db upgrade
+> ```
+
+---
+
+## Decoupled Assessment Flow (Upload Quizzes)
+
+Quizzes generated from uploaded study material use the platform's core evaluation engine (`evaluate_single_answer`, case-insensitive trimmed matching, and tolerant short-answer normalization ignoring leading English articles).
+
+> [!NOTE]
+> **Pedagogical Separation**:
+> Upload quizzes **do NOT create `Attempt` table records** and do **NOT receive Decision Tree mastery labels**.
+> This design decision ensures that ad-hoc, student-provided study materials do not contaminate formal curriculum mastery analytics, cohort feature vectors, or prerequisite knowledge gap graphs, which rely strictly on vetted, syllabus-aligned topic assessments.
+
+---
+
+## Design Decisions
+
+- **Pre-trained API Model**: Utilized Google Gemini REST API directly with the Python `requests` library rather than bundling heavy third-party SDKs or local OCR binaries (e.g. Tesseract), keeping deployment containers lightweight.
+- **Strict HTML Tag Elimination**: Applied `nh3.clean` and `html.escape` across all LLM-returned fields to completely eliminate Cross-Site Scripting (XSS) risks before database persistence and UI rendering.
+- **True Image Binary Signature Verification**: Implemented PNG chunk and IHDR CRC checks, JPEG SOI segment validations, and WEBP RIFF chunk parsing to reject fake file headers before any network traffic is initiated.
+- **Dynamic Multi-Hop SSRF Defense**: Disabled automatic redirect following in favor of per-hop DNS resolution to prevent attackers from bypassing SSRF filters via external 302 redirects to internal microservices.
+- **Navbar Navigation Integration**: Added a direct "My material" navigation link in the top bar for authenticated users pointing to `/upload/` with reciprocal links between material creation and upload history.
+- **Decoupled Assessment Persistence**: Tracked assessment performance metrics (`attempts_count`, `last_score`, `last_total`) directly on the `Upload` record rather than creating curriculum `Attempt` records, preserving the mathematical integrity of the Decision Tree classification model.
 

@@ -1,0 +1,82 @@
+{% extends "base.html" %}
+
+{% block title %}My Uploaded Material - StudySphere{% endblock %}
+
+{% block content %}
+<div class="history-container" style="max-width: 900px; margin: 2rem auto; padding: 0 1rem;">
+    <!-- Navigation header -->
+    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.5rem;">
+        <div>
+            <h1 style="font-size: 1.85rem; font-weight: 700; color: var(--neutral-900); margin-bottom: 0.25rem;">
+                📜 My Uploaded Material
+            </h1>
+            <p style="color: var(--neutral-600); font-size: 0.95rem;">
+                Browse and review all study notes, images, and links you have uploaded.
+            </p>
+        </div>
+        <a href="{{ url_for('upload.index') }}" class="btn btn-primary btn-sm">
+            ➕ Upload New Material
+        </a>
+    </div>
+
+    {% if uploads and uploads | length > 0 %}
+        <div style="display: flex; flex-direction: column; gap: 1rem;">
+            {% for u in uploads %}
+                <div class="card" style="background: #ffffff; border: 1px solid var(--neutral-200); border-radius: var(--radius-lg); padding: 1.5rem; box-shadow: var(--shadow-sm); display: flex; justify-content: space-between; align-items: center; gap: 1rem; flex-wrap: wrap;">
+                    <div style="flex: 1; min-width: 280px;">
+                        <div style="display: flex; align-items: center; gap: 0.5rem; margin-bottom: 0.4rem;">
+                            <span class="badge badge-subtle" style="text-transform: uppercase; font-size: 0.75rem;">
+                                {{ u.source_type }}
+                            </span>
+                            <span style="font-size: 0.8rem; color: var(--neutral-500);">
+                                {{ u.created_at.strftime('%b %d, %Y') }}
+                            </span>
+                        </div>
+                        <h2 style="font-size: 1.15rem; font-weight: 700; color: var(--neutral-900); margin-bottom: 0.35rem;">
+                            <a href="{{ url_for('upload.view_upload', upload_id=u.id) }}" style="color: var(--neutral-900); text-decoration: none;" onmouseover="this.style.color='var(--primary)'" onmouseout="this.style.color='var(--neutral-900)'">
+                                {{ u.title }}
+                            </a>
+                        </h2>
+                        {% if u.source_ref %}
+                            <div style="font-size: 0.82rem; color: var(--neutral-500); margin-bottom: 0.4rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 480px;">
+                                Source: {{ u.source_ref }}
+                            </div>
+                        {% endif %}
+                        <div style="font-size: 0.85rem; color: var(--neutral-600);">
+                            {% if u.attempts_count > 0 %}
+                                <span>Quiz Score:</span>
+                                <strong style="color: var(--primary);">{{ u.last_score }} / {{ u.last_total }}</strong>
+                                <span style="color: var(--neutral-500);">({{ u.attempts_count }} attempt{{ 's' if u.attempts_count != 1 else '' }})</span>
+                            {% else %}
+                                <span style="color: var(--neutral-500);">Quiz not taken yet</span>
+                            {% endif %}
+                        </div>
+                    </div>
+
+                    <div style="display: flex; gap: 0.5rem; align-items: center;">
+                        <a href="{{ url_for('upload.view_upload', upload_id=u.id) }}" class="btn btn-outline btn-sm">
+                            📖 View Guide
+                        </a>
+                        <a href="{{ url_for('upload.take_quiz', upload_id=u.id) }}" class="btn btn-primary btn-sm">
+                            🎯 Quiz
+                        </a>
+                    </div>
+                </div>
+            {% endfor %}
+        </div>
+    {% else %}
+        <div class="card" style="background: #ffffff; border: 1px dashed var(--neutral-300); border-radius: var(--radius-lg); padding: 3rem 1.5rem; text-align: center;">
+            <span style="font-size: 2.5rem; display: block; margin-bottom: 0.75rem;">📂</span>
+            <h3 style="font-size: 1.25rem; font-weight: 700; color: var(--neutral-800); margin-bottom: 0.5rem;">
+                No study materials uploaded yet
+            </h3>
+            <p style="color: var(--neutral-600); font-size: 0.95rem; max-width: 450px; margin: 0 auto 1.5rem auto;">
+                Paste lecture notes, upload a whiteboard photo, or paste a URL to generate your first AI study guide and quiz.
+            </p>
+            <a href="{{ url_for('upload.index') }}" class="btn btn-primary">
+                Upload Your First Material
+            </a>
+        </div>
+    {% endif %}
+</div>
+{% endblock %}

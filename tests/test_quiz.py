@@ -1218,8 +1218,8 @@ def test_migration_applies_on_fresh_sqlite_database(tmp_path: Path) -> None:
     fresh_app.config["SQLALCHEMY_DATABASE_URI"] = f"sqlite:///{test_db_path.as_posix()}"
 
     with fresh_app.app_context():
-        # Apply all migrations up to head
-        upgrade()
+        # Apply all migrations up to b4f8a1e2c9d0
+        upgrade(revision="b4f8a1e2c9d0")
 
         inspector = inspect(db.engine)
         table_names = set(inspector.get_table_names())
@@ -1247,7 +1247,7 @@ def test_migration_applies_on_fresh_sqlite_database(tmp_path: Path) -> None:
         assert "attempt_answers" not in inspector_post_down.get_table_names()
 
         # Re-upgrade to leave in clean state
-        upgrade()
+        upgrade(revision="b4f8a1e2c9d0")
         inspector_re = inspect(db.engine)
         assert "attempt_answers" in inspector_re.get_table_names()
 

@@ -1,0 +1,135 @@
+{% extends "base.html" %}
+
+{% block title %}Quiz Assessment: {{ upload.title }} - StudySphere{% endblock %}
+
+{% block content %}
+<div class="quiz-container" style="max-width: 860px; margin: 2rem auto; padding: 0 1rem;">
+    <!-- Breadcrumb -->
+    <div style="display: flex; align-items: center; gap: 0.5rem; font-size: 0.9rem; color: var(--neutral-600); margin-bottom: 1.25rem;">
+        <a href="{{ url_for('upload.index') }}" style="color: var(--primary); text-decoration: none;">Upload</a>
+        <span>/</span>
+        <a href="{{ url_for('upload.view_upload', upload_id=upload.id) }}" style="color: var(--primary); text-decoration: none;">{{ upload.title }}</a>
+        <span>/</span>
+        <span style="color: var(--neutral-800); font-weight: 500;">Quiz</span>
+    </div>
+
+    <!-- Header -->
+    <header class="card" style="background: #ffffff; border: 1px solid var(--neutral-200); border-radius: var(--radius-lg); padding: 1.75rem; margin-bottom: 1.75rem; box-shadow: var(--shadow-sm);">
+        <div style="display: flex; gap: 0.5rem; margin-bottom: 0.5rem;">
+            <span class="badge badge-primary">Assessment</span>
+            <span class="badge badge-subtle">6 Questions</span>
+            <span class="badge badge-subtle">Auto-Scored</span>
+        </div>
+        <h1 style="font-size: 1.75rem; font-weight: 700; color: var(--neutral-900); margin-bottom: 0.4rem;">
+            Knowledge Assessment: {{ upload.title }}
+        </h1>
+        <p style="color: var(--neutral-600); font-size: 0.92rem; line-height: 1.5;">
+            Answer the 6 questions below based on your study material. Theory questions will reveal the model answer for comparison upon submission and are excluded from numerical scoring.
+        </p>
+    </header>
+
+    <!-- Quiz Form -->
+    <form method="POST" action="{{ url_for('upload.submit_quiz', upload_id=upload.id) }}" novalidate>
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+
+        <div style="display: flex; flex-direction: column; gap: 1.5rem;">
+            {% for q in upload.questions %}
+                <div class="card" style="background: #ffffff; border: 1px solid var(--neutral-200); border-radius: var(--radius-lg); padding: 1.5rem; box-shadow: var(--shadow-sm);">
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.85rem; padding-bottom: 0.6rem; border-bottom: 1px solid var(--neutral-200);">
+                        <span style="font-weight: 700; font-size: 0.9rem; color: var(--neutral-700);">
+                            Question {{ loop.index }} of {{ upload.questions | length }}
+                        </span>
+                        {% if q.type == 'mcq' %}
+                            <span class="badge badge-subtle">Multiple Choice</span>
+                        {% elif q.type == 'tf' %}
+                            <span class="badge badge-subtle">True / False</span>
+                        {% elif q.type == 'short' %}
+                            <span class="badge badge-subtle">Short Answer</span>
+                        {% elif q.type == 'theory' %}
+                            <span class="badge badge-warning">Theory &bull; Model Evaluation</span>
+                        {% endif %}
+                    </div>
+
+                    <div style="font-size: 1.05rem; font-weight: 600; color: var(--neutral-900); margin-bottom: 1.25rem; line-height: 1.45;">
+                        {{ q.question_text }}
+                    </div>
+
+                    <!-- Answers input based on question type -->
+                    <div class="question-inputs">
+                        {% if q.type == 'mcq' %}
+                            <div style="display: flex; flex-direction: column; gap: 0.6rem;">
+                                {% for opt_key, opt_val in q.options.items() %}
+                                    <label style="display: flex; align-items: flex-start; gap: 0.75rem; padding: 0.75rem 1rem; border: 1px solid var(--neutral-200); border-radius: var(--radius); cursor: pointer; transition: background 0.15s ease;"
+                                           onmouseover="this.style.background='var(--neutral-50)'"
+                                           onmouseout="this.style.background='#ffffff'">
+                                        <input type="radio"
+                                               name="question_{{ q.id }}"
+                                               value="{{ opt_key }}"
+                                               style="margin-top: 0.25rem;">
+                                        <div style="font-size: 0.95rem; color: var(--neutral-800);">
+                                            <strong style="color: var(--primary); margin-right: 0.35rem;">{{ opt_key }}.</strong>
+                                            <span>{{ opt_val }}</span>
+                                        </div>
+                                    </label>
+                                {% endfor %}
+                            </div>
+
+                        {% elif q.type == 'tf' %}
+                            <div style="display: flex; gap: 1rem;">
+                                <label style="flex: 1; display: flex; align-items: center; justify-content: center; gap: 0.6rem; padding: 0.85rem; border: 1px solid var(--neutral-200); border-radius: var(--radius); cursor: pointer; font-weight: 600; color: var(--neutral-800);"
+                                       onmouseover="this.style.background='var(--neutral-50)'"
+                                       onmouseout="this.style.background='#ffffff'">
+                                    <input type="radio" name="question_{{ q.id }}" value="True">
+                                    <span>True</span>
+                                </label>
+                                <label style="flex: 1; display: flex; align-items: center; justify-content: center; gap: 0.6rem; padding: 0.85rem; border: 1px solid var(--neutral-200); border-radius: var(--radius); cursor: pointer; font-weight: 600; color: var(--neutral-800);"
+                                       onmouseover="this.style.background='var(--neutral-50)'"
+                                       onmouseout="this.style.background='#ffffff'">
+                                    <input type="radio" name="question_{{ q.id }}" value="False">
+                                    <span>False</span>
+                                </label>
+                            </div>
+
+                        {% elif q.type == 'short' %}
+                            <div>
+                                <input type="text"
+                                       name="question_{{ q.id }}"
+                                       class="form-input"
+                                       placeholder="Type concise answer or keyword..."
+                                       maxlength="200"
+                                       autocomplete="off"
+                                       style="width: 100%; padding: 0.65rem 0.85rem; border: 1px solid var(--neutral-300); border-radius: var(--radius); font-size: 0.95rem;">
+                                <span style="display: block; font-size: 0.8rem; color: var(--neutral-500); margin-top: 0.35rem;">
+                                    Tolerant matching: case-insensitive, punctuation and leading articles ignored.
+                                </span>
+                            </div>
+
+                        {% elif q.type == 'theory' %}
+                            <div>
+                                <textarea name="question_{{ q.id }}"
+                                          rows="4"
+                                          class="form-input"
+                                          placeholder="Formulate your detailed conceptual explanation here..."
+                                          style="width: 100%; padding: 0.75rem; border: 1px solid var(--neutral-300); border-radius: var(--radius); font-family: var(--font-sans); font-size: 0.95rem; line-height: 1.5; resize: vertical;"></textarea>
+                                <span style="display: block; font-size: 0.8rem; color: var(--neutral-500); margin-top: 0.35rem;">
+                                    The model answer will be presented after submission to compare with your explanation.
+                                </span>
+                            </div>
+                        {% endif %}
+                    </div>
+                </div>
+            {% endfor %}
+        </div>
+
+        <!-- Submit Button -->
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-top: 2rem; padding-top: 1.25rem; border-top: 1px solid var(--neutral-200);">
+            <a href="{{ url_for('upload.view_upload', upload_id=upload.id) }}" class="btn btn-outline">
+                ← Back to Study Guide
+            </a>
+            <button type="submit" class="btn btn-primary" style="padding: 0.75rem 2rem; font-size: 1rem; font-weight: 600;">
+                Submit Quiz Answers
+            </button>
+        </div>
+    </form>
+</div>
+{% endblock %}

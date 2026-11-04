@@ -34,6 +34,7 @@ from app.models.prerequisite import Prerequisite
 from app.models.topic import Topic
 from app.models.upload import Upload
 from app.models.user import User
+from app.blueprints.dashboard import get_course_display_name
 from app.services.adaptive_service import (
     get_next_topics,
     get_user_latest_topic_attempts,
@@ -645,3 +646,119 @@ def test_recommendations_change_after_attempt(app: Flask, test_user: User, adapt
 
         # Neural Net is now placed after ready-to-learn topics
         assert improved_order_ids.index(dt_id) < improved_order_ids.index(nn_id)
+
+
+# 15. Course Display Name Resolution and Elective Formatting Tests
+def test_get_course_display_name_resolver():
+    """Verify get_course_display_name resolves real course names and elective placeholders."""
+    # Standard accredited course with real stored title
+    c_os = Course(code="CS301", title="Operating Systems", semester=5, domain="Core", credit_hours=3, contact_hours="3-0-0")
+    assert get_course_display_name(c_os) == "Operating Systems"
+
+    c_cc = Course(code="CS302", title="Compiler Construction", semester=5, domain="Core", credit_hours=3, contact_hours="3-0-0")
+    assert get_course_display_name(c_cc) == "Compiler Construction"
+
+    c_la = Course(code="MT301", title="Linear Algebra", semester=5, domain="Mathematics", credit_hours=3, contact_hours="3-0-0")
+    assert get_course_display_name(c_la) == "Linear Algebra"
+
+    # Electives in Semester 5 (CS3xx-E1, CS3xx-E2)
+    c_e1 = Course(code="CS3xx-E1", title="Web Engineering", semester=5, domain="Elective", credit_hours=3, contact_hours="3-0-0")
+    assert get_course_display_name(c_e1) == "Elective 1"
+
+    c_e2 = Course(code="CS3xx-E2", title="Machine Learning", semester=5, domain="Elective", credit_hours=3, contact_hours="3-0-0")
+    assert get_course_display_name(c_e2) == "Elective 2"
+
+    # Electives without a real name yet (empty title, equal to code, or generic)
+    c_e1_noname = Course(code="CS3xx-E1", title="CS3xx-E1", semester=5, domain="Elective", credit_hours=3, contact_hours="3-0-0")
+    assert get_course_display_name(c_e1_noname) == "Elective 1"
+
+    c_e1_empty = Course(code="CS3xx-E1", title="", semester=5, domain="Elective", credit_hours=3, contact_hours="3-0-0")
+    assert get_course_display_name(c_e1_empty) == "Elective 1"
+
+    # Elective in another semester with generic title
+    c_e5 = Course(code="CS4xx-E5", title="Elective V (Domain Elective)", semester=7, domain="Elective", credit_hours=3, contact_hours="3-0-0")
+    assert get_course_display_name(c_e5) == "Elective 5"
+
+    # Course with empty title falls back to code
+    c_fallback = Course(code="GE999", title="", semester=1, domain="General", credit_hours=1, contact_hours="1-0-0")
+    assert get_course_display_name(c_fallback) == "GE999"
+
+
+# 16. Dashboard Course Progress Chart Uses Real Names and Tooltip Data
+def test_dashboard_course_progress_chart_uses_real_course_names_and_electives(
+    app: Flask,
+    test_user: User,
+    auth_client: FlaskClient,
+):
+    """Verify that dashboard Course Progress chart passes real course names and elective labels to Chart.js."""
+    with app.app_context():
+        # Seed Semester 5 courses matching realistic curriculum: CS301, CS302, CS3xx-E1, MT301
+        c1 = Course(code="CS301", title="Operating Systems", semester=5, domain="Core", credit_hours=3, contact_hours="3-0-0")
+        c2 = Course(code="CS302", title="Compiler Construction", semester=5, domain="Core", credit_hours=3, contact_hours="3-0-0")
+        c3 = Course(code="CS3xx-E1", title="Web Engineering", semester=5, domain="Elective", credit_hours=3, contact_hours="3-0-0")
+        c4 = Course(code="MT301", title="Linear Algebra", semester=5, domain="Mathematics", credit_hours=3, contact_hours="3-0-0")
+        db.session.add_all([c1, c2, c3, c4])
+        db.session.commit()
+
+    res = auth_client.get("/dashboard/")
+    assert res.status_code == 200
+    html = res.get_data(as_text=True)
+
+    match_course = re.search(r"const courseData = (\{.*?\});", html)
+    assert match_course is not None
+    course_json = json.loads(match_course.group(1))
+
+    # Real names must be used on chart labels instead of raw course codes
+    assert "Operating Systems" in course_json["labels"]
+    assert "Compiler Construction" in course_json["labels"]
+    assert "Linear Algebra" in course_json["labels"]
+    assert "Elective 1" in course_json["labels"]
+    assert "CS301" not in course_json["labels"]
+    assert "CS302" not in course_json["labels"]
+    assert "MT301" not in course_json["labels"]
+    assert "CS3xx-E1" not in course_json["labels"]
+
+    # Tooltip data arrays should provide full names and codes
+    assert "full_names" in course_json
+    assert "codes" in course_json
+    assert "Operating Systems" in course_json["full_names"]
+    assert "CS301" in course_json["codes"]
+    assert "CS3xx-E1" in course_json["codes"]
+
+
+# 17. Dashboard Progress Over Time Line Chart Labels Have No Stray Spaces
+def test_dashboard_progress_over_time_labels_no_stray_space(
+    app: Flask,
+    test_user: User,
+    auth_client: FlaskClient,
+    adaptive_setup: dict,
+):
+    """Verify that line chart attempt labels strip trailing spaces caused by slicing (e.g. '#1 (Associativity )')."""
+    with app.app_context():
+        # Create a topic whose name produces a space at index 14
+        # "Associativity in Boolean Algebra": [:14] is "Associativity "
+        t_assoc = Topic(
+            course_id=adaptive_setup["course_id"],
+            name="Associativity in Boolean Algebra",
+            difficulty=2,
+            week="2",
+            semester=5,
+            subject="Machine Learning Systems",
+            content="Boolean algebra associativity properties.",
+        )
+        db.session.add(t_assoc)
+        db.session.commit()
+
+        _create_attempt(test_user.id, t_assoc.id, score=3.0, total=4, label=MasteryLabel.GOOD, attempt_number=1)
+
+    res = auth_client.get("/dashboard/")
+    assert res.status_code == 200
+    html = res.get_data(as_text=True)
+
+    match_progress = re.search(r"const progressData = (\{.*?\});", html)
+    assert match_progress is not None
+    progress_json = json.loads(match_progress.group(1))
+
+    # Label should be "#1 (Associativity)", NOT "#1 (Associativity )"
+    assert any("#1 (Associativity)" == lbl for lbl in progress_json["labels"])
+    assert not any("#1 (Associativity )" in lbl for lbl in progress_json["labels"])

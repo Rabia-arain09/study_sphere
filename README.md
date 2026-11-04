@@ -623,6 +623,7 @@ StudySphere features a content-based recommendation engine (`ml/recommender.py` 
 - **Compact Sidebar Metric Preservation & Multi-Attempt History Table**: Retained latest attempt summary metrics on the topic sidebar while integrating the 5-attempt table with directional delta arrows and conditional 'View all attempts' links to maintain backward compatibility with existing topic summary checks.
 - **Prerequisite Knowledge Gap Graph Traversal**: Engineered pure Python breadth-first search (BFS) traversal (`app/services/gap_analysis.py`) over the topic prerequisite DAG with cycle-safe visited sets, bounded depth (max 4), and constant 4-query retrieval (`joinedload` course, deferred content) prioritizing foundational deficits for personalized student revision.
 - **Post-Classifier Improvement Rule**: Added a pure function (`ml/improvement.py`) that promotes a Decision Tree label by exactly one tier (e.g. Weak → Good) when the student's score ratio improves by ≥ 0.2 over their previous attempt on the same topic; labels are never lowered and Excellent is capped, so the rule only corrects the classifier's conservatism at boundary gains without destabilising confident predictions.
+- **Dashboard Course Progress Chart Real Course Names and Elective Placeholders**: Resolved course names on the progress bar chart from stored database titles while mapping elective placeholder codes without fixed names (CS3xx-E1, CS3xx-E2) to 'Elective 1' and 'Elective 2', wrapping long names across lines and surfacing full names with course codes in interactive tooltips.
 
 ---
 

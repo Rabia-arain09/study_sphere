@@ -380,7 +380,28 @@
                         },
                         y: {
                             grid: { display: false },
-                            ticks: { font: { family: "'Inter', sans-serif", weight: 600 } }
+                            ticks: {
+                                font: { family: "'Inter', sans-serif", weight: 600 },
+                                callback: function(value) {
+                                    const label = this.getLabelForValue(value);
+                                    if (typeof label === "string" && label.length > 18) {
+                                        const words = label.split(" ");
+                                        const lines = [];
+                                        let currentLine = "";
+                                        for (const word of words) {
+                                            if ((currentLine + " " + word).trim().length <= 18) {
+                                                currentLine = (currentLine + " " + word).trim();
+                                            } else {
+                                                if (currentLine) lines.push(currentLine);
+                                                currentLine = word;
+                                            }
+                                        }
+                                        if (currentLine) lines.push(currentLine);
+                                        return lines.length > 1 ? lines : (label.length > 18 ? label.slice(0, 16) + "…" : label);
+                                    }
+                                    return label;
+                                }
+                            }
                         }
                     },
                     plugins: {
@@ -389,6 +410,17 @@
                             labels: {
                                 boxWidth: 12,
                                 font: { family: "'Inter', sans-serif", size: 12 }
+                            }
+                        },
+                        tooltip: {
+                            callbacks: {
+                                title: function(context) {
+                                    if (!context || !context.length) return "";
+                                    const idx = context[0].dataIndex;
+                                    const fullName = (courseData.full_names && courseData.full_names[idx]) || context[0].label;
+                                    const code = (courseData.codes && courseData.codes[idx]) || "";
+                                    return code ? `${fullName} (${code})` : fullName;
+                                }
                             }
                         }
                     }

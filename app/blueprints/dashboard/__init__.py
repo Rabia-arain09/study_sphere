@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import re
 from typing import Any
 from flask import Blueprint, render_template
 from flask_login import current_user, login_required
@@ -24,6 +25,40 @@ from app.services.gap_analysis import (
 )
 
 dashboard_bp: Blueprint = Blueprint("dashboard", __name__)
+
+
+def get_course_display_name(course: Course) -> str:
+    """Resolve human-readable course name for dashboard progress chart display.
+
+    Uses the course name stored in the Course table/schema data (e.g. 'Operating Systems').
+    Electives that have no real name yet (such as CS3xx-E1, CS3xx-E2, or courses
+    with generic placeholder titles) are formatted as 'Elective 1', 'Elective 2', etc.
+
+    Args:
+        course: Course model instance.
+
+    Returns:
+        str: Human-readable course name or elective label.
+    """
+    code = (course.code or "").strip()
+    title = (course.title or "").strip()
+
+    # Match elective codes ending with -E followed by digits (e.g., CS3xx-E1, CS3xx-E2, CS4xx-E5)
+    elective_match = re.search(r"-E(\d+)$", code, re.IGNORECASE)
+    if elective_match:
+        num = elective_match.group(1)
+        if (
+            not title
+            or title.upper() == code.upper()
+            or title.lower().startswith("elective")
+            or code.upper().startswith("CS3XX-E")
+        ):
+            return f"Elective {num}"
+
+    if not title:
+        return code
+
+    return title
 
 
 def get_dashboard_data(user: Any) -> dict[str, Any]:
@@ -111,7 +146,7 @@ def get_dashboard_data(user: Any) -> dict[str, Any]:
 
     chart_progress_data = {
         "labels": [
-            f"#{att.attempt_number} ({att.topic.name[:14]})"
+            f"#{att.attempt_number} ({att.topic.name[:14].strip()})"
             if att.topic
             else f"#{att.id}"
             for att in last_20_attempts
@@ -159,6 +194,8 @@ def get_dashboard_data(user: Any) -> dict[str, Any]:
 
     course_stats_list: list[dict[str, Any]] = []
     course_chart_labels: list[str] = []
+    course_chart_full_names: list[str] = []
+    course_chart_codes: list[str] = []
     course_chart_attempted: list[int] = []
     course_chart_total: list[int] = []
     course_chart_avg_pct: list[float] = []
@@ -183,13 +220,23 @@ def get_dashboard_data(user: Any) -> dict[str, Any]:
             "coverage_percentage": coverage_pct,
             "average_percentage": avg_score,
         })
-        course_chart_labels.append(c.code)
+        display_name = get_course_display_name(c)
+        full_name = (
+            c.title.strip()
+            if c.title and c.title.strip() and c.title.strip().upper() != c.code.strip().upper()
+            else display_name
+        )
+        course_chart_labels.append(display_name)
+        course_chart_full_names.append(full_name)
+        course_chart_codes.append(c.code)
         course_chart_attempted.append(att_count)
         course_chart_total.append(tot)
         course_chart_avg_pct.append(avg_score)
 
     chart_course_data = {
         "labels": course_chart_labels,
+        "full_names": course_chart_full_names,
+        "codes": course_chart_codes,
         "attempted": course_chart_attempted,
         "total": course_chart_total,
         "avg_percentages": course_chart_avg_pct,

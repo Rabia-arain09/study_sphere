@@ -19,6 +19,7 @@ from ml.label_model import (
     predict_label,
     train_model,
 )
+from ml.improvement import apply_improvement_rule
 
 logger = logging.getLogger(__name__)
 
@@ -159,6 +160,11 @@ def predict_mastery_for_attempt(
 ) -> MasteryLabel:
     """Classify attempt performance into a MasteryLabel enum instance.
 
+    Runs the Decision Tree classifier and then applies the improvement rule:
+    if the student's score ratio improved by at least 0.2 over their previous
+    attempt on the same topic, the label is promoted by one tier at most.
+    First attempts are always returned unchanged by the improvement rule.
+
     Execution time is well under 50 ms (in-memory tree inference takes < 1 ms).
 
     Args:
@@ -171,7 +177,12 @@ def predict_mastery_for_attempt(
     features = extract_features_for_attempt(attempt, prev_attempt=prev_attempt)
     model = get_model()
     raw_label = predict_label(features, model=model)
-    return MasteryLabel(raw_label)
+    dt_label = MasteryLabel(raw_label)
+
+    # features[4] is previous_score_ratio; features[0] is current score_ratio
+    current_ratio: float = features[0]
+    previous_ratio: float = features[4]
+    return apply_improvement_rule(current_ratio, previous_ratio, dt_label)
 
 
 def label_attempt_record(

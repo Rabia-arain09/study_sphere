@@ -472,8 +472,10 @@ def test_label_recomputed_after_self_grade(
         updated2 = db.session.get(Attempt, attempt2_id)
         assert updated2.score == 3.0
         assert updated2.total_questions == 4
-        # score_ratio = 3/4 = 0.75 -> Better
-        assert updated2.label == MasteryLabel.BETTER
+        # score_ratio = 3/4 = 0.75 -> DT labels Better.
+        # Previous attempt score = 1/4 = 0.25; improvement = 0.50 >= 0.20
+        # -> improvement rule promotes Better to Excellent.
+        assert updated2.label == MasteryLabel.EXCELLENT
 
 
 # ==============================================================================

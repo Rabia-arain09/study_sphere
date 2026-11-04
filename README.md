@@ -622,6 +622,7 @@ StudySphere features a content-based recommendation engine (`ml/recommender.py` 
 - **In-Memory Sequential Delta Calculation**: Computed attempt score percentage changes relative to the prior attempt sequentially in pure Python using `calculate_attempts_history`, eliminating secondary database queries and keeping queries strictly $O(1)$.
 - **Compact Sidebar Metric Preservation & Multi-Attempt History Table**: Retained latest attempt summary metrics on the topic sidebar while integrating the 5-attempt table with directional delta arrows and conditional 'View all attempts' links to maintain backward compatibility with existing topic summary checks.
 - **Prerequisite Knowledge Gap Graph Traversal**: Engineered pure Python breadth-first search (BFS) traversal (`app/services/gap_analysis.py`) over the topic prerequisite DAG with cycle-safe visited sets, bounded depth (max 4), and constant 4-query retrieval (`joinedload` course, deferred content) prioritizing foundational deficits for personalized student revision.
+- **Post-Classifier Improvement Rule**: Added a pure function (`ml/improvement.py`) that promotes a Decision Tree label by exactly one tier (e.g. Weak → Good) when the student's score ratio improves by ≥ 0.2 over their previous attempt on the same topic; labels are never lowered and Excellent is capped, so the rule only corrects the classifier's conservatism at boundary gains without destabilising confident predictions.
 
 ---
 

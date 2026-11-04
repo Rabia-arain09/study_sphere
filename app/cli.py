@@ -552,7 +552,18 @@ def label_attempts_command(force: bool) -> None:
     labeled_counts: dict[str, int] = {}
 
     for attempt in attempts_to_label:
-        label = label_attempt_record(attempt, commit=False)
+        # Locate the immediately preceding attempt for the same user and topic
+        # so the improvement rule has access to the previous score ratio.
+        prev_attempt = (
+            Attempt.query.filter(
+                Attempt.user_id == attempt.user_id,
+                Attempt.topic_id == attempt.topic_id,
+                Attempt.id != attempt.id,
+            )
+            .order_by(Attempt.id.desc())
+            .first()
+        )
+        label = label_attempt_record(attempt, prev_attempt=prev_attempt, commit=False)
         val = label.value
         labeled_counts[val] = labeled_counts.get(val, 0) + 1
 

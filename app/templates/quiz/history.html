@@ -23,7 +23,7 @@
         </p>
 
         <!-- Summary Metric Bar (Requirement 3) -->
-        <div class="history-summary-bar" style="display: flex; gap: 1rem; flex-wrap: wrap; background: white; border: 1px solid var(--neutral-200); border-radius: var(--radius); padding: 1rem 1.25rem; box-shadow: var(--shadow-sm);">
+        <div class="history-summary-bar" style="display: flex; gap: 1rem; flex-wrap: wrap; background: var(--bg-surface); border: 1px solid var(--neutral-200); border-radius: var(--radius); padding: 1rem 1.25rem; box-shadow: var(--shadow-sm);">
             <div class="summary-metric" style="flex: 1; min-width: 140px;">
                 <span class="text-xs text-muted" style="text-transform: uppercase; letter-spacing: 0.05em; display: block;">Total Attempts</span>
                 <span class="metric-value font-bold" style="font-size: 1.4rem; color: var(--neutral-800);">{{ total_attempts }}</span>
@@ -40,7 +40,7 @@
     </header>
 
     <!-- Attempts Table Section -->
-    <section class="card history-card" style="background: white; border: 1px solid var(--neutral-200); border-radius: var(--radius-lg); padding: 1.5rem; box-shadow: var(--shadow-sm);">
+    <section class="card history-card" style="background: var(--bg-surface); border: 1px solid var(--neutral-200); border-radius: var(--radius-lg); padding: 1.5rem; box-shadow: var(--shadow-sm);">
         {% if items %}
             <div class="table-responsive" style="overflow-x: auto;">
                 <table class="history-table" style="width: 100%; border-collapse: collapse; text-align: left;">

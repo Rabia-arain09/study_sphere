@@ -244,11 +244,40 @@
             return;
         }
 
+        function getThemeChartColors() {
+            const theme = document.documentElement.getAttribute("data-theme") || "light";
+            if (theme === "dark") {
+                return {
+                    text: "#cbd5e1",
+                    grid: "#334155",
+                    border: "#1e293b"
+                };
+            } else if (theme === "highlight") {
+                return {
+                    text: "#000000",
+                    grid: "rgba(0, 0, 0, 0.25)",
+                    border: "#000000"
+                };
+            } else {
+                return {
+                    text: "#475569",
+                    grid: "#f1f5f9",
+                    border: "#ffffff"
+                };
+            }
+        }
+
+        let chartDoughnut = null;
+        let chartLine = null;
+        let chartBar = null;
+
+        const initialColors = getThemeChartColors();
+
         // 1. Chart 1: Mastery Distribution (Doughnut)
         const ctxDoughnut = document.getElementById("chartMasteryDistribution");
         if (ctxDoughnut) {
             const hasData = labelsData.data && labelsData.data.some(val => val > 0);
-            new Chart(ctxDoughnut, {
+            chartDoughnut = new Chart(ctxDoughnut, {
                 type: "doughnut",
                 data: {
                     labels: labelsData.labels,
@@ -257,7 +286,7 @@
                         backgroundColor: hasData
                             ? labelsData.colors
                             : ["#f1f5f9", "#f1f5f9", "#f1f5f9", "#f1f5f9"],
-                        borderColor: "#ffffff",
+                        borderColor: initialColors.border,
                         borderWidth: 2,
                     }]
                 },
@@ -270,6 +299,7 @@
                             labels: {
                                 boxWidth: 12,
                                 padding: 12,
+                                color: initialColors.text,
                                 font: { family: "'Inter', sans-serif", size: 12 }
                             }
                         },
@@ -291,7 +321,7 @@
         const ctxLine = document.getElementById("chartProgressOverTime");
         if (ctxLine) {
             const hasAttempts = progressData.percentages && progressData.percentages.length > 0;
-            new Chart(ctxLine, {
+            chartLine = new Chart(ctxLine, {
                 type: "line",
                 data: {
                     labels: hasAttempts ? progressData.labels : ["No attempts"],
@@ -315,13 +345,15 @@
                             min: 0,
                             max: 100,
                             ticks: {
+                                color: initialColors.text,
                                 callback: val => val + "%",
                                 font: { family: "'Inter', sans-serif" }
                             },
-                            grid: { color: "#f1f5f9" }
+                            grid: { color: initialColors.grid }
                         },
                         x: {
                             ticks: {
+                                color: initialColors.text,
                                 maxRotation: 45,
                                 minRotation: 0,
                                 font: { family: "'Inter', sans-serif", size: 10 }
@@ -344,7 +376,7 @@
         // 3. Chart 3: Course Progress (Horizontal Bar)
         const ctxBar = document.getElementById("chartCourseProgress");
         if (ctxBar) {
-            new Chart(ctxBar, {
+            chartBar = new Chart(ctxBar, {
                 type: "bar",
                 data: {
                     labels: courseData.labels,
@@ -376,11 +408,15 @@
                     scales: {
                         x: {
                             beginAtZero: true,
-                            grid: { color: "#f1f5f9" }
+                            ticks: {
+                                color: initialColors.text
+                            },
+                            grid: { color: initialColors.grid }
                         },
                         y: {
                             grid: { display: false },
                             ticks: {
+                                color: initialColors.text,
                                 font: { family: "'Inter', sans-serif", weight: 600 },
                                 callback: function(value) {
                                     const label = this.getLabelForValue(value);
@@ -409,6 +445,7 @@
                             position: "top",
                             labels: {
                                 boxWidth: 12,
+                                color: initialColors.text,
                                 font: { family: "'Inter', sans-serif", size: 12 }
                             }
                         },
@@ -427,6 +464,54 @@
                 }
             });
         }
+
+        function updateChartsTheme() {
+            const colors = getThemeChartColors();
+            if (chartDoughnut) {
+                if (chartDoughnut.data.datasets && chartDoughnut.data.datasets[0]) {
+                    chartDoughnut.data.datasets[0].borderColor = colors.border;
+                }
+                if (chartDoughnut.options.plugins && chartDoughnut.options.plugins.legend && chartDoughnut.options.plugins.legend.labels) {
+                    chartDoughnut.options.plugins.legend.labels.color = colors.text;
+                }
+                chartDoughnut.update();
+            }
+            if (chartLine) {
+                if (chartLine.options.scales && chartLine.options.scales.y) {
+                    if (chartLine.options.scales.y.ticks) chartLine.options.scales.y.ticks.color = colors.text;
+                    if (chartLine.options.scales.y.grid) chartLine.options.scales.y.grid.color = colors.grid;
+                }
+                if (chartLine.options.scales && chartLine.options.scales.x && chartLine.options.scales.x.ticks) {
+                    chartLine.options.scales.x.ticks.color = colors.text;
+                }
+                chartLine.update();
+            }
+            if (chartBar) {
+                if (chartBar.options.scales && chartBar.options.scales.x) {
+                    if (chartBar.options.scales.x.ticks) chartBar.options.scales.x.ticks.color = colors.text;
+                    if (chartBar.options.scales.x.grid) chartBar.options.scales.x.grid.color = colors.grid;
+                }
+                if (chartBar.options.scales && chartBar.options.scales.y && chartBar.options.scales.y.ticks) {
+                    chartBar.options.scales.y.ticks.color = colors.text;
+                }
+                if (chartBar.options.plugins && chartBar.options.plugins.legend && chartBar.options.plugins.legend.labels) {
+                    chartBar.options.plugins.legend.labels.color = colors.text;
+                }
+                chartBar.update();
+            }
+        }
+
+        window.addEventListener("themechanged", updateChartsTheme);
+
+        const themeObserver = new MutationObserver(function(mutations) {
+            for (const m of mutations) {
+                if (m.type === "attributes" && m.attributeName === "data-theme") {
+                    updateChartsTheme();
+                    break;
+                }
+            }
+        });
+        themeObserver.observe(document.documentElement, { attributes: true, attributeFilter: ["data-theme"] });
     });
 </script>
 {% endblock %}

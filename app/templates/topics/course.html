@@ -78,12 +78,7 @@
                                             </a>
                                         </h3>
 
-                                        <!-- Review Provenance Badge (Requirement 3) -->
-                                        {% if not topic.content_reviewed %}
-                                            <span class="badge badge-warning" title="Authored via AI extraction, awaiting instructor verification">
-                                                AI-generated, not yet reviewed
-                                            </span>
-                                        {% else %}
+                                        {% if topic.content_reviewed %}
                                             <span class="badge badge-success" title="Verified by academic faculty">
                                                 Reviewed
                                             </span>

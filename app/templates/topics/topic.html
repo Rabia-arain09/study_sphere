@@ -15,6 +15,15 @@
         <span class="breadcrumb-current">{{ topic.name }}</span>
     </div>
 
+    <!-- AI Notes Banner (Requirement 5) -->
+    {% set is_ai_source = topic.content_source and (topic.content_source == 'ai_generated' or (topic.content_source.value is defined and topic.content_source.value == 'ai_generated')) %}
+    {% if is_ai_source and not topic.content_reviewed %}
+        <div class="ai-notes-banner alert alert-warning" role="alert">
+            <span class="ai-banner-icon">🤖</span>
+            <span class="ai-banner-text">AI-generated notes, not yet reviewed</span>
+        </div>
+    {% endif %}
+
     <!-- Topic Hero Header -->
     <header class="topic-header">
         <div class="topic-header-meta">
@@ -24,12 +33,8 @@
             {% endif %}
             <span class="badge badge-subtle">Semester {{ topic.semester }}</span>
 
-            <!-- Provenance Review Badge (Requirement 3) -->
-            {% if not topic.content_reviewed %}
-                <span class="badge badge-warning" title="Authored via AI extraction, awaiting instructor review">
-                    AI-generated, not yet reviewed
-                </span>
-            {% else %}
+            <!-- Provenance Review Badge -->
+            {% if topic.content_reviewed %}
                 <span class="badge badge-success" title="Verified by academic instructor">
                     Reviewed
                 </span>

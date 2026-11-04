@@ -31,7 +31,7 @@
     </div>
 
     <!-- Upload Card -->
-    <div class="card" style="background: #ffffff; border: 1px solid var(--neutral-200); border-radius: var(--radius-lg); padding: 1.75rem; box-shadow: var(--shadow-sm);">
+    <div class="card" style="background: var(--bg-surface); border: 1px solid var(--neutral-200); border-radius: var(--radius-lg); padding: 1.75rem; box-shadow: var(--shadow-sm);">
         <form id="uploadForm" method="POST" action="{{ url_for('upload.index') }}" enctype="multipart/form-data" novalidate>
             <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
 
@@ -94,21 +94,21 @@
                             id="tab-btn-text"
                             class="tab-btn {% if active_tab == 'text' %}active{% endif %}"
                             onclick="selectTab('text')"
-                            style="padding: 0.75rem; border: 1px solid var(--neutral-300); border-radius: var(--radius); background: #ffffff; font-weight: 600; font-size: 0.9rem; cursor: pointer; text-align: center; transition: all 0.15s ease;">
+                            style="padding: 0.75rem; border: 1px solid var(--neutral-300); border-radius: var(--radius); background: var(--bg-surface); color: var(--text-main); font-weight: 600; font-size: 0.9rem; cursor: pointer; text-align: center; transition: all 0.15s ease;">
                         ✍️ Paste Text
                     </button>
                     <button type="button"
                             id="tab-btn-image"
                             class="tab-btn {% if active_tab == 'image' %}active{% endif %}"
                             onclick="selectTab('image')"
-                            style="padding: 0.75rem; border: 1px solid var(--neutral-300); border-radius: var(--radius); background: #ffffff; font-weight: 600; font-size: 0.9rem; cursor: pointer; text-align: center; transition: all 0.15s ease;">
+                            style="padding: 0.75rem; border: 1px solid var(--neutral-300); border-radius: var(--radius); background: var(--bg-surface); color: var(--text-main); font-weight: 600; font-size: 0.9rem; cursor: pointer; text-align: center; transition: all 0.15s ease;">
                         🖼️ Upload Image
                     </button>
                     <button type="button"
                             id="tab-btn-url"
                             class="tab-btn {% if active_tab == 'url' %}active{% endif %}"
                             onclick="selectTab('url')"
-                            style="padding: 0.75rem; border: 1px solid var(--neutral-300); border-radius: var(--radius); background: #ffffff; font-weight: 600; font-size: 0.9rem; cursor: pointer; text-align: center; transition: all 0.15s ease;">
+                            style="padding: 0.75rem; border: 1px solid var(--neutral-300); border-radius: var(--radius); background: var(--bg-surface); color: var(--text-main); font-weight: 600; font-size: 0.9rem; cursor: pointer; text-align: center; transition: all 0.15s ease;">
                         🔗 Enter URL
                     </button>
                 </div>

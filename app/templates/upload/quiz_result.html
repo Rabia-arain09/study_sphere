@@ -14,7 +14,7 @@
     </div>
 
     <!-- Score Summary Card -->
-    <div class="card" style="background: #ffffff; border: 1px solid var(--neutral-200); border-radius: var(--radius-lg); padding: 2rem; margin-bottom: 2rem; text-align: center; box-shadow: var(--shadow-sm);">
+    <div class="card" style="background: var(--bg-surface); border: 1px solid var(--neutral-200); border-radius: var(--radius-lg); padding: 2rem; margin-bottom: 2rem; text-align: center; box-shadow: var(--shadow-sm);">
         <span style="font-size: 2.5rem; display: block; margin-bottom: 0.5rem;">
             {% if result.percentage >= 80 %}🎉{% elif result.percentage >= 60 %}👍{% else %}💡{% endif %}
         </span>
@@ -72,7 +72,7 @@
 
     <div style="display: flex; flex-direction: column; gap: 1.5rem;">
         {% for item in result.details %}
-            <div class="card" style="background: #ffffff; border: 1px solid {% if item.is_correct is true %}var(--success-border){% elif item.is_correct is false %}var(--danger-border){% else %}var(--neutral-300){% endif %}; border-radius: var(--radius-lg); padding: 1.5rem; box-shadow: var(--shadow-sm);">
+            <div class="card" style="background: var(--bg-surface); border: 1px solid {% if item.is_correct is true %}var(--success-border){% elif item.is_correct is false %}var(--danger-border){% else %}var(--neutral-300){% endif %}; border-radius: var(--radius-lg); padding: 1.5rem; box-shadow: var(--shadow-sm);">
                 <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.75rem;">
                     <span style="font-weight: 700; font-size: 0.9rem; color: var(--neutral-700);">
                         Question {{ loop.index }}

@@ -176,8 +176,8 @@ def test_course_topics_view(auth_client: FlaskClient, seeded_curriculum):
     assert b"Level 3/5" in response.data
     assert b"Level 4/5" in response.data
 
-    # Check unreviewed badge: "AI-generated, not yet reviewed"
-    assert b"AI-generated, not yet reviewed" in response.data
+    # Topic cards no longer show the unreviewed AI badge
+    assert b"AI-generated, not yet reviewed" not in response.data
     assert b"Reviewed" in response.data
 
     # Check week headings (Requirement 2)
@@ -267,12 +267,12 @@ def test_course_topics_week_grouping_and_other_group(
     pos_t_unassigned = response.data.find(b"Capstone Project Overview")
     assert pos_w1 < pos_t1 < pos_w23 < pos_t2 < pos_w45 < pos_t3 < pos_other < pos_t_unassigned
 
-    # Verify difficulty and review badges are retained
+    # Verify difficulty is retained and topic cards no longer show unreviewed AI badge
     assert b"Level 1/5" in response.data
     assert b"Level 2/5" in response.data
     assert b"Level 4/5" in response.data
     assert b"Level 3/5" in response.data
-    assert b"AI-generated, not yet reviewed" in response.data
+    assert b"AI-generated, not yet reviewed" not in response.data
     assert b"Reviewed" in response.data
 
 
@@ -344,8 +344,8 @@ def test_topic_detail_notes_reader(auth_client: FlaskClient, seeded_curriculum):
     assert b"Process Lifecycle Diagram" in response.data
     assert b"https://example.com/process-lifecycle.png" in response.data
 
-    # Provenance badge
-    assert b"AI-generated, not yet reviewed" in response.data
+    # Unreviewed AI notes banner (Requirement 5)
+    assert b"AI-generated notes, not yet reviewed" in response.data
 
 
 def test_topic_detail_prerequisites_as_links(auth_client: FlaskClient, seeded_curriculum):

@@ -1,22 +1,52 @@
 /* StudySphere Production Design System & Responsive Styles */
 
-:root {
+/* ==========================================================================
+   Theme Variables (Light, Dark, Highlight)
+   ========================================================================== */
+
+:root,
+html[data-theme="light"] {
+    --bg-body: #f8fafc;
+    --bg-surface: #ffffff;
+    --bg-surface-elevated: #ffffff;
+    --bg-surface-alt: #f1f5f9;
+    --card-bg: #ffffff;
+
+    --text-main: #1e293b;
+    --text-heading: #0f172a;
+    --text-muted: #64748b;
+    --text-subtle: #94a3b8;
+
+    --border-color: #e2e8f0;
+    --border-subtle: #f1f5f9;
+    --border-focus: #2563eb;
+
+    --input-bg: #ffffff;
+    --input-text: #0f172a;
+    --input-border: #cbd5e1;
+
     --primary: #2563eb;
     --primary-hover: #1d4ed8;
     --primary-light: #eff6ff;
     --primary-border: #bfdbfe;
+    --btn-primary-text: #ffffff;
 
     --success: #16a34a;
     --success-bg: #f0fdf4;
     --success-border: #bbf7d0;
+    --success-text: #14532d;
 
     --warning: #d97706;
     --warning-bg: #fffbeb;
     --warning-border: #fde68a;
+    --warning-text: #78350f;
 
     --danger: #dc2626;
     --danger-bg: #fef2f2;
     --danger-border: #fecaca;
+    --danger-text: #7f1d1d;
+
+    --info-text: #1e3a8a;
 
     --neutral-50: #f8fafc;
     --neutral-100: #f1f5f9;
@@ -28,6 +58,10 @@
     --neutral-700: #334155;
     --neutral-800: #1e293b;
     --neutral-900: #0f172a;
+
+    --code-color: #e11d48;
+    --pre-bg: #0f172a;
+    --pre-color: #f8fafc;
 
     --font-sans: 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
     --font-mono: 'JetBrains Mono', SFMono-Regular, Menlo, Monaco, Consolas, monospace;
@@ -41,6 +75,146 @@
     --radius: 8px;
     --radius-lg: 12px;
     --radius-full: 9999px;
+
+    --chart-text: #475569;
+    --chart-grid: #f1f5f9;
+    --chart-border: #ffffff;
+}
+
+html[data-theme="dark"] {
+    --bg-body: #0b0f19;
+    --bg-surface: #1e293b;
+    --bg-surface-elevated: #283548;
+    --bg-surface-alt: #162032;
+    --card-bg: #1e293b;
+
+    --text-main: #e2e8f0;
+    --text-heading: #f8fafc;
+    --text-muted: #94a3b8;
+    --text-subtle: #64748b;
+
+    --border-color: #334155;
+    --border-subtle: #1e293b;
+    --border-focus: #3b82f6;
+
+    --input-bg: #0f172a;
+    --input-text: #f8fafc;
+    --input-border: #475569;
+
+    --primary: #3b82f6;
+    --primary-hover: #60a5fa;
+    --primary-light: #1e3a8a;
+    --primary-border: #2563eb;
+    --btn-primary-text: #ffffff;
+
+    --success: #4ade80;
+    --success-bg: rgba(34, 197, 94, 0.18);
+    --success-border: rgba(34, 197, 94, 0.4);
+    --success-text: #86efac;
+
+    --warning: #fbbf24;
+    --warning-bg: rgba(245, 158, 11, 0.18);
+    --warning-border: rgba(245, 158, 11, 0.4);
+    --warning-text: #fcd34d;
+
+    --danger: #f87171;
+    --danger-bg: rgba(239, 68, 68, 0.18);
+    --danger-border: rgba(239, 68, 68, 0.4);
+    --danger-text: #fca5a5;
+
+    --info-text: #93c5fd;
+
+    --neutral-50: #0f172a;
+    --neutral-100: #1e293b;
+    --neutral-200: #334155;
+    --neutral-300: #475569;
+    --neutral-400: #64748b;
+    --neutral-500: #94a3b8;
+    --neutral-600: #cbd5e1;
+    --neutral-700: #e2e8f0;
+    --neutral-800: #f1f5f9;
+    --neutral-900: #f8fafc;
+
+    --code-color: #fda4af;
+    --pre-bg: #030712;
+    --pre-color: #f8fafc;
+
+    --shadow-sm: 0 1px 2px 0 rgb(0 0 0 / 0.5);
+    --shadow: 0 1px 3px 0 rgb(0 0 0 / 0.6);
+    --shadow-md: 0 4px 6px -1px rgb(0 0 0 / 0.7);
+    --shadow-lg: 0 10px 15px -3px rgb(0 0 0 / 0.8);
+
+    --chart-text: #cbd5e1;
+    --chart-grid: #334155;
+    --chart-border: #1e293b;
+}
+
+html[data-theme="highlight"] {
+    --bg-body: #fbf8f1;
+    --bg-surface: #fffef8;
+    --bg-surface-elevated: #f5f0e1;
+    --bg-surface-alt: #f0ebd8;
+    --card-bg: #fffef8;
+
+    --text-main: #000000;
+    --text-heading: #000000;
+    --text-muted: #111111;
+    --text-subtle: #222222;
+
+    --border-color: #000000;
+    --border-subtle: #222222;
+    --border-focus: #000000;
+
+    --input-bg: #ffffff;
+    --input-text: #000000;
+    --input-border: #000000;
+
+    --primary: #facc15;
+    --primary-hover: #eab308;
+    --primary-light: #fef08a;
+    --primary-border: #000000;
+    --btn-primary-text: #000000;
+
+    --success: #166534;
+    --success-bg: #dcfce7;
+    --success-border: #000000;
+    --success-text: #000000;
+
+    --warning: #854d0e;
+    --warning-bg: #fef3c7;
+    --warning-border: #000000;
+    --warning-text: #000000;
+
+    --danger: #991b1b;
+    --danger-bg: #fee2e2;
+    --danger-border: #000000;
+    --danger-text: #000000;
+
+    --info-text: #000000;
+
+    --neutral-50: #f5f0e1;
+    --neutral-100: #ebe4d1;
+    --neutral-200: #000000;
+    --neutral-300: #000000;
+    --neutral-400: #111111;
+    --neutral-500: #222222;
+    --neutral-600: #000000;
+    --neutral-700: #000000;
+    --neutral-800: #000000;
+    --neutral-900: #000000;
+
+    --code-color: #000000;
+    --pre-bg: #f0ebd8;
+    --pre-color: #000000;
+
+    --shadow-sm: 0 1px 2px 0 rgb(0 0 0 / 0.15);
+    --shadow: 0 2px 4px 0 rgb(0 0 0 / 0.2);
+    --shadow-md: 0 4px 8px 0 rgb(0 0 0 / 0.25);
+    --shadow-lg: 0 8px 16px 0 rgb(0 0 0 / 0.3);
+
+    --chart-text: #000000;
+    --chart-grid: rgba(0, 0, 0, 0.25);
+    --chart-border: #000000;
 }
 
 /* Box sizing reset */
@@ -52,8 +226,8 @@
 
 body {
     font-family: var(--font-sans);
-    background-color: var(--neutral-50);
-    color: var(--neutral-800);
+    background-color: var(--bg-body);
+    color: var(--text-main);
     line-height: 1.6;
     min-height: 100vh;
     display: flex;
@@ -62,7 +236,7 @@ body {
 
 /* Header & Navigation */
 .site-header {
-    background-color: #ffffff;
+    background-color: var(--bg-surface);
     border-bottom: 1px solid var(--neutral-200);
     position: sticky;
     top: 0;
@@ -161,7 +335,7 @@ body {
 
 .btn-primary {
     background-color: var(--primary);
-    color: #ffffff;
+    color: var(--btn-primary-text, #ffffff);
 }
 
 .btn-primary:hover {
@@ -290,25 +464,25 @@ body {
 
 .alert-success {
     background-color: var(--success-bg);
-    color: #14532d;
+    color: var(--success-text);
     border-color: var(--success-border);
 }
 
 .alert-danger {
     background-color: var(--danger-bg);
-    color: #7f1d1d;
+    color: var(--danger-text);
     border-color: var(--danger-border);
 }
 
 .alert-warning {
     background-color: var(--warning-bg);
-    color: #78350f;
+    color: var(--warning-text);
     border-color: var(--warning-border);
 }
 
 .alert-info {
     background-color: var(--primary-light);
-    color: #1e3a8a;
+    color: var(--info-text);
     border-color: var(--primary-border);
 }
 
@@ -397,7 +571,7 @@ body {
 }
 
 .feature-card {
-    background-color: #ffffff;
+    background-color: var(--bg-surface);
     border: 1px solid var(--neutral-200);
     border-radius: var(--radius-lg);
     padding: 1.75rem;
@@ -437,7 +611,7 @@ body {
 }
 
 .auth-card {
-    background-color: #ffffff;
+    background-color: var(--bg-surface);
     border: 1px solid var(--neutral-200);
     border-radius: var(--radius-lg);
     padding: 2.25rem;
@@ -482,20 +656,20 @@ body {
     color: var(--neutral-700);
 }
 
-.form-input, .form-select {
+.form-input, .form-select, textarea {
     font-family: inherit;
     font-size: 0.95rem;
     padding: 0.6rem 0.85rem;
-    border: 1px solid var(--neutral-300);
+    border: 1px solid var(--input-border);
     border-radius: var(--radius);
-    background-color: #ffffff;
-    color: var(--neutral-900);
+    background-color: var(--input-bg);
+    color: var(--input-text);
     transition: border-color 0.15s ease, box-shadow 0.15s ease;
 }
 
-.form-input:focus, .form-select:focus {
+.form-input:focus, .form-select:focus, textarea:focus {
     outline: none;
-    border-color: var(--primary);
+    border-color: var(--border-focus);
     box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.15);
 }
 
@@ -569,7 +743,7 @@ body {
 }
 
 .semester-picker-card {
-    background-color: #ffffff;
+    background-color: var(--bg-surface);
     border: 1px solid var(--neutral-200);
     border-radius: var(--radius-lg);
     padding: 1.25rem;
@@ -615,7 +789,7 @@ body {
 
 .semester-pill.active {
     background-color: var(--primary);
-    color: #ffffff;
+    color: var(--btn-primary-text, #ffffff);
     border-color: var(--primary);
     box-shadow: var(--shadow-sm);
 }
@@ -653,7 +827,7 @@ body {
 }
 
 .course-card {
-    background-color: #ffffff;
+    background-color: var(--bg-surface);
     border: 1px solid var(--neutral-200);
     border-radius: var(--radius-lg);
     padding: 1.5rem;
@@ -712,7 +886,7 @@ body {
 
 /* Friendly Empty / Coming Soon Banner */
 .coming-soon-card {
-    background-color: #ffffff;
+    background-color: var(--bg-surface);
     border: 1px dashed var(--warning-border);
     background-color: var(--warning-bg);
     border-radius: var(--radius-lg);
@@ -729,13 +903,13 @@ body {
 .coming-soon-title {
     font-size: 1.25rem;
     font-weight: 700;
-    color: #92400e;
+    color: var(--warning-text);
     margin-bottom: 0.5rem;
 }
 
 .coming-soon-text {
     font-size: 0.95rem;
-    color: #b45309;
+    color: var(--warning-text);
     max-width: 600px;
     margin: 0 auto;
     line-height: 1.6;
@@ -743,7 +917,7 @@ body {
 
 /* Course Detail Page */
 .course-hero {
-    background-color: #ffffff;
+    background-color: var(--bg-surface);
     border: 1px solid var(--neutral-200);
     border-radius: var(--radius-lg);
     padding: 2rem;
@@ -862,7 +1036,7 @@ body {
 }
 
 .topic-row-card {
-    background-color: #ffffff;
+    background-color: var(--bg-surface);
     border: 1px solid var(--neutral-200);
     border-radius: var(--radius);
     padding: 1.25rem 1.5rem;
@@ -983,7 +1157,7 @@ body {
 }
 
 .topic-header {
-    background-color: #ffffff;
+    background-color: var(--bg-surface);
     border: 1px solid var(--neutral-200);
     border-radius: var(--radius-lg);
     padding: 2rem;
@@ -1042,7 +1216,7 @@ body {
 }
 
 .notes-reader-card {
-    background-color: #ffffff;
+    background-color: var(--bg-surface);
     border: 1px solid var(--neutral-200);
     border-radius: var(--radius-lg);
     box-shadow: var(--shadow-sm);
@@ -1168,16 +1342,17 @@ body {
 .markdown-body code {
     font-family: var(--font-mono);
     font-size: 0.875em;
-    background-color: var(--neutral-100);
-    color: #e11d48;
+    background-color: var(--bg-surface-alt);
+    color: var(--code-color);
     padding: 0.15rem 0.4rem;
     border-radius: var(--radius-sm);
-    border: 1px solid var(--neutral-200);
+    border: 1px solid var(--border-color);
 }
 
 .markdown-body pre {
-    background-color: var(--neutral-900);
-    color: #f8fafc;
+    background-color: var(--pre-bg);
+    color: var(--pre-color);
+    border: 1px solid var(--border-color);
     border-radius: var(--radius);
     padding: 1.25rem;
     overflow-x: auto;
@@ -1261,7 +1436,7 @@ body {
 }
 
 .sidebar-card {
-    background-color: #ffffff;
+    background-color: var(--bg-surface);
     border: 1px solid var(--neutral-200);
     border-radius: var(--radius-lg);
     padding: 1.25rem;
@@ -1373,7 +1548,7 @@ body {
 
 /* Footer */
 .site-footer {
-    background-color: #ffffff;
+    background-color: var(--bg-surface);
     border-top: 1px solid var(--neutral-200);
     margin-top: auto;
     padding: 1.5rem 1.5rem;
@@ -1462,7 +1637,7 @@ body {
 }
 
 .quiz-header {
-    background: #ffffff;
+    background: var(--bg-surface);
     border: 1px solid var(--neutral-200);
     border-radius: var(--radius-lg);
     padding: 2rem;
@@ -1499,7 +1674,7 @@ body {
 }
 
 .quiz-question-card {
-    background: #ffffff;
+    background: var(--bg-surface);
     border: 1px solid var(--neutral-200);
     border-radius: var(--radius-lg);
     padding: 1.75rem;
@@ -1616,7 +1791,7 @@ body {
 
 /* Quiz Result Presentation */
 .quiz-result-hero {
-    background: #ffffff;
+    background: var(--bg-surface);
     border: 1px solid var(--neutral-200);
     border-radius: var(--radius-lg);
     padding: 2.25rem;
@@ -1740,7 +1915,7 @@ body {
 .answer-block-correct {
     background: var(--success-bg);
     border: 1px solid var(--success-border);
-    color: #14532d;
+    color: var(--success-text);
 }
 
 .answer-block-correct .answer-block-label {
@@ -1750,7 +1925,7 @@ body {
 .answer-block-wrong {
     background: var(--danger-bg);
     border: 1px solid var(--danger-border);
-    color: #7f1d1d;
+    color: var(--danger-text);
 }
 
 .answer-block-wrong .answer-block-label {
@@ -1768,7 +1943,7 @@ body {
 }
 
 .answer-block-groundtruth {
-    background: #ffffff;
+    background: var(--bg-surface);
     border: 1px solid var(--neutral-200);
     color: var(--neutral-900);
 }
@@ -1820,7 +1995,7 @@ body {
 
 /* Quiz Empty State (no questions) */
 .quiz-empty-state-card {
-    background: #ffffff;
+    background: var(--bg-surface);
     border: 1px solid var(--neutral-200);
     border-radius: var(--radius-lg);
     padding: 4rem 2rem;
@@ -1924,7 +2099,7 @@ body {
 
 /* Empty State Card */
 .empty-state-card {
-    background: #ffffff;
+    background: var(--bg-surface);
     border: 1px solid var(--neutral-200);
     border-radius: var(--radius-lg);
     padding: 2.5rem 2rem;
@@ -1962,7 +2137,7 @@ body {
 }
 
 .metric-card {
-    background: #ffffff;
+    background: var(--bg-surface);
     border: 1px solid var(--neutral-200);
     border-radius: var(--radius);
     padding: 1.15rem 1rem;
@@ -2022,7 +2197,7 @@ body {
 }
 
 .chart-card {
-    background: #ffffff;
+    background: var(--bg-surface);
     border: 1px solid var(--neutral-200);
     border-radius: var(--radius-lg);
     padding: 1.25rem;
@@ -2066,7 +2241,7 @@ body {
 }
 
 .dashboard-card {
-    background: #ffffff;
+    background: var(--bg-surface);
     border: 1px solid var(--neutral-200);
     border-radius: var(--radius-lg);
     padding: 1.5rem;
@@ -2168,7 +2343,7 @@ body {
     display: flex;
     align-items: baseline;
     gap: 0.4rem;
-    background: #ffffff;
+    background: var(--bg-surface);
     border: 1px solid var(--neutral-200);
     padding: 0.35rem 0.6rem;
     border-radius: var(--radius-sm);
@@ -2203,6 +2378,320 @@ body {
         grid-template-columns: 1fr;
     }
 }
+
+/* ==========================================================================
+   Generic Card & Surface Styles
+   ========================================================================== */
+
+.card {
+    background-color: var(--bg-surface);
+    border: 1px solid var(--border-color);
+    border-radius: var(--radius-lg);
+    color: var(--text-main);
+}
+
+/* ==========================================================================
+   Theme Switch Navigation Control
+   ========================================================================== */
+
+.theme-switch {
+    display: inline-flex;
+    align-items: center;
+    background-color: var(--bg-surface-alt);
+    border: 1px solid var(--border-color);
+    border-radius: var(--radius-full);
+    padding: 3px;
+    gap: 2px;
+}
+
+.theme-btn {
+    background: transparent;
+    border: none;
+    padding: 0.25rem 0.55rem;
+    font-size: 0.78rem;
+    font-weight: 500;
+    color: var(--text-muted);
+    border-radius: var(--radius-full);
+    cursor: pointer;
+    transition: all 0.15s ease;
+    line-height: 1.2;
+    font-family: inherit;
+}
+
+.theme-btn:hover {
+    color: var(--text-heading);
+}
+
+.theme-btn.active {
+    background-color: var(--bg-surface);
+    color: var(--text-heading);
+    font-weight: 600;
+    box-shadow: var(--shadow-sm);
+}
+
+@media (max-width: 768px) {
+    .theme-switch {
+        margin-top: 0.25rem;
+    }
+    .theme-btn {
+        padding: 0.25rem 0.45rem;
+        font-size: 0.75rem;
+    }
+}
+
+/* ==========================================================================
+   AI Notes Banner
+   ========================================================================== */
+
+.ai-notes-banner {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    padding: 0.85rem 1.25rem;
+    border-radius: var(--radius);
+    background-color: var(--warning-bg);
+    color: var(--warning-text);
+    border: 1px solid var(--warning-border);
+    margin-bottom: 1.5rem;
+    font-size: 0.95rem;
+    font-weight: 600;
+}
+
+.ai-banner-icon {
+    font-size: 1.25rem;
+}
+
+.ai-banner-text {
+    flex: 1;
+}
+
+/* ==========================================================================
+   Dark Theme Adjustments
+   ========================================================================== */
+
+html[data-theme="dark"] body {
+    background-color: var(--bg-body);
+    color: var(--text-main);
+}
+
+html[data-theme="dark"] .badge-mastery-weak {
+    background-color: var(--danger-bg);
+    color: var(--danger-text);
+    border-color: var(--danger-border);
+}
+
+html[data-theme="dark"] .badge-mastery-good {
+    background-color: var(--warning-bg);
+    color: var(--warning-text);
+    border-color: var(--warning-border);
+}
+
+html[data-theme="dark"] .badge-mastery-better {
+    background-color: var(--primary-light);
+    color: var(--primary);
+    border-color: var(--primary-border);
+}
+
+html[data-theme="dark"] .badge-mastery-excellent {
+    background-color: var(--success-bg);
+    color: var(--success-text);
+    border-color: var(--success-border);
+}
+
+html[data-theme="dark"] .diff-1 { background-color: rgba(16, 185, 129, 0.2); color: #34d399; }
+html[data-theme="dark"] .diff-2 { background-color: rgba(34, 197, 94, 0.2); color: #4ade80; }
+html[data-theme="dark"] .diff-3 { background-color: rgba(245, 158, 11, 0.2); color: #fbbf24; }
+html[data-theme="dark"] .diff-4 { background-color: rgba(249, 115, 22, 0.2); color: #fb923c; }
+html[data-theme="dark"] .diff-5 { background-color: rgba(239, 68, 68, 0.2); color: #f87171; }
+
+html[data-theme="dark"] .type-note { background-color: rgba(59, 130, 246, 0.2); color: #93c5fd; }
+html[data-theme="dark"] .type-diagram { background-color: rgba(245, 158, 11, 0.2); color: #fcd34d; }
+html[data-theme="dark"] .type-image { background-color: rgba(99, 102, 241, 0.2); color: #a5b4fc; }
+html[data-theme="dark"] .type-link { background-color: rgba(168, 85, 247, 0.2); color: #d8b4fe; }
+
+/* ==========================================================================
+   Highlight Theme (High Contrast: Cream, Black, Yellow Highlights)
+   ========================================================================== */
+
+html[data-theme="highlight"] body {
+    background-color: #fbf8f1;
+    color: #000000;
+}
+
+html[data-theme="highlight"] h1,
+html[data-theme="highlight"] h2,
+html[data-theme="highlight"] h3,
+html[data-theme="highlight"] h4,
+html[data-theme="highlight"] h5,
+html[data-theme="highlight"] h6,
+html[data-theme="highlight"] .brand-logo,
+html[data-theme="highlight"] .topic-name a,
+html[data-theme="highlight"] .page-title,
+html[data-theme="highlight"] .section-title,
+html[data-theme="highlight"] .course-title,
+html[data-theme="highlight"] .topic-title,
+html[data-theme="highlight"] .quiz-title,
+html[data-theme="highlight"] .result-title,
+html[data-theme="highlight"] .dashboard-title,
+html[data-theme="highlight"] .card-section-title,
+html[data-theme="highlight"] .form-label,
+html[data-theme="highlight"] .quiz-question-text,
+html[data-theme="highlight"] .quiz-opt-text,
+html[data-theme="highlight"] .metric-value,
+html[data-theme="highlight"] .score-value {
+    color: #000000 !important;
+}
+
+html[data-theme="highlight"] p,
+html[data-theme="highlight"] span:not(.badge):not(.difficulty-meter),
+html[data-theme="highlight"] div:not(.badge),
+html[data-theme="highlight"] li,
+html[data-theme="highlight"] td,
+html[data-theme="highlight"] th {
+    color: #000000;
+}
+
+/* High Contrast Yellow Highlights on Buttons */
+html[data-theme="highlight"] .btn-primary {
+    background-color: #facc15 !important;
+    color: #000000 !important;
+    border: 2px solid #000000 !important;
+    font-weight: 700 !important;
+}
+
+html[data-theme="highlight"] .btn-primary:hover {
+    background-color: #eab308 !important;
+    color: #000000 !important;
+}
+
+html[data-theme="highlight"] .btn-outline {
+    background-color: transparent !important;
+    color: #000000 !important;
+    border: 2px solid #000000 !important;
+    font-weight: 600 !important;
+}
+
+html[data-theme="highlight"] .btn-outline:hover {
+    background-color: #fde047 !important;
+    color: #000000 !important;
+}
+
+html[data-theme="highlight"] .btn-secondary {
+    background-color: #fef08a !important;
+    color: #000000 !important;
+    border: 2px solid #000000 !important;
+    font-weight: 600 !important;
+}
+
+html[data-theme="highlight"] .btn-secondary:hover {
+    background-color: #fde047 !important;
+    color: #000000 !important;
+}
+
+/* High Contrast Yellow Highlights on Links */
+html[data-theme="highlight"] a:not(.btn):not(.brand-logo) {
+    color: #000000;
+    text-decoration: underline 1.5px #000000;
+}
+
+html[data-theme="highlight"] a:not(.btn):not(.brand-logo):hover {
+    background-color: #fde047 !important;
+    color: #000000 !important;
+    border-radius: 2px;
+}
+
+html[data-theme="highlight"] .text-link {
+    color: #000000 !important;
+    background-color: #fef08a !important;
+    padding: 0.05rem 0.35rem;
+    border-radius: 2px;
+    border-bottom: 2px solid #000000 !important;
+    text-decoration: none !important;
+    font-weight: 700 !important;
+}
+
+html[data-theme="highlight"] .text-link:hover {
+    background-color: #facc15 !important;
+}
+
+/* High Contrast Yellow Highlights on Active Nav Items */
+html[data-theme="highlight"] .nav-link.active,
+html[data-theme="highlight"] .semester-pill.active,
+html[data-theme="highlight"] .theme-btn.active {
+    background-color: #facc15 !important;
+    color: #000000 !important;
+    border: 2px solid #000000 !important;
+    font-weight: 700 !important;
+}
+
+html[data-theme="highlight"] .theme-switch {
+    border: 2px solid #000000 !important;
+    background-color: #f0ebd8 !important;
+}
+
+html[data-theme="highlight"] .theme-btn {
+    color: #000000 !important;
+}
+
+/* Mastery Badges (Weak, Good, Better, Excellent) readable in Highlight theme */
+html[data-theme="highlight"] .badge-mastery-weak {
+    background-color: #fee2e2 !important;
+    color: #000000 !important;
+    border: 2px solid #dc2626 !important;
+    font-weight: 700 !important;
+}
+
+html[data-theme="highlight"] .badge-mastery-good {
+    background-color: #fef3c7 !important;
+    color: #000000 !important;
+    border: 2px solid #d97706 !important;
+    font-weight: 700 !important;
+}
+
+html[data-theme="highlight"] .badge-mastery-better {
+    background-color: #dbeafe !important;
+    color: #000000 !important;
+    border: 2px solid #2563eb !important;
+    font-weight: 700 !important;
+}
+
+html[data-theme="highlight"] .badge-mastery-excellent {
+    background-color: #dcfce7 !important;
+    color: #000000 !important;
+    border: 2px solid #16a34a !important;
+    font-weight: 700 !important;
+}
+
+/* High Contrast Borders on Cards, Tables and Inputs */
+html[data-theme="highlight"] .card,
+html[data-theme="highlight"] .auth-card,
+html[data-theme="highlight"] .topic-row-card,
+html[data-theme="highlight"] .course-card,
+html[data-theme="highlight"] .dashboard-card,
+html[data-theme="highlight"] .metric-card,
+html[data-theme="highlight"] .chart-card,
+html[data-theme="highlight"] .quiz-header,
+html[data-theme="highlight"] .quiz-question-card,
+html[data-theme="highlight"] .quiz-result-hero,
+html[data-theme="highlight"] .notes-reader-card,
+html[data-theme="highlight"] .history-card,
+html[data-theme="highlight"] .site-header,
+html[data-theme="highlight"] .site-footer,
+html[data-theme="highlight"] .form-input,
+html[data-theme="highlight"] .form-select,
+html[data-theme="highlight"] textarea,
+html[data-theme="highlight"] table th,
+html[data-theme="highlight"] table td {
+    border-color: #000000 !important;
+}
+
+html[data-theme="highlight"] .ai-notes-banner {
+    background-color: #fef3c7 !important;
+    color: #000000 !important;
+    border: 2px solid #000000 !important;
+    font-weight: 700 !important;
+}
+
 
 
 

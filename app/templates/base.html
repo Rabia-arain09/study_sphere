@@ -1,9 +1,23 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="en" data-theme="light">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>{% block title %}StudySphere - Adaptive Learning Platform{% endblock %}</title>
+    <script>
+        (function() {
+            try {
+                var theme = localStorage.getItem('studysphere-theme');
+                if (['dark', 'highlight', 'light'].indexOf(theme) !== -1) {
+                    document.documentElement.setAttribute('data-theme', theme);
+                } else {
+                    document.documentElement.setAttribute('data-theme', 'light');
+                }
+            } catch (e) {
+                document.documentElement.setAttribute('data-theme', 'light');
+            }
+        })();
+    </script>
     <link rel="stylesheet" href="{{ url_for('static', filename='css/main.css') }}">
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -33,6 +47,12 @@
                     <a href="{{ url_for('auth.login') }}" class="nav-link {% if request.endpoint == 'auth.login' %}active{% endif %}">Log In</a>
                     <a href="{{ url_for('auth.signup') }}" class="btn btn-primary btn-sm">Sign Up</a>
                 {% endif %}
+
+                <div class="theme-switch" id="theme-switch" role="group" aria-label="Theme selector">
+                    <button type="button" class="theme-btn" data-theme="light" data-theme-val="light" aria-pressed="false" title="Light theme">Light</button>
+                    <button type="button" class="theme-btn" data-theme="dark" data-theme-val="dark" aria-pressed="false" title="Dark theme">Dark</button>
+                    <button type="button" class="theme-btn" data-theme="highlight" data-theme-val="highlight" aria-pressed="false" title="Highlight theme">Highlight</button>
+                </div>
             </nav>
         </div>
     </header>

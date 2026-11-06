@@ -105,8 +105,8 @@ study_sphere/
 ├── data/                    # Curriculum dataset benchmarks & study notes
 │   ├── courses.csv              # 44 degree courses (code, title, domain, credits, contact)
 │   ├── course_prerequisites.csv # 12 course-level academic prerequisites
-│   ├── topics.csv               # 165 syllabus topics with tags, difficulty & week
-│   ├── topic_prerequisites.csv  # 194 directed topic-level concept prerequisites
+│   ├── topics.csv               # Syllabus topics with tags, difficulty & week
+│   ├── topic_prerequisites.csv  # Directed topic-level concept prerequisites
 │   ├── questions.csv            # Calibrated assessment items (mcq, tf, short, theory)
 │   └── notes/                   # Markdown study notes organized by subject-slug/NN-topic-slug.md
 ├── migrations/              # Alembic / Flask-Migrate migration scripts
@@ -223,7 +223,7 @@ Supabase PostgreSQL queries from regions with high network latency (e.g., Pakist
 
 ### 1. Initialize Local SQLite Database (`setup-local-db`)
 
-The `setup-local-db` command prepares the schema (applying migrations or `create_all`), ingests the entire curriculum dataset, and populates all study notes so your local database has the exact same **44 courses**, **165 topics**, and **165 notes** as Supabase. It is strictly idempotent and refuses to run against PostgreSQL databases.
+The `setup-local-db` command prepares the schema (applying migrations or `create_all`), ingests the curriculum dataset, and populates every study note. Course, topic, and note totals follow the current repository data. It is strictly idempotent and refuses to run against PostgreSQL databases.
 
 Run in PowerShell:
 ```powershell
@@ -244,14 +244,14 @@ Example output:
 ------------------------------------------------------------
 [1/3] Preparing database schema... OK
 [2/3] Ingesting curriculum (courses, topics, prerequisites)...
-      Processed 44 courses, 165 topics, 12 course prerequisites, 194 topic prerequisites.
+      Processed <course-count> courses, <topic-count> topics, <course-prerequisite-count> course prerequisites, <topic-prerequisite-count> topic prerequisites.
 [3/3] Ingesting study notes...
-      Processed 165 note files (165 updated, 0 unchanged, 0 skipped).
+      Processed <note-count> note files (<updated-count> updated, 0 unchanged, 0 skipped).
 ============================================================
  Local SQLite database setup completed successfully!
-> Total Courses : 44 (expected: 44)
-> Total Topics  : 165 (expected: 165)
-> Total Notes   : 165 (expected: 165)
+> Total Courses : <course-count> (expected: <course-count>)
+> Total Topics  : <topic-count> (expected: <topic-count>)
+> Total Notes   : <note-count> (expected: <note-count>)
 ============================================================
 ```
 
@@ -550,7 +550,7 @@ StudySphere features a content-based recommendation engine (`ml/recommender.py` 
 
 2. **TF-IDF Vectorization (`TfidfVectorizer`)**:
    - **Term Frequency (TF)**: Measures how frequently a word appears in a topic's text. We use `sublinear_tf=True`, which applies logarithmic scaling ($1 + \log(\text{tf})$) instead of raw counts. This prevents long notes or repeatedly used terms from unfairly dominating shorter topics.
-   - **Inverse Document Frequency (IDF)**: Measures how unique or informative a word is across all 165 curriculum topics ($\log \frac{N}{\text{df}} + 1$). Common words across all topics (like "system" or "introduction") receive low IDF weights, while specialized terms (like "perceptron", "deadlock", "syntax") receive high IDF weights.
+   - **Inverse Document Frequency (IDF)**: Measures how unique or informative a word is across the curriculum topics ($\log \frac{N}{\text{df}} + 1$). Common words across topics (like "system" or "introduction") receive low IDF weights, while specialized terms (like "perceptron", "deadlock", "syntax") receive high IDF weights.
    - The result is a high-dimensional sparse numerical vector for each topic.
 
 3. **Cosine Similarity**:
@@ -571,6 +571,7 @@ StudySphere features a content-based recommendation engine (`ml/recommender.py` 
 
 ## Design Decisions
 
+- **Course Note Scope**: Use three foundational topics per named course, each with a short note and six generated questions; omit placeholder electives without real course names.
 - **Application Factory Pattern**: Adopted `create_app()` factory with modular Blueprint separation (`auth`, `topics`, `quiz`, `upload`, `dashboard`) to isolate developer workflows and eliminate circular dependencies.
 - **Dynamic Database Adapter Switching**: Configured `app/config.py` to automatically normalize Supabase `postgres://` or `postgresql://` URIs to `postgresql+psycopg2://` while falling back to zero-config SQLite (`instance/studysphere.db`).
 - **Standardized Migration Naming Conventions**: Enforced explicit SQLAlchemy `MetaData` constraint naming convention (`ix_`, `uq_`, `ck_`, `fk_`, `pk_`) in `app/extensions.py` to prevent unnamed constraint errors during SQLite and PostgreSQL migrations.
@@ -599,7 +600,7 @@ StudySphere features a content-based recommendation engine (`ml/recommender.py` 
 - **Sanitized Markdown Notes Reader**: Engineered `render_markdown` using Python-Markdown extensions and `nh3` (Ammonia Rust sanitizer) to safely render AI-generated and lecture notes without XSS vulnerabilities.
 - **Hierarchical Curriculum Browsing & Empty States**: Structured student navigation across `/topics/`, `/topics/semester/<n>`, `/topics/course/<id>`, and `/topics/<id>` with week-based ordering, review status badges, prerequisite linking, and friendly 'notes coming soon' empty states.
 - **Flask-Login User Loader Scope Isolation**: Explicitly bound the `User` model in `load_user` to eliminate factory instance closure shadowing on `app.models`.
-- **Local SQLite Environment & Safe Migration Pipeline**: Built `setup-local-db` CLI command that validates SQLite dialect, runs migrations with `create_all` fallback, loads curriculum CSVs and Markdown notes idempotently (44 courses, 165 topics, 165 notes), and strictly refuses execution against PostgreSQL.
+- **Local SQLite Environment & Safe Migration Pipeline**: Built `setup-local-db` CLI command that validates SQLite dialect, runs migrations with `create_all` fallback, loads curriculum CSVs and Markdown notes idempotently, and strictly refuses execution against PostgreSQL.
 - **Instance-Relative Path Normalization**: Resolved relative `sqlite:///instance/` URIs in `create_app` against repository root to prevent Flask-SQLAlchemy 3.x from double-nesting paths into `instance/instance/studysphere.db`.
 - **TF-IDF Topic Name Repetition Weighting**: Repeated topic name 3 times during document text aggregation in `ml/recommender.py` to give primary title keywords prominent feature weighting above secondary description and body text.
 - **Sublinear Term Frequency Scaling**: Configured `sublinear_tf=True` in `TfidfVectorizer` to scale term frequencies logarithmically ($1 + \log(\text{tf})$), dampening the influence of repetitive keywords in detailed lecture notes.
@@ -611,7 +612,7 @@ StudySphere features a content-based recommendation engine (`ml/recommender.py` 
 - **Study Notes Reading Time Metric**: Replaced the static 'Pedagogical Ground Truth' header badge with dynamic reading time ('X min read') computed via `calculate_reading_time` at 200 words per minute using `max(1, math.ceil(words / 200))` with a 1-minute minimum for non-empty content and omitting the badge for empty notes.
 - **Quiz Engine Attempt Review & Model Reuse**: Reused existing `Question` and `Attempt` database schemas without migrations, persisting student responses in the signed session and recording numeric features (`score`, `total_questions`, `wrong_count`, `attempt_number`, `label=None`) for the Phase 5 Decision Tree.
 - **Assessment Ingestion Pipeline and Idempotency**: Built `load-questions` CLI validating CSV headers, natural topic keys, and question type rubrics before transactions, guaranteeing idempotency via `(topic_id, type, question_text)` compound keys.
-- **Question Bank Generation & Balanced Option Distribution**: Generated exactly 6 note-grounded questions per topic (3 MCQ, 1 TF, 1 Short, 1 Theory) across all 165 Semester 5 topics strictly from lecture note content and Quick checks with cyclic A-D answer distribution (36 of each letter in 48-topic subjects) and pre-commit automated CSV schema validation.
+- **Question Bank Generation & Balanced Option Distribution**: Course question banks use six note-grounded questions per topic (3 MCQ, 1 TF, 1 Short, 1 Theory), balanced MCQ answer positions, and automated CSV schema validation.
 - **Tolerant Short-Answer Normalization & Variant Ground Truth**: Normalized short-answer submissions by converting hyphens/underscores to spaces, stripping non-symbol punctuation, collapsing whitespace, and stripping leading articles ('a', 'an', 'the') for strict equality against pipe-delimited variants, while joining accepted answers with ' or ' and eliminating raw '|' delimiters in attempt result reviews.
 - **Durable Quiz Answer Persistence & Session Decoupling**: Persisted per-question responses in `attempt_answers` with `(attempt_id, question_id)` unique constraint and cascading foreign keys, reading review data exclusively from the database, and eliminating transient quiz answer payload bloat from signed session cookies.
 - **Fractional Scoring & Mathematical Consistency**: Verified `Attempt.score` is already `sa.Float()` in schema and migrated `attempts.wrong_count` to `sa.Float()` so theory self-grading ("Got it" = 1.0 pt, "Partly" = 0.5 pt / 0.5 wrong, "Missed" = 0.0 pt / 1.0 wrong) maintains strict score-wrong-total invariant (`score + wrong_count == total_questions`) without schema bloat.
@@ -667,7 +668,7 @@ python scripts/validate_questions.py
 ```
 
 The validation suite checks:
-- All 165 Semester 5 topics are present with exact type quotas (3 mcq, 1 tf, 1 short, 1 theory).
+- The four original Semester 5 courses retain their 165 existing topics, each with exact question quotas (3 mcq, 1 tf, 1 short, 1 theory).
 - No duplicate question texts within a topic.
 - Non-empty options and valid answer keys.
 - Balanced MCQ answer distribution per subject.

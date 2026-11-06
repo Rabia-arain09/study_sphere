@@ -1,11 +1,24 @@
 """Unit and integration tests for the setup-local-db CLI command."""
 
 from __future__ import annotations
+import csv
 from pathlib import Path
 from flask import Flask
 from app import create_app
 from app.extensions import db
 from app.models import Course, CoursePrerequisite, Topic, Prerequisite
+
+
+def _data_counts() -> tuple[int, int, int]:
+    """Return current topic, prerequisite, and note-file counts."""
+    with Path("data/topics.csv").open(encoding="utf-8-sig", newline="") as file:
+        topic_count = sum(1 for _ in csv.DictReader(file))
+    with Path("data/topic_prerequisites.csv").open(
+        encoding="utf-8-sig", newline=""
+    ) as file:
+        prerequisite_count = sum(1 for _ in csv.DictReader(file))
+    note_count = sum(1 for _ in Path("data/notes").rglob("*.md"))
+    return topic_count, prerequisite_count, note_count
 
 
 def _create_sqlite_test_app(db_path: Path) -> Flask:
@@ -21,29 +34,30 @@ def test_setup_local_db_runs_on_sqlite(tmp_path: Path) -> None:
     db_file = tmp_path / "studysphere_test.db"
     app = _create_sqlite_test_app(db_file)
     runner = app.test_cli_runner()
+    topic_count, prerequisite_count, note_count = _data_counts()
 
     result = runner.invoke(args=["setup-local-db"])
 
     assert result.exit_code == 0
     assert "StudySphere Local SQLite Database Setup" in result.output
     assert "[1/3] Preparing database schema..." in result.output
-    assert "Processed 44 courses, 165 topics" in result.output
-    assert "Processed 165 note files (165 updated" in result.output
+    assert f"Processed 44 courses, {topic_count} topics" in result.output
+    assert f"Processed {note_count} note files ({note_count} updated" in result.output
     assert "Local SQLite database setup completed successfully!" in result.output
     assert "> Total Courses : 44" in result.output
-    assert "> Total Topics  : 165" in result.output
-    assert "> Total Notes   : 165" in result.output
+    assert f"> Total Topics  : {topic_count}" in result.output
+    assert f"> Total Notes   : {note_count}" in result.output
 
     # Verify persistent database state within application context
     with app.app_context():
         assert Course.query.count() == 44
-        assert Topic.query.count() == 165
+        assert Topic.query.count() == topic_count
         assert (
             Topic.query.filter(Topic.content.isnot(None), Topic.content != "").count()
-            == 165
+            == topic_count
         )
         assert CoursePrerequisite.query.count() == 12
-        assert Prerequisite.query.count() == 194
+        assert Prerequisite.query.count() == prerequisite_count
 
         # Sample course and topic verification
         ml_course = Course.query.filter_by(title="Machine Learning").first()
@@ -61,26 +75,30 @@ def test_setup_local_db_is_idempotent(tmp_path: Path) -> None:
     db_file = tmp_path / "studysphere_idempotent.db"
     app = _create_sqlite_test_app(db_file)
     runner = app.test_cli_runner()
+    topic_count, _, note_count = _data_counts()
 
     # First execution - initial ingestion
     res1 = runner.invoke(args=["setup-local-db"])
     assert res1.exit_code == 0
-    assert "Processed 165 note files (165 updated" in res1.output
+    assert f"Processed {note_count} note files ({note_count} updated" in res1.output
 
     # Second execution - idempotent pass
     res2 = runner.invoke(args=["setup-local-db"])
     assert res2.exit_code == 0
-    assert "Processed 165 note files (0 updated, 165 unchanged, 0 skipped)" in res2.output
+    assert (
+        f"Processed {note_count} note files (0 updated, {note_count} unchanged, 0 skipped)"
+        in res2.output
+    )
     assert "> Total Courses : 44" in res2.output
-    assert "> Total Topics  : 165" in res2.output
-    assert "> Total Notes   : 165" in res2.output
+    assert f"> Total Topics  : {topic_count}" in res2.output
+    assert f"> Total Notes   : {note_count}" in res2.output
 
     with app.app_context():
         assert Course.query.count() == 44
-        assert Topic.query.count() == 165
+        assert Topic.query.count() == topic_count
         assert (
             Topic.query.filter(Topic.content.isnot(None), Topic.content != "").count()
-            == 165
+            == topic_count
         )
 
 
@@ -136,6 +154,7 @@ def test_setup_local_db_create_all_fallback(tmp_path: Path) -> None:
         db.create_all()
 
     runner = app.test_cli_runner()
+    topic_count, _, _ = _data_counts()
     result = runner.invoke(args=["setup-local-db"])
 
     assert result.exit_code == 0
@@ -143,8 +162,8 @@ def test_setup_local_db_create_all_fallback(tmp_path: Path) -> None:
 
     with app.app_context():
         assert Course.query.count() == 44
-        assert Topic.query.count() == 165
+        assert Topic.query.count() == topic_count
         assert (
             Topic.query.filter(Topic.content.isnot(None), Topic.content != "").count()
-            == 165
+            == topic_count
         )

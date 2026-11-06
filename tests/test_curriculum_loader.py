@@ -1,5 +1,6 @@
 """Unit and integration tests for the curriculum loader service."""
 
+import csv
 from pathlib import Path
 import pytest
 from app.extensions import db
@@ -10,6 +11,12 @@ from app.services.curriculum_loader import (
     MissingDataFileError,
     load_curriculum,
 )
+
+
+def _csv_record_count(path: Path) -> int:
+    """Return the number of records in a curriculum CSV file."""
+    with path.open(encoding="utf-8-sig", newline="") as file:
+        return sum(1 for _ in csv.DictReader(file))
 
 
 def _write_csv(path: Path, header: list[str], rows: list[list[str]]) -> None:
@@ -203,8 +210,10 @@ def test_dry_run_mode(app):
         assert summary.dry_run is True
         assert summary.courses_count == 44
         assert summary.course_prerequisites_count == 12
-        assert summary.topics_count == 165
-        assert summary.topic_prerequisites_count == 194
+        assert summary.topics_count == _csv_record_count(Path("data/topics.csv"))
+        assert summary.topic_prerequisites_count == _csv_record_count(
+            Path("data/topic_prerequisites.csv")
+        )
 
         # Confirm nothing was written
         assert Course.query.count() == 0
@@ -214,19 +223,23 @@ def test_dry_run_mode(app):
 
 
 def test_idempotency_and_real_csv_integration(app):
-    """Integration test loading real CSVs: exactly 44/12/165/194 and idempotent on second run."""
+    """Integration test loading real CSVs and confirming idempotency."""
+    expected_topics = _csv_record_count(Path("data/topics.csv"))
+    expected_topic_prerequisites = _csv_record_count(
+        Path("data/topic_prerequisites.csv")
+    )
     with app.app_context():
         # First execution: loads real CSVs
         summary1 = load_curriculum(data_dir="data", dry_run=False)
         assert summary1.courses_count == 44
         assert summary1.course_prerequisites_count == 12
-        assert summary1.topics_count == 165
-        assert summary1.topic_prerequisites_count == 194
+        assert summary1.topics_count == expected_topics
+        assert summary1.topic_prerequisites_count == expected_topic_prerequisites
 
         assert Course.query.count() == 44
         assert CoursePrerequisite.query.count() == 12
-        assert Topic.query.count() == 165
-        assert Prerequisite.query.count() == 194
+        assert Topic.query.count() == expected_topics
+        assert Prerequisite.query.count() == expected_topic_prerequisites
 
         # Verify parsed properties
         ml_topic = Topic.query.filter_by(name="Introduction to Machine Learning").first()
@@ -257,12 +270,12 @@ def test_idempotency_and_real_csv_integration(app):
         summary2 = load_curriculum(data_dir="data", dry_run=False)
         assert summary2.courses_count == 44
         assert summary2.course_prerequisites_count == 12
-        assert summary2.topics_count == 165
-        assert summary2.topic_prerequisites_count == 194
+        assert summary2.topics_count == expected_topics
+        assert summary2.topic_prerequisites_count == expected_topic_prerequisites
 
         assert Course.query.count() == 44
         assert CoursePrerequisite.query.count() == 12
-        assert Topic.query.count() == 165
-        assert Prerequisite.query.count() == 194
+        assert Topic.query.count() == expected_topics
+        assert Prerequisite.query.count() == expected_topic_prerequisites
         assert Course.query.filter_by(code="CS3xx-E1").one().title == "Machine Learning"
         assert Course.query.filter_by(code="CS3xx-E2").one().title == "Web Engineering"

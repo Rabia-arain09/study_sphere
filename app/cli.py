@@ -427,9 +427,17 @@ def setup_local_db_command(data_dir: str, notes_dir: str, force: bool) -> None:
 
     click.echo("=" * 60)
     click.echo(" Local SQLite database setup completed successfully!")
-    click.echo(f"> Total Courses : {courses_count} (expected: 44)")
-    click.echo(f"> Total Topics  : {topics_count} (expected: 165)")
-    click.echo(f"> Total Notes   : {notes_count} (expected: 165)")
+    click.echo(
+        f"> Total Courses : {courses_count} "
+        f"(expected: {curriculum_summary.courses_count})"
+    )
+    click.echo(
+        f"> Total Topics  : {topics_count} "
+        f"(expected: {curriculum_summary.topics_count})"
+    )
+    click.echo(
+        f"> Total Notes   : {notes_count} (expected: {notes_summary.total_files})"
+    )
     click.echo("=" * 60)
 
 

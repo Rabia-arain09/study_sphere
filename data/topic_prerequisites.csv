@@ -225,3 +225,15 @@ Software Engineering,Software Design and Modularity,Software Engineering,Require
 Software Engineering,Testing and Quality Assurance,Software Engineering,Software Design and Modularity
 Ideology and Constitution of Pakistan,Constitutional Development and the 1973 Constitution,Ideology and Constitution of Pakistan,Ideology and Constitutional Principles
 Ideology and Constitution of Pakistan,"Government, Rights, and Citizenship",Ideology and Constitution of Pakistan,Constitutional Development and the 1973 Constitution
+Computer Organization and Assembly Language,CPU Organization and the Instruction Cycle,Computer Organization and Assembly Language,Data Representation and Number Systems
+Computer Organization and Assembly Language,Assembly Instructions and Addressing Modes,Computer Organization and Assembly Language,CPU Organization and the Instruction Cycle
+Theory of Automata,Regular Expressions and Nondeterminism,Theory of Automata,Deterministic Finite Automata and Regular Languages
+Theory of Automata,Context-Free Grammars and Pushdown Automata,Theory of Automata,Regular Expressions and Nondeterminism
+Advanced Database Management Systems,Transactions and Concurrency Control,Advanced Database Management Systems,Database Indexing and Query Planning
+Advanced Database Management Systems,"Recovery, Replication, and Availability",Advanced Database Management Systems,Transactions and Concurrency Control
+Artificial Intelligence,Knowledge Representation and Inference,Artificial Intelligence,State-Space Search
+Artificial Intelligence,Planning and Intelligent Agents,Artificial Intelligence,Knowledge Representation and Inference
+Information Security,"Encryption, Hashing, and Digital Signatures",Information Security,"Confidentiality, Integrity, and Availability"
+Information Security,Authentication and Access Control,Information Security,"Encryption, Hashing, and Digital Signatures"
+Probability and Statistics,Random Variables and Probability Distributions,Probability and Statistics,Probability Rules and Conditional Probability
+Probability and Statistics,"Sampling, Estimation, and Hypothesis Tests",Probability and Statistics,Random Variables and Probability Distributions

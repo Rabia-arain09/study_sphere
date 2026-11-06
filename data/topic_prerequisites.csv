@@ -237,3 +237,7 @@ Information Security,"Encryption, Hashing, and Digital Signatures",Information S
 Information Security,Authentication and Access Control,Information Security,"Encryption, Hashing, and Digital Signatures"
 Probability and Statistics,Random Variables and Probability Distributions,Probability and Statistics,Probability Rules and Conditional Probability
 Probability and Statistics,"Sampling, Estimation, and Hypothesis Tests",Probability and Statistics,Random Variables and Probability Distributions
+Computer Architecture,Pipelining and Processor Hazards,Computer Architecture,Instruction Set Architecture and Instruction Formats
+Computer Architecture,Cache Memory and Locality,Computer Architecture,Pipelining and Processor Hazards
+Linear Algebra,Matrices and Linear Systems,Linear Algebra,"Vectors, Span, and Linear Independence"
+Linear Algebra,Eigenvalues and Eigenvectors,Linear Algebra,Matrices and Linear Systems

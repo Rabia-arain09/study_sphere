@@ -15,7 +15,7 @@ from app.services.curriculum_loader import load_curriculum
 from app.services.notes_loader import NotesLoader
 from app.services.question_loader import QuestionLoader
 
-COMPLETED_SEMESTER = 4
+COMPLETED_SEMESTER = 5
 LEGACY_SEMESTER_FIVE_CODES = {"CS301", "CS302", "CS3xx-E1", "CS3xx-E2"}
 EXCLUDED_COURSE_CODES = {"SS401", "MT101", "MT150"}
 LEGACY_SEMESTER_FIVE_SUBJECTS = {

@@ -241,3 +241,11 @@ Computer Architecture,Pipelining and Processor Hazards,Computer Architecture,Ins
 Computer Architecture,Cache Memory and Locality,Computer Architecture,Pipelining and Processor Hazards
 Linear Algebra,Matrices and Linear Systems,Linear Algebra,"Vectors, Span, and Linear Independence"
 Linear Algebra,Eigenvalues and Eigenvectors,Linear Algebra,Matrices and Linear Systems
+HCI and Computer Graphics,User Research and Interface Evaluation,HCI and Computer Graphics,User-Centered Design and Usability
+HCI and Computer Graphics,2D Transformations and Coordinate Systems,HCI and Computer Graphics,User Research and Interface Evaluation
+Parallel and Distributed Computing,Synchronization and Shared-Memory Safety,Parallel and Distributed Computing,Parallel Decomposition and Amdahl's Law
+Parallel and Distributed Computing,Distributed Systems and Message Passing,Parallel and Distributed Computing,Synchronization and Shared-Memory Safety
+Analysis of Algorithms,Divide-and-Conquer Algorithms,Analysis of Algorithms,Algorithm Growth and Asymptotic Notation
+Analysis of Algorithms,Greedy Algorithms and Dynamic Programming,Analysis of Algorithms,Divide-and-Conquer Algorithms
+Technical and Business Writing,Emails and Business Correspondence,Technical and Business Writing,"Audience, Purpose, and Professional Tone"
+Technical and Business Writing,Technical Reports and Proposals,Technical and Business Writing,Emails and Business Correspondence

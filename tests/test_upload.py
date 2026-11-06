@@ -7,11 +7,16 @@ from pathlib import Path
 import socket
 import struct
 import zlib
+from typing import Any
 from unittest.mock import MagicMock, patch
 import pytest
 from flask import Flask
 from flask.testing import FlaskClient
 import requests
+from docx import Document
+from pypdf import PdfWriter
+from pptx import Presentation
+from pptx.util import Inches
 from app import create_app
 from app.extensions import db
 from app.models.attempt import Attempt
@@ -27,6 +32,7 @@ from app.services.llm_client import (
 )
 from app.services.upload_service import (
     DailyLimitExceededError,
+    DocumentValidationError,
     ImageValidationError,
     LLMGenerationError,
     SSRFProtectionError,
@@ -36,6 +42,7 @@ from app.services.upload_service import (
     clean_user_request,
     compute_upload_content_hash,
     fetch_url_content,
+    extract_document_text,
     generate_study_artifacts,
     is_ip_blocked,
     process_image_upload,
@@ -76,6 +83,76 @@ def _make_valid_jpeg() -> bytes:
 def _make_valid_webp() -> bytes:
     """Generate minimal valid WEBP bytes."""
     return b"RIFF\x18\x00\x00\x00WEBPVP8 \x0c\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00"
+
+
+def _make_text_pdf(text: str) -> bytes:
+    """Create a small PDF containing selectable text without external utilities."""
+    content = f"BT /F1 12 Tf 72 720 Td ({text}) Tj ET".encode("ascii")
+    objects = [
+        b"<< /Type /Catalog /Pages 2 0 R >>",
+        b"<< /Type /Pages /Kids [3 0 R] /Count 1 >>",
+        b"<< /Type /Page /Parent 2 0 R /MediaBox [0 0 612 792] "
+        b"/Resources << /Font << /F1 4 0 R >> >> /Contents 5 0 R >>",
+        b"<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica >>",
+        b"<< /Length "
+        + str(len(content)).encode("ascii")
+        + b" >>\nstream\n"
+        + content
+        + b"\nendstream",
+    ]
+    pdf = bytearray(b"%PDF-1.4\n")
+    offsets = [0]
+    for index, obj in enumerate(objects, start=1):
+        offsets.append(len(pdf))
+        pdf.extend(f"{index} 0 obj\n".encode("ascii"))
+        pdf.extend(obj)
+        pdf.extend(b"\nendobj\n")
+    xref_offset = len(pdf)
+    pdf.extend(f"xref\n0 {len(objects) + 1}\n".encode("ascii"))
+    pdf.extend(b"0000000000 65535 f \n")
+    for offset in offsets[1:]:
+        pdf.extend(f"{offset:010d} 00000 n \n".encode("ascii"))
+    pdf.extend(
+        f"trailer\n<< /Size {len(objects) + 1} /Root 1 0 R >>\n"
+        f"startxref\n{xref_offset}\n%%EOF\n".encode("ascii")
+    )
+    return bytes(pdf)
+
+
+def _make_encrypted_pdf() -> bytes:
+    """Create an encrypted PDF to verify unsupported protection is reported."""
+    writer = PdfWriter()
+    writer.add_blank_page(width=612, height=792)
+    writer.encrypt("test-password")
+    stream = io.BytesIO()
+    writer.write(stream)
+    return stream.getvalue()
+
+
+def _make_pptx() -> bytes:
+    """Create a presentation with slide text and speaker notes."""
+    presentation = Presentation()
+    slide = presentation.slides.add_slide(presentation.slide_layouts[6])
+    shape = slide.shapes.add_textbox(Inches(1), Inches(1), Inches(8), Inches(1))
+    shape.text = "This presentation explains graph algorithms and traversal."
+    slide.notes_slide.notes_text_frame.text = (
+        "Speaker notes explain breadth first search and queue order."
+    )
+    stream = io.BytesIO()
+    presentation.save(stream)
+    return stream.getvalue()
+
+
+def _make_docx() -> bytes:
+    """Create a Word document with a paragraph and table content."""
+    document = Document()
+    document.add_paragraph("This document explains database normalization.")
+    table = document.add_table(rows=1, cols=2)
+    table.cell(0, 0).text = "First normal form"
+    table.cell(0, 1).text = "Each field contains one value."
+    stream = io.BytesIO()
+    document.save(stream)
+    return stream.getvalue()
 
 
 # ==============================================================================
@@ -170,6 +247,176 @@ def test_image_upload_route(auth_client: FlaskClient, app: Flask) -> None:
     resp_fake = auth_client.post("/upload/", data=data_fake, content_type="multipart/form-data", follow_redirects=False)
     assert resp_fake.status_code == 400
     assert b"Corrupt or invalid PNG image" in resp_fake.data
+
+
+@pytest.mark.parametrize(
+    ("filename", "file_factory", "expected_text"),
+    [
+        (
+            "lecture.pdf",
+            lambda: _make_text_pdf(
+                "This is readable study material about matrix algebra and vectors."
+            ),
+            "matrix algebra and vectors",
+        ),
+        (
+            "slides.pptx",
+            _make_pptx,
+            "Speaker notes explain breadth first search and queue order.",
+        ),
+        (
+            "notes.docx",
+            _make_docx,
+            "Each field contains one value.",
+        ),
+    ],
+)
+def test_document_upload_extracts_and_saves_source(
+    auth_client: FlaskClient,
+    app: Flask,
+    filename: str,
+    file_factory: Any,
+    expected_text: str,
+) -> None:
+    """Verify PDF, PPTX, and DOCX uploads share generation and retain the filename."""
+    data = {
+        "source_type": "document",
+        "title": f"Material from {filename}",
+        "user_request": "Focus on the key definitions",
+        "document_file": (io.BytesIO(file_factory()), filename),
+    }
+    with patch(
+        "app.services.upload_service.get_llm_client",
+        return_value=FakeLLMClient(),
+    ):
+        response = auth_client.post(
+            "/upload/",
+            data=data,
+            content_type="multipart/form-data",
+            follow_redirects=True,
+        )
+
+    assert response.status_code == 200
+    assert filename.encode() in response.data
+    with app.app_context():
+        upload = Upload.query.filter_by(source_ref=filename).one()
+        assert upload.source_type == "document"
+        assert expected_text in upload.extracted_text
+        assert upload.user_request == "Focus on the key definitions"
+        assert len(upload.questions) == 6
+
+
+def test_document_upload_rejects_wrong_extension_and_fake_file(
+    auth_client: FlaskClient,
+) -> None:
+    """Reject unsupported names and files whose bytes do not match their extension."""
+    cases = [
+        (
+            "notes.txt",
+            _make_text_pdf("A readable PDF with enough text for a test."),
+            "Unsupported document file extension",
+        ),
+        ("fake.pdf", b"not a PDF document", "does not match a valid PDF"),
+    ]
+    for filename, payload, message in cases:
+        response = auth_client.post(
+            "/upload/",
+            data={
+                "source_type": "document",
+                "document_file": (io.BytesIO(payload), filename),
+            },
+            content_type="multipart/form-data",
+        )
+        assert response.status_code == 400
+        assert message.encode() in response.data
+
+
+def test_document_upload_rejects_oversized_file(auth_client: FlaskClient) -> None:
+    """Reject a document above the configured 10 MB limit before parsing it."""
+    payload = b"%PDF-1.4\n" + b"x" * (10 * 1024 * 1024)
+    response = auth_client.post(
+        "/upload/",
+        data={
+            "source_type": "document",
+            "document_file": (io.BytesIO(payload), "large.pdf"),
+        },
+        content_type="multipart/form-data",
+    )
+    assert response.status_code == 400
+    assert b"maximum allowed limit of 10 MB" in response.data
+
+
+@pytest.mark.parametrize(
+    ("payload", "message"),
+    [
+        (b"", "uploaded document is empty"),
+        (
+            _make_text_pdf(""),
+            "This file has no readable text. "
+            "Try uploading images of the pages instead.",
+        ),
+    ],
+)
+def test_pdf_without_readable_text_has_helpful_error(
+    auth_client: FlaskClient,
+    payload: bytes,
+    message: str,
+) -> None:
+    """Return clear messages for empty and scanned PDFs."""
+    response = auth_client.post(
+        "/upload/",
+        data={
+            "source_type": "document",
+            "document_file": (io.BytesIO(payload), "scanned.pdf"),
+        },
+        content_type="multipart/form-data",
+    )
+    assert response.status_code == 400
+    assert message.encode() in response.data
+
+
+def test_document_extraction_rejects_encrypted_and_overlong_content() -> None:
+    """Reject encrypted PDFs and extracted text above the shared character limit."""
+    with pytest.raises(DocumentValidationError, match="Encrypted PDF files are not supported"):
+        extract_document_text(_make_encrypted_pdf(), "locked.pdf")
+
+    with pytest.raises(DocumentValidationError, match="PDF is corrupt"):
+        extract_document_text(b"%PDF-corrupt", "broken.pdf")
+
+    with pytest.raises(UploadValidationError, match="exceeds the maximum limit of 20"):
+        extract_document_text(
+            _make_text_pdf("A readable document with more than twenty characters."),
+            "long.pdf",
+            max_chars=20,
+        )
+
+
+def test_document_upload_obeys_daily_limit(
+    app: Flask,
+    auth_client: FlaskClient,
+    test_user: User,
+) -> None:
+    """Ensure document generation is subject to the existing daily upload quota."""
+    app.config["UPLOAD_DAILY_LIMIT"] = 0
+    with patch(
+        "app.services.upload_service.get_llm_client",
+        return_value=FakeLLMClient(),
+    ):
+        response = auth_client.post(
+            "/upload/",
+            data={
+                "source_type": "document",
+                "document_file": (
+                    io.BytesIO(_make_text_pdf("This is a readable PDF with sufficient study text.")),
+                    "limited.pdf",
+                ),
+            },
+            content_type="multipart/form-data",
+        )
+    assert response.status_code == 400
+    assert b"reached your daily generation limit" in response.data
+    with app.app_context():
+        assert Upload.query.filter_by(user_id=test_user.id).count() == 0
 
 
 # ==============================================================================

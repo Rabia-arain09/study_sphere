@@ -19,11 +19,13 @@ from app.models.upload import Upload, UploadSourceType
 from app.services.llm_client import LLMError
 from app.services.upload_service import (
     DailyLimitExceededError,
+    DocumentValidationError,
     ImageValidationError,
     LLMGenerationError,
     SSRFProtectionError,
     URLValidationError,
     UploadValidationError,
+    process_document_upload,
     process_image_upload,
     process_text_upload,
     process_url_upload,
@@ -38,7 +40,7 @@ upload_bp: Blueprint = Blueprint("upload", __name__)
 @upload_bp.route("/", methods=["GET", "POST"])
 @login_required
 def index() -> Any:
-    """Render upload form or process study material submission (text, image, URL)."""
+    """Render upload form or process text, image, document, or URL material."""
     if request.method == "POST":
         source_type = (request.form.get("source_type") or "").strip().lower()
         title = (request.form.get("title") or "").strip() or None
@@ -65,6 +67,25 @@ def index() -> Any:
                     title=title,
                     user_request=user_request,
                 )
+            elif source_type == UploadSourceType.DOCUMENT.value:
+                file = request.files.get("document_file")
+                if not file or not file.filename:
+                    raise DocumentValidationError(
+                        "Please select a PDF, PPTX, or DOCX file to upload."
+                    )
+                max_bytes = (
+                    int(current_app.config.get("UPLOAD_MAX_DOCUMENT_MB", 10))
+                    * 1024
+                    * 1024
+                )
+                file_bytes = file.read(max_bytes + 1)
+                upload, is_new = process_document_upload(
+                    user_id=current_user.id,
+                    file_bytes=file_bytes,
+                    filename=file.filename,
+                    title=title,
+                    user_request=user_request,
+                )
             elif source_type == UploadSourceType.URL.value:
                 raw_url = (request.form.get("url_content") or "").strip()
                 if not raw_url:
@@ -77,7 +98,8 @@ def index() -> Any:
                 )
             else:
                 raise UploadValidationError(
-                    "Invalid upload source type. Please select text, image, or URL."
+                    "Invalid upload source type. Please select text, image, "
+                    "document, or URL."
                 )
 
             if is_new:

@@ -5,18 +5,25 @@ import concurrent.futures
 import hashlib
 import html
 import ipaddress
+import io
 import json
 import logging
 import re
 import socket
 import urllib.parse
+import zipfile
 from datetime import datetime, timedelta, timezone
+from pathlib import Path
 from types import SimpleNamespace
 from typing import Any
 from bs4 import BeautifulSoup
+from docx import Document
 import nh3
+from pypdf import PdfReader
 import requests
 from flask import current_app
+from pptx import Presentation
+from werkzeug.utils import secure_filename
 from app.extensions import db
 from app.models.upload import Upload, UploadSourceType
 from app.services.llm_client import LLMClient, LLMError, get_llm_client
@@ -35,6 +42,10 @@ class UploadValidationError(UploadError):
 
 class ImageValidationError(UploadValidationError):
     """Exception raised when an uploaded image fails signature or dimension checks."""
+
+
+class DocumentValidationError(UploadValidationError):
+    """Exception raised when an uploaded document fails validation or extraction."""
 
 
 class URLValidationError(UploadValidationError):
@@ -1414,6 +1425,208 @@ def process_image_upload(
     db.session.add(upload)
     db.session.commit()
 
+    return upload, True
+
+
+def extract_document_text(
+    file_bytes: bytes,
+    filename: str,
+    max_mb: int = 10,
+    max_chars: int = 20000,
+) -> str:
+    """Validate a supported document and extract its text entirely in memory.
+
+    Args:
+        file_bytes: Uploaded document bytes.
+        filename: Original client filename, used to identify the format.
+        max_mb: Maximum permitted compressed document size.
+        max_chars: Maximum extracted text length.
+
+    Returns:
+        str: Extracted document text within the configured character limit.
+
+    Raises:
+        DocumentValidationError: If the file is unsupported, oversized, encrypted,
+            corrupt, or contains no readable text.
+        UploadValidationError: If extracted text exceeds the shared text limit.
+    """
+    if not file_bytes:
+        raise DocumentValidationError("The uploaded document is empty.")
+    if len(file_bytes) > max_mb * 1024 * 1024:
+        raise DocumentValidationError(
+            f"Document file size exceeds the maximum allowed limit of {max_mb} MB."
+        )
+
+    extension = Path(filename or "").suffix.lower()
+    if extension not in {".pdf", ".pptx", ".docx"}:
+        raise DocumentValidationError(
+            "Unsupported document file extension. Allowed formats are PDF (.pdf), "
+            "PowerPoint (.pptx), and Word (.docx)."
+        )
+
+    buffer = io.BytesIO(file_bytes)
+    if extension == ".pdf":
+        if not file_bytes.startswith(b"%PDF"):
+            raise DocumentValidationError(
+                "The file content does not match a valid PDF document."
+            )
+        try:
+            reader = PdfReader(buffer, strict=True)
+            if reader.is_encrypted:
+                raise DocumentValidationError(
+                    "Encrypted PDF files are not supported. "
+                    "Please upload an unlocked PDF."
+                )
+            parts = [page.extract_text() or "" for page in reader.pages]
+        except DocumentValidationError:
+            raise
+        except Exception as err:
+            raise DocumentValidationError(
+                "This PDF is corrupt or could not be read. Please upload a valid PDF."
+            ) from err
+        extracted = "\n".join(parts).strip()
+        if not extracted:
+            raise DocumentValidationError(
+                "This file has no readable text. "
+                "Try uploading images of the pages instead."
+            )
+    else:
+        file_type = "PPTX" if extension == ".pptx" else "DOCX"
+        expected_parts = {"[Content_Types].xml"}
+        if extension == ".pptx":
+            expected_parts.add("ppt/presentation.xml")
+        else:
+            expected_parts.add("word/document.xml")
+        try:
+            if not zipfile.is_zipfile(buffer):
+                raise DocumentValidationError(
+                    f"The file content does not match a valid {file_type} document."
+                )
+            with zipfile.ZipFile(buffer) as archive:
+                names = set(archive.namelist())
+                total_uncompressed_size = sum(
+                    info.file_size for info in archive.infolist()
+                )
+                if total_uncompressed_size > 100 * 1024 * 1024:
+                    raise DocumentValidationError(
+                        "This document expands beyond the supported size limit."
+                    )
+                has_slide = extension != ".pptx" or any(
+                    name.startswith("ppt/slides/slide") and name.endswith(".xml")
+                    for name in names
+                )
+                if (
+                    not expected_parts.issubset(names)
+                    or not has_slide
+                    or archive.testzip() is not None
+                ):
+                    raise DocumentValidationError(
+                        f"This {file_type} file is corrupt or invalid."
+                    )
+            buffer.seek(0)
+            if extension == ".pptx":
+                presentation = Presentation(buffer)
+                parts = []
+                for slide in presentation.slides:
+                    parts.extend(
+                        shape.text
+                        for shape in slide.shapes
+                        if getattr(shape, "has_text_frame", False)
+                        and shape.text.strip()
+                    )
+                    notes_text = slide.notes_slide.notes_text_frame.text
+                    if notes_text.strip():
+                        parts.append(notes_text)
+            else:
+                document = Document(buffer)
+                parts = [paragraph.text for paragraph in document.paragraphs]
+                parts.extend(
+                    cell.text
+                    for table in document.tables
+                    for row in table.rows
+                    for cell in row.cells
+                )
+        except DocumentValidationError:
+            raise
+        except Exception as err:
+            raise DocumentValidationError(
+                f"This {file_type} file is encrypted, corrupt, or invalid."
+            ) from err
+        extracted = "\n".join(part.strip() for part in parts if part.strip()).strip()
+        if not extracted:
+            raise DocumentValidationError(
+                f"This {file_type} file contains no readable text."
+            )
+
+    if len(extracted) > max_chars:
+        raise UploadValidationError(
+            f"Extracted document text exceeds the maximum limit of {max_chars} "
+            f"characters (provided {len(extracted)})."
+        )
+    return extracted
+
+
+def process_document_upload(
+    user_id: int,
+    file_bytes: bytes,
+    filename: str,
+    title: str | None = None,
+    user_request: str | None = None,
+    llm_client: LLMClient | None = None,
+) -> tuple[Upload, bool]:
+    """Extract and process a PDF, PPTX, or DOCX using the shared text workflow.
+
+    Args:
+        user_id: Student user ID.
+        file_bytes: Uploaded document bytes; never persisted to disk.
+        filename: Original client filename.
+        title: Optional custom topic title.
+        user_request: Optional user-provided instruction or focus request.
+        llm_client: Optional LLMClient override.
+
+    Returns:
+        tuple[Upload, bool]: (Upload entity, is_new_generation).
+    """
+    max_mb = int(current_app.config.get("UPLOAD_MAX_DOCUMENT_MB", 10))
+    max_chars = int(current_app.config.get("UPLOAD_MAX_TEXT_CHARS", 20000))
+    extracted = extract_document_text(
+        file_bytes, filename, max_mb=max_mb, max_chars=max_chars
+    )
+    cleaned = clean_text_input(extracted, max_chars=max_chars)
+    norm_request = clean_user_request(user_request)
+    stored_filename = secure_filename(Path(filename).name) or (
+        f"uploaded-document{Path(filename).suffix.lower()}"
+    )
+    text_hash = compute_upload_content_hash(cleaned, norm_request)
+    content_hash = hashlib.sha256(
+        f"{text_hash}::document::{stored_filename}".encode("utf-8")
+    ).hexdigest()
+    existing = find_existing_upload(user_id, content_hash)
+    if existing:
+        return existing, False
+
+    check_daily_limit(user_id)
+    artifacts = generate_study_artifacts(
+        material_text=cleaned,
+        client=llm_client,
+        default_title=title,
+        user_request=norm_request or None,
+    )
+    upload = Upload(
+        user_id=user_id,
+        source_type=UploadSourceType.DOCUMENT.value,
+        source_ref=stored_filename[:500],
+        title=artifacts["title"],
+        content_hash=content_hash,
+        user_request=norm_request or None,
+        extracted_text=cleaned,
+        summary=artifacts["summary"],
+        simple_explanation=artifacts["simple_explanation"],
+        key_terms=artifacts["key_terms"],
+        questions=artifacts["questions"],
+    )
+    db.session.add(upload)
+    db.session.commit()
     return upload, True
 
 

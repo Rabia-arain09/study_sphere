@@ -17,6 +17,7 @@ class UploadSourceType(str, Enum):
 
     TEXT = "text"
     IMAGE = "image"
+    DOCUMENT = "document"
     URL = "url"
 
 

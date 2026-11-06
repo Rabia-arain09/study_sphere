@@ -190,6 +190,10 @@ class Config:
     )
     LLM_PROVIDER: str = os.getenv("LLM_PROVIDER", "gemini")
     UPLOAD_MAX_TEXT_CHARS: int = int(os.getenv("UPLOAD_MAX_TEXT_CHARS", "20000"))
+    UPLOAD_MAX_DOCUMENT_MB: int = int(os.getenv("UPLOAD_MAX_DOCUMENT_MB", "10"))
+    MAX_CONTENT_LENGTH: int = (
+        UPLOAD_MAX_DOCUMENT_MB * 1024 * 1024 + 64 * 1024
+    )
     UPLOAD_MAX_IMAGE_MB: int = int(os.getenv("UPLOAD_MAX_IMAGE_MB", "4"))
     URL_FETCH_TIMEOUT: int = int(os.getenv("URL_FETCH_TIMEOUT", "10"))
     URL_MAX_BYTES: int = int(os.getenv("URL_MAX_BYTES", "2000000"))

@@ -80,7 +80,7 @@
                     </button>
                 </div>
                 <span style="font-size: 0.8rem; color: var(--neutral-500); margin-top: 0.35rem; display: block;">
-                    Applies to text, image, and URL uploads. Shapes the summary focus, explanation style, and quiz questions.
+                    Applies to text, image, document, and URL uploads. Shapes the summary focus, explanation style, and quiz questions.
                 </span>
             </div>
 
@@ -89,7 +89,7 @@
                 <label style="display: block; font-weight: 600; font-size: 0.9rem; margin-bottom: 0.5rem; color: var(--neutral-800);">
                     Choose Input Method
                 </label>
-                <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 0.5rem; margin-bottom: 1.25rem;" role="tablist">
+                <div style="display: grid; grid-template-columns: repeat(4, 1fr); gap: 0.5rem; margin-bottom: 1.25rem;" role="tablist">
                     <button type="button"
                             id="tab-btn-text"
                             class="tab-btn {% if active_tab == 'text' %}active{% endif %}"
@@ -103,6 +103,13 @@
                             onclick="selectTab('image')"
                             style="padding: 0.75rem; border: 1px solid var(--neutral-300); border-radius: var(--radius); background: var(--bg-surface); color: var(--text-main); font-weight: 600; font-size: 0.9rem; cursor: pointer; text-align: center; transition: all 0.15s ease;">
                         🖼️ Upload Image
+                    </button>
+                    <button type="button"
+                            id="tab-btn-document"
+                            class="tab-btn {% if active_tab == 'document' %}active{% endif %}"
+                            onclick="selectTab('document')"
+                            style="padding: 0.75rem; border: 1px solid var(--neutral-300); border-radius: var(--radius); background: var(--bg-surface); color: var(--text-main); font-weight: 600; font-size: 0.9rem; cursor: pointer; text-align: center; transition: all 0.15s ease;">
+                        📄 Upload Document
                     </button>
                     <button type="button"
                             id="tab-btn-url"
@@ -152,7 +159,27 @@
                 </div>
             </div>
 
-            <!-- Tab 3: URL Input -->
+            <!-- Tab 3: Document Input -->
+            <div id="panel-document" class="tab-panel" style="display: {% if active_tab == 'document' %}block{% else %}none{% endif %}; margin-bottom: 1.5rem;">
+                <label for="document_file" style="display: block; font-weight: 600; font-size: 0.9rem; margin-bottom: 0.4rem; color: var(--neutral-800);">
+                    Upload a PDF, PowerPoint, or Word Document
+                </label>
+                <div style="border: 2px dashed var(--neutral-300); border-radius: var(--radius-lg); padding: 2rem 1rem; text-align: center; background: var(--neutral-50);">
+                    <input type="file"
+                           id="document_file"
+                           name="document_file"
+                           accept=".pdf,.pptx,.docx"
+                           style="margin-bottom: 0.75rem;">
+                    <p style="font-size: 0.85rem; color: var(--neutral-600); margin-top: 0.5rem;">
+                        Accepted formats: <strong>PDF, PPTX, DOCX</strong>. Maximum file size: <strong>10 MB</strong>.
+                    </p>
+                    <p style="font-size: 0.8rem; color: var(--neutral-500); margin-top: 0.25rem;">
+                        Text is extracted in memory; the original file is not stored.
+                    </p>
+                </div>
+            </div>
+
+            <!-- Tab 4: URL Input -->
             <div id="panel-url" class="tab-panel" style="display: {% if active_tab == 'url' %}block{% else %}none{% endif %}; margin-bottom: 1.5rem;">
                 <label for="url_content" style="display: block; font-weight: 600; font-size: 0.9rem; margin-bottom: 0.4rem; color: var(--neutral-800);">
                     Article, Documentation, or Educational Page URL
@@ -217,7 +244,7 @@
 function selectTab(tabName) {
     document.getElementById('source_type').value = tabName;
     
-    ['text', 'image', 'url'].forEach(function(t) {
+    ['text', 'image', 'document', 'url'].forEach(function(t) {
         var panel = document.getElementById('panel-' + t);
         var btn = document.getElementById('tab-btn-' + t);
         if (t === tabName) {

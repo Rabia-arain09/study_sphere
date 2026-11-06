@@ -31,7 +31,8 @@
             </span>
             {% if upload.source_ref %}
                 <span class="badge badge-subtle" title="{{ upload.source_ref }}">
-                    Ref: {{ upload.source_ref[:45] }}{% if upload.source_ref | length > 45 %}...{% endif %}
+                    {% if upload.source_type == 'document' %}File{% else %}Ref{% endif %}:
+                    {{ upload.source_ref[:45] }}{% if upload.source_ref | length > 45 %}...{% endif %}
                 </span>
             {% endif %}
             <span style="font-size: 0.85rem; color: var(--neutral-500);">

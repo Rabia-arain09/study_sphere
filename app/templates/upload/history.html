@@ -39,7 +39,7 @@
                         </h2>
                         {% if u.source_ref %}
                             <div style="font-size: 0.82rem; color: var(--neutral-500); margin-bottom: 0.4rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 480px;">
-                                Source: {{ u.source_ref }}
+                                {% if u.source_type == 'document' %}File{% else %}Source{% endif %}: {{ u.source_ref }}
                             </div>
                         {% endif %}
                         <div style="font-size: 0.85rem; color: var(--neutral-600);">

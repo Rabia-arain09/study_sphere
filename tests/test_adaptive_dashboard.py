@@ -34,7 +34,8 @@ from app.models.prerequisite import Prerequisite
 from app.models.topic import Topic
 from app.models.upload import Upload
 from app.models.user import User
-from app.blueprints.dashboard import get_course_display_name
+from app.blueprints.dashboard import get_course_display_name, get_dashboard_data
+from app.services.label_service import get_topic_label
 from app.services.adaptive_service import (
     get_next_topics,
     get_user_latest_topic_attempts,
@@ -215,7 +216,7 @@ def test_tier_ordering_for_fixture_graph(app: Flask, test_user: User, adaptive_s
         # Student scored Weak on Neural Networks (which requires Perceptron -> Linear Algebra)
         _create_attempt(u.id, nn_id, score=1.0, total=4, label=MasteryLabel.WEAK)
         # Student scored Good on Naive Bayes (practice)
-        _create_attempt(u.id, bayes_id, score=3.0, total=4, label=MasteryLabel.GOOD)
+        _create_attempt(u.id, bayes_id, score=3.0, total=4, label=MasteryLabel.BETTER)
         # Student scored Excellent on SVM (mastered)
         _create_attempt(u.id, svm_id, score=4.0, total=4, label=MasteryLabel.EXCELLENT)
 
@@ -267,12 +268,15 @@ def test_reasons_text(app: Flask, test_user: User, adaptive_setup: dict):
 
         # Tier 1 reason
         lin_alg_rec = recs_by_id[adaptive_setup["t_linear_alg_id"]]
-        assert "Prerequisite of Neural Networks Architecture, which you scored Weak on" == lin_alg_rec["reason"]
+        assert (
+            "Prerequisite of Neural Networks Architecture, which has Weak topic mastery"
+            == lin_alg_rec["reason"]
+        )
         assert lin_alg_rec["label"] == "Not attempted"
 
         # Tier 2 reason
         nn_rec = recs_by_id[nn_id]
-        assert "Scored Weak on last quiz — retake to build mastery" in nn_rec["reason"]
+        assert "Topic mastery is Weak — retake to build mastery" in nn_rec["reason"]
         assert nn_rec["label"] == "Weak"
 
         # Tier 3 reason
@@ -282,8 +286,8 @@ def test_reasons_text(app: Flask, test_user: User, adaptive_setup: dict):
 
         # Tier 4 reason
         bayes_rec = recs_by_id[bayes_id]
-        assert "Scored Good — practice to reach mastery" in bayes_rec["reason"]
-        assert bayes_rec["label"] == "Good"
+        assert "Scored Better — practice to reach mastery" in bayes_rec["reason"]
+        assert bayes_rec["label"] == "Better"
 
         # Tier 5 reason
         svm_rec = recs_by_id[svm_id]
@@ -303,7 +307,7 @@ def test_rerank_weak_and_prereq_first_and_excellent_last(app: Flask, test_user: 
 
         _create_attempt(u.id, nn_id, score=1.0, total=4, label=MasteryLabel.WEAK)
         _create_attempt(u.id, svm_id, score=4.0, total=4, label=MasteryLabel.EXCELLENT)
-        _create_attempt(u.id, bayes_id, score=3.0, total=4, label=MasteryLabel.GOOD)
+        _create_attempt(u.id, bayes_id, score=2.0, total=4, label=MasteryLabel.GOOD)
 
         # Related list ordered by raw similarity score (SVM highest, LinAlg lowest)
         mock_related = [
@@ -444,12 +448,13 @@ def test_dashboard_summary_numbers(app: Flask, test_user: User, auth_client: Fla
         nn_id = adaptive_setup["t_neural_net_id"]
         bayes_id = adaptive_setup["t_bayes_id"]
 
-        # Attempt 1 on NN: Weak (25%)
+        # Attempt history on NN: a weak score followed by a stronger score.
         _create_attempt(u.id, nn_id, score=1.0, total=4, label=MasteryLabel.WEAK, attempt_number=1)
-        # Attempt 2 on NN: Better (75%)
         _create_attempt(u.id, nn_id, score=3.0, total=4, label=MasteryLabel.BETTER, attempt_number=2)
         # Attempt 1 on Bayes: Weak (25%)
         _create_attempt(u.id, bayes_id, score=1.0, total=4, label=MasteryLabel.WEAK, attempt_number=1)
+        nn_label = get_topic_label(u.id, nn_id)
+        bayes_label = get_topic_label(u.id, bayes_id)
 
         # Add 1 upload
         upload = Upload(
@@ -476,10 +481,21 @@ def test_dashboard_summary_numbers(app: Flask, test_user: User, auth_client: Fla
     assert "2</div>\n                <div class=\"metric-label\">Topics Attempted</div>" in html
     # Average score = (25 + 75 + 25) / 3 = 41.7%
     assert "41.7%</div>\n                <div class=\"metric-label\">Average Score</div>" in html
-    # Mastered topics = 1 (NN latest is Better)
-    assert "1</div>\n                <div class=\"metric-label\">Mastered Topics</div>" in html
-    # Weak topics = 1 (Bayes latest is Weak)
-    assert "1</div>\n                <div class=\"metric-label\">Weak Topics</div>" in html
+    expected_mastered = sum(
+        label in (MasteryLabel.BETTER, MasteryLabel.EXCELLENT)
+        for label in (nn_label, bayes_label)
+    )
+    expected_weak = sum(
+        label == MasteryLabel.WEAK for label in (nn_label, bayes_label)
+    )
+    assert (
+        f"{expected_mastered}</div>\n                "
+        '<div class="metric-label">Mastered Topics</div>'
+    ) in html
+    assert (
+        f"{expected_weak}</div>\n                "
+        '<div class="metric-label">Weak Topics</div>'
+    ) in html
     # Uploads count = 1
     assert "1</div>\n                <div class=\"metric-label\">Study Uploads</div>" in html
 
@@ -522,6 +538,37 @@ def test_dashboard_chart_json_shape(app: Flask, test_user: User, auth_client: Fl
 
 
 # 11. No CDN URLs in Dashboard HTML
+def test_dashboard_distribution_uses_aggregate_topic_label(
+    app: Flask,
+    test_user: User,
+    adaptive_setup: dict,
+) -> None:
+    """Verify dashboard counts use the topic model rather than stored attempt labels."""
+    with app.app_context():
+        topic_id = adaptive_setup["t_neural_net_id"]
+        attempt = Attempt(
+            user_id=test_user.id,
+            topic_id=topic_id,
+            score=4.0,
+            total_questions=4,
+            wrong_count=0.0,
+            attempt_number=1,
+            label=MasteryLabel.WEAK,
+        )
+        db.session.add(attempt)
+        db.session.commit()
+
+        topic_label = get_topic_label(test_user.id, topic_id)
+        assert topic_label == MasteryLabel.EXCELLENT
+        data = get_dashboard_data(db.session.get(User, test_user.id))
+        counts = dict(zip(
+            data["chart_labels_data"]["labels"],
+            data["chart_labels_data"]["data"],
+        ))
+        assert counts[topic_label.value] == 1
+        assert counts["Weak"] == 0
+
+
 def test_dashboard_no_cdn_urls(auth_client: FlaskClient):
     """Verify dashboard HTML contains zero CDN script references, loading Chart.js exclusively from local vendor."""
     res = auth_client.get("/dashboard/")
@@ -622,7 +669,7 @@ def test_recommendations_change_after_attempt(app: Flask, test_user: User, adapt
         assert weak_order_ids.index(lin_id) < weak_order_ids.index(dt_id)
         assert weak_order_ids.index(perceptron_id) < weak_order_ids.index(dt_id)
 
-        # Step 2: Student retakes Neural Networks and achieves Better mastery
+        # Step 2: Another attempt raises aggregate mastery out of Weak.
         _create_attempt(u.id, nn_id, score=3.0, total=4, label=MasteryLabel.BETTER, attempt_number=2)
 
         recs_improved = get_next_topics(u, limit=5)
@@ -636,8 +683,8 @@ def test_recommendations_change_after_attempt(app: Flask, test_user: User, adapt
 
         assert recs_weak_by_id[nn_id]["tier"] == 2
         assert recs_improved_by_id[nn_id]["tier"] == 4
-        assert "Scored Weak" in recs_weak_by_id[nn_id]["reason"]
-        assert "Scored Better" in recs_improved_by_id[nn_id]["reason"]
+        assert "Topic mastery is Weak" in recs_weak_by_id[nn_id]["reason"]
+        assert "Scored Good" in recs_improved_by_id[nn_id]["reason"]
 
         assert recs_weak_by_id[lin_id]["tier"] == 1
         assert recs_improved_by_id[lin_id]["tier"] == 3
@@ -662,11 +709,25 @@ def test_get_course_display_name_resolver():
     assert get_course_display_name(c_la) == "Linear Algebra"
 
     # Electives in Semester 5 (CS3xx-E1, CS3xx-E2)
-    c_e1 = Course(code="CS3xx-E1", title="Web Engineering", semester=5, domain="Elective", credit_hours=3, contact_hours="3-0-0")
-    assert get_course_display_name(c_e1) == "Elective 1"
+    c_e1 = Course(
+        code="CS3xx-E1",
+        title="Machine Learning",
+        semester=5,
+        domain="Elective",
+        credit_hours=3,
+        contact_hours="3-0-0",
+    )
+    assert get_course_display_name(c_e1) == "Machine Learning"
 
-    c_e2 = Course(code="CS3xx-E2", title="Machine Learning", semester=5, domain="Elective", credit_hours=3, contact_hours="3-0-0")
-    assert get_course_display_name(c_e2) == "Elective 2"
+    c_e2 = Course(
+        code="CS3xx-E2",
+        title="Web Engineering",
+        semester=5,
+        domain="Elective",
+        credit_hours=3,
+        contact_hours="3-0-0",
+    )
+    assert get_course_display_name(c_e2) == "Web Engineering"
 
     # Electives without a real name yet (empty title, equal to code, or generic)
     c_e1_noname = Course(code="CS3xx-E1", title="CS3xx-E1", semester=5, domain="Elective", credit_hours=3, contact_hours="3-0-0")
@@ -695,9 +756,24 @@ def test_dashboard_course_progress_chart_uses_real_course_names_and_electives(
         # Seed Semester 5 courses matching realistic curriculum: CS301, CS302, CS3xx-E1, MT301
         c1 = Course(code="CS301", title="Operating Systems", semester=5, domain="Core", credit_hours=3, contact_hours="3-0-0")
         c2 = Course(code="CS302", title="Compiler Construction", semester=5, domain="Core", credit_hours=3, contact_hours="3-0-0")
-        c3 = Course(code="CS3xx-E1", title="Web Engineering", semester=5, domain="Elective", credit_hours=3, contact_hours="3-0-0")
+        c3 = Course(
+            code="CS3xx-E1",
+            title="Machine Learning",
+            semester=5,
+            domain="Elective",
+            credit_hours=3,
+            contact_hours="3-0-0",
+        )
+        c5 = Course(
+            code="CS3xx-E2",
+            title="Web Engineering",
+            semester=5,
+            domain="Elective",
+            credit_hours=3,
+            contact_hours="3-0-0",
+        )
         c4 = Course(code="MT301", title="Linear Algebra", semester=5, domain="Mathematics", credit_hours=3, contact_hours="3-0-0")
-        db.session.add_all([c1, c2, c3, c4])
+        db.session.add_all([c1, c2, c3, c4, c5])
         db.session.commit()
 
     res = auth_client.get("/dashboard/")
@@ -712,7 +788,8 @@ def test_dashboard_course_progress_chart_uses_real_course_names_and_electives(
     assert "Operating Systems" in course_json["labels"]
     assert "Compiler Construction" in course_json["labels"]
     assert "Linear Algebra" in course_json["labels"]
-    assert "Elective 1" in course_json["labels"]
+    assert "Machine Learning" in course_json["labels"]
+    assert "Web Engineering" in course_json["labels"]
     assert "CS301" not in course_json["labels"]
     assert "CS302" not in course_json["labels"]
     assert "MT301" not in course_json["labels"]
@@ -724,6 +801,92 @@ def test_dashboard_course_progress_chart_uses_real_course_names_and_electives(
     assert "Operating Systems" in course_json["full_names"]
     assert "CS301" in course_json["codes"]
     assert "CS3xx-E1" in course_json["codes"]
+
+
+def test_semester_five_elective_names_match_across_views(
+    app: Flask,
+    test_user: User,
+    auth_client: FlaskClient,
+) -> None:
+    """Verify named electives match across dashboard, browse, topic, and History."""
+    with app.app_context():
+        machine_learning = Course(
+            code="CS3xx-E1",
+            title="Machine Learning",
+            semester=5,
+            domain="Domain Elective",
+            credit_hours=3,
+            contact_hours="2-3",
+            is_elective=True,
+        )
+        web_engineering = Course(
+            code="CS3xx-E2",
+            title="Web Engineering",
+            semester=5,
+            domain="Domain Elective",
+            credit_hours=3,
+            contact_hours="2-3",
+            is_elective=True,
+        )
+        db.session.add_all([machine_learning, web_engineering])
+        db.session.flush()
+        ml_topic = Topic(
+            course_id=machine_learning.id,
+            name="Model Training",
+            semester=5,
+            subject=machine_learning.title,
+            difficulty=2,
+            content="",
+        )
+        web_topic = Topic(
+            course_id=web_engineering.id,
+            name="Web Architecture",
+            semester=5,
+            subject=web_engineering.title,
+            difficulty=2,
+            content="",
+        )
+        db.session.add_all([ml_topic, web_topic])
+        db.session.flush()
+        db.session.add_all([
+            Attempt(
+                user_id=test_user.id,
+                topic_id=ml_topic.id,
+                score=4.0,
+                total_questions=4,
+                wrong_count=0.0,
+                attempt_number=1,
+                label=MasteryLabel.EXCELLENT,
+            ),
+            Attempt(
+                user_id=test_user.id,
+                topic_id=web_topic.id,
+                score=4.0,
+                total_questions=4,
+                wrong_count=0.0,
+                attempt_number=1,
+                label=MasteryLabel.EXCELLENT,
+            ),
+        ])
+        db.session.commit()
+        ml_topic_id = ml_topic.id
+        web_topic_id = web_topic.id
+        dashboard_data = get_dashboard_data(db.session.get(User, test_user.id))
+
+    expected_names = {"Machine Learning", "Web Engineering"}
+    assert expected_names.issubset(set(dashboard_data["chart_course_data"]["labels"]))
+
+    browse_html = auth_client.get("/topics/semester/5").get_data(as_text=True)
+    assert all(name in browse_html for name in expected_names)
+    for topic_id, expected_name in (
+        (ml_topic_id, "Machine Learning"),
+        (web_topic_id, "Web Engineering"),
+    ):
+        topic_html = auth_client.get(f"/topics/{topic_id}").get_data(as_text=True)
+        assert expected_name in topic_html
+
+    history_html = auth_client.get("/quiz/history").get_data(as_text=True)
+    assert all(name in history_html for name in expected_names)
 
 
 # 17. Dashboard Progress Over Time Line Chart Labels Have No Stray Spaces

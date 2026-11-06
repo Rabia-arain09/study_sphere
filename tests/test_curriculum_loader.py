@@ -240,6 +240,18 @@ def test_idempotency_and_real_csv_integration(app):
         assert cs102.title == "Programming Fundamentals"
         assert cs102.contact_hours == "3-3"
         assert cs102.credit_hours == 4
+        elective_1 = Course.query.filter_by(code="CS3xx-E1").first()
+        elective_2 = Course.query.filter_by(code="CS3xx-E2").first()
+        assert elective_1 is not None and elective_1.title == "Machine Learning"
+        assert elective_2 is not None and elective_2.title == "Web Engineering"
+
+        # Simulate the prior swapped names and verify the loader can safely swap back.
+        elective_1.title = "__stale_elective_title__"
+        db.session.flush()
+        elective_2.title = "Machine Learning"
+        db.session.flush()
+        elective_1.title = "Web Engineering"
+        db.session.commit()
 
         # Second execution: asserts idempotency (no duplicate key errors, row counts unchanged)
         summary2 = load_curriculum(data_dir="data", dry_run=False)
@@ -252,3 +264,5 @@ def test_idempotency_and_real_csv_integration(app):
         assert CoursePrerequisite.query.count() == 12
         assert Topic.query.count() == 165
         assert Prerequisite.query.count() == 194
+        assert Course.query.filter_by(code="CS3xx-E1").one().title == "Machine Learning"
+        assert Course.query.filter_by(code="CS3xx-E2").one().title == "Web Engineering"

@@ -17,12 +17,12 @@ from app.models.upload import Upload
 from app.services.adaptive_service import (
     get_next_topics,
     get_user_latest_topic_attempts,
-    normalize_label,
 )
 from app.services.gap_analysis import (
     build_prerequisite_graph,
     traverse_prerequisites_bfs,
 )
+from app.services.label_service import get_user_topic_labels
 
 dashboard_bp: Blueprint = Blueprint("dashboard", __name__)
 
@@ -51,7 +51,6 @@ def get_course_display_name(course: Course) -> str:
             not title
             or title.upper() == code.upper()
             or title.lower().startswith("elective")
-            or code.upper().startswith("CS3XX-E")
         ):
             return f"Elective {num}"
 
@@ -104,6 +103,7 @@ def get_dashboard_data(user: Any) -> dict[str, Any]:
     # 3. Latest attempt per topic for current user (1 query)
     latest_attempts = get_user_latest_topic_attempts(user_id)
     topics_attempted: int = len(latest_attempts)
+    topic_labels = get_user_topic_labels(user_id)
 
     # Label counts for Chart 1 and summary counts
     label_counts = {
@@ -112,10 +112,9 @@ def get_dashboard_data(user: Any) -> dict[str, Any]:
         MasteryLabel.BETTER.value: 0,
         MasteryLabel.EXCELLENT.value: 0,
     }
-    for att in latest_attempts.values():
-        lbl_str = normalize_label(att.label)
-        if lbl_str in label_counts:
-            label_counts[lbl_str] += 1
+    for label in topic_labels.values():
+        if label.value in label_counts:
+            label_counts[label.value] += 1
 
     mastered_topics: int = (
         label_counts[MasteryLabel.BETTER.value]
@@ -248,20 +247,19 @@ def get_dashboard_data(user: Any) -> dict[str, Any]:
     # 7. "Revise first" list: Weak topics in semester with top foundational gap
     revise_first_list: list[dict[str, Any]] = []
     for t in semester_topics:
-        att = latest_attempts.get(t.id)
-        lbl_str = normalize_label(att.label) if att else ""
-        if lbl_str == MasteryLabel.WEAK.value or lbl_str == "Weak":
+        topic_label = topic_labels.get(t.id)
+        if topic_label == MasteryLabel.WEAK:
             # Search BFS prerequisite DAG for gaps (deepest first)
             depths = traverse_prerequisites_bfs(t.id, adj, max_depth=4)
             found_gaps: list[tuple[int, int, str]] = []
             for p_id, depth in depths.items():
                 p_att = latest_attempts.get(p_id)
-                p_lbl = normalize_label(p_att.label) if p_att else ""
-                if p_att is None or p_lbl == MasteryLabel.WEAK.value or p_lbl == "Weak":
+                p_label = topic_labels.get(p_id)
+                if p_att is None or p_label == MasteryLabel.WEAK:
                     found_gaps.append((
                         depth,
                         p_id,
-                        "Weak" if p_att is not None else "Not attempted",
+                        "Weak" if p_label == MasteryLabel.WEAK else "Not attempted",
                     ))
 
             top_gap: dict[str, Any] | None = None

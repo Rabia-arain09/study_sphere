@@ -87,7 +87,7 @@
         <div class="chart-card">
             <div class="chart-header">
                 <h3 class="chart-title">Topic Mastery Distribution</h3>
-                <span class="text-xs text-muted">Latest quiz label per topic</span>
+                <span class="text-xs text-muted">All attempts per topic</span>
             </div>
             <div class="chart-body">
                 <canvas id="chartMasteryDistribution"></canvas>
@@ -127,7 +127,7 @@
                     <span class="badge badge-mastery-weak">{{ revise_first_list | length }} to retake</span>
                 </div>
                 <p class="card-section-desc">
-                    Topics where you scored Weak on your latest quiz, alongside top foundational gaps to remediate:
+                    Topics with Weak aggregate mastery, alongside top foundational gaps to remediate:
                 </p>
 
                 {% if revise_first_list %}

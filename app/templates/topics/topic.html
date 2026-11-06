@@ -110,11 +110,11 @@
                                 {% endif %}
                             </span>
                         </div>
-                        {% if last_attempt.label %}
+                        {% if topic_mastery_label %}
                             <div class="quiz-stat-row" style="align-items: center;">
-                                <span class="quiz-stat-label">Mastery:</span>
+                                <span class="quiz-stat-label">Topic mastery:</span>
                                 <span class="quiz-stat-value">
-                                    {% set lbl = last_attempt.label.value if last_attempt.label.value is defined else last_attempt.label %}
+                                    {% set lbl = topic_mastery_label.value if topic_mastery_label.value is defined else topic_mastery_label %}
                                     {% if lbl == 'Weak' %}
                                         <span class="badge badge-mastery-weak">Weak</span>
                                     {% elif lbl == 'Good' %}
@@ -129,7 +129,7 @@
                                 </span>
                             </div>
                             <div class="mastery-guidance text-xs text-muted" style="margin-top: 0.15rem; margin-bottom: 0.35rem; line-height: 1.3;">
-                                {{ last_attempt.label | label_guidance }}
+                                {{ topic_mastery_label | label_guidance }}
                             </div>
                         {% endif %}
                         <div class="quiz-last-link">
@@ -211,8 +211,8 @@
                 </div>
             </div>
 
-            {% set last_lbl = last_attempt.label.value if (last_attempt and last_attempt.label and last_attempt.label.value is defined) else (last_attempt.label if (last_attempt and last_attempt.label) else '') %}
-            {% if last_lbl == 'Weak' %}
+            {% set topic_lbl = topic_mastery_label.value if (topic_mastery_label and topic_mastery_label.value is defined) else (topic_mastery_label if topic_mastery_label else '') %}
+            {% if topic_lbl == 'Weak' %}
                 <!-- Revise these first card for Weak mastery -->
                 <div class="sidebar-card revise-first-card" style="border-left: 4px solid var(--danger);">
                     <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.5rem; flex-wrap: wrap; gap: 0.25rem;">

@@ -17,8 +17,10 @@ from app.models.topic import Topic
 from app.models.user import User
 from app.services.label_service import (
     get_model,
+    get_topic_label,
     reset_model_cache,
     extract_features_for_attempt,
+    extract_features_for_topic,
     predict_mastery_for_attempt,
     label_attempt_record,
     get_label_guidance,
@@ -27,10 +29,13 @@ from app.services.label_service import (
 )
 from ml.label_model import (
     generate_synthetic_dataset,
+    generate_synthetic_topic_dataset,
     train_model,
+    train_topic_model,
     predict_label,
     get_feature_importances,
     FEATURE_NAMES,
+    TOPIC_FEATURE_NAMES,
     LABELS,
 )
 
@@ -164,6 +169,36 @@ def test_synthetic_dataset_reproducible_and_has_all_classes() -> None:
     assert np.all(attempt_num >= 1.0) and np.all(attempt_num <= 5.0)
     assert np.all(prev_ratio >= -1.0) and np.all(prev_ratio <= 1.0)
     assert np.all(improvement >= -1.0) and np.all(improvement <= 1.0)
+
+
+def test_synthetic_topic_dataset_and_fixed_model(tmp_path: Path) -> None:
+    """Verify aggregate topic features and the required entropy/depth-5 model."""
+    X1, y1 = generate_synthetic_topic_dataset(n=1000, seed=42)
+    X2, y2 = generate_synthetic_topic_dataset(n=1000, seed=42)
+    np.testing.assert_array_equal(X1, X2)
+    np.testing.assert_array_equal(y1, y2)
+    assert X1.shape == (1000, 5)
+    assert set(y1) == set(LABELS)
+    assert set(TOPIC_FEATURE_NAMES) == {
+        "average_score_ratio",
+        "latest_score_ratio",
+        "best_score_ratio",
+        "attempt_count",
+        "trend",
+    }
+
+    result = train_topic_model(
+        dataset=(X1, y1),
+        seed=42,
+        model_path=tmp_path / "topic_model.joblib",
+        metrics_path=tmp_path / "topic_metrics.json",
+        tree_path=tmp_path / "topic_tree.txt",
+    )
+    assert result["best_params"] == {"criterion": "entropy", "max_depth": 5}
+    assert result["test_accuracy"] >= 0.85
+    assert result["confusion_matrix"].shape == (4, 4)
+    assert result["model"].criterion == "entropy"
+    assert result["model"].max_depth == 5
 
 
 # ==============================================================================
@@ -472,10 +507,8 @@ def test_label_recomputed_after_self_grade(
         updated2 = db.session.get(Attempt, attempt2_id)
         assert updated2.score == 3.0
         assert updated2.total_questions == 4
-        # score_ratio = 3/4 = 0.75 -> DT labels Better.
-        # Previous attempt score = 1/4 = 0.25; improvement = 0.50 >= 0.20
-        # -> improvement rule promotes Better to Excellent.
-        assert updated2.label == MasteryLabel.EXCELLENT
+        # Attempt labels remain the per-attempt Decision Tree result.
+        assert updated2.label == MasteryLabel.BETTER
 
 
 # ==============================================================================
@@ -514,6 +547,7 @@ def test_mastery_badge_and_guidance_on_result_page(
 
     # Plain-English guidance line
     assert "Revise the prerequisite topics first." in html
+    assert "Topic mastery" in html
 
 
 def test_mastery_badge_and_guidance_on_topic_page(
@@ -548,6 +582,41 @@ def test_mastery_badge_and_guidance_on_topic_page(
 
     # Guidance text for Excellent
     assert "Outstanding mastery! You are ready to move on to next topics." in html
+    assert "Topic mastery:" in html
+
+
+def test_topic_features_and_label_use_all_attempts(
+    app: Flask,
+    test_user: User,
+    quiz_mastery_setup: dict[str, int],
+) -> None:
+    """Verify topic features aggregate the full history and no history has no label."""
+    topic_id = quiz_mastery_setup["topic_id"]
+    with app.app_context():
+        assert get_topic_label(test_user.id, topic_id) is None
+        attempts = [
+            Attempt(
+                user_id=test_user.id,
+                topic_id=topic_id,
+                score=score,
+                total_questions=4,
+                wrong_count=4 - score,
+                attempt_number=number,
+                label=MasteryLabel.WEAK,
+            )
+            for number, score in enumerate((1.0, 3.0, 2.0), start=1)
+        ]
+        db.session.add_all(attempts)
+        db.session.commit()
+
+        assert extract_features_for_topic(test_user.id, topic_id) == [
+            0.5,
+            0.5,
+            0.75,
+            3.0,
+            0.0,
+        ]
+        assert isinstance(get_topic_label(test_user.id, topic_id), MasteryLabel)
 
 
 # ==============================================================================

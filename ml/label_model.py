@@ -1,13 +1,15 @@
-"""Decision Tree mastery classification model for StudySphere.
+"""Per-attempt and aggregate topic mastery Decision Tree models for StudySphere.
 
-Categorizes learner topic mastery into 4 tiers: Weak, Good, Better, Excellent.
-Uses scikit-learn's DecisionTreeClassifier trained on attempt features:
+The per-attempt classifier uses:
 - score_ratio (score / total_questions)
 - wrong_ratio (wrong_count / total_questions)
 - total_questions
 - attempt_number (capped at 5)
 - previous_score_ratio (-1.0 if first attempt)
 - improvement (score_ratio - previous_score_ratio, 0.0 if none)
+
+The topic classifier uses aggregate features from all attempts on one topic:
+average score ratio, latest score ratio, best score ratio, attempt count, and trend.
 """
 
 from __future__ import annotations
@@ -46,6 +48,18 @@ DEFAULT_MODEL_PATH: Path = DEFAULT_MODEL_DIR / "label_model.joblib"
 DEFAULT_REPORTS_DIR: Path = REPO_ROOT / "ml" / "reports"
 DEFAULT_METRICS_PATH: Path = DEFAULT_REPORTS_DIR / "label_model_metrics.json"
 DEFAULT_TREE_PATH: Path = DEFAULT_REPORTS_DIR / "label_tree.txt"
+TOPIC_FEATURE_NAMES: list[str] = [
+    "average_score_ratio",
+    "latest_score_ratio",
+    "best_score_ratio",
+    "attempt_count",
+    "trend",
+]
+DEFAULT_TOPIC_MODEL_PATH: Path = DEFAULT_MODEL_DIR / "topic_label_model.joblib"
+DEFAULT_TOPIC_METRICS_PATH: Path = (
+    DEFAULT_REPORTS_DIR / "topic_label_model_metrics.json"
+)
+DEFAULT_TOPIC_TREE_PATH: Path = DEFAULT_REPORTS_DIR / "topic_label_tree.txt"
 
 
 def generate_synthetic_dataset(
@@ -302,6 +316,204 @@ def train_model(
         "metrics_path": str(target_metrics_path),
         "tree_path": str(target_tree_path),
     }
+
+
+def generate_synthetic_topic_dataset(
+    n: int = 1000,
+    seed: int = 42,
+) -> tuple[np.ndarray, np.ndarray]:
+    """Generate reproducible synthetic mastery features across topic attempt histories.
+
+    Labels use a weighted score (40% average, 35% latest, 25% best), a 0.05 bonus
+    for a positive trend or penalty for a negative trend, and small Gaussian noise.
+    The weighted score maps to the four mastery tiers at 0.50, 0.70, and 0.90.
+
+    Args:
+        n: Number of synthetic user-topic histories.
+        seed: Random seed for reproducibility.
+
+    Returns:
+        tuple[np.ndarray, np.ndarray]: Feature matrix (n, 5) and string labels.
+    """
+    rng = np.random.default_rng(seed)
+    feature_rows: list[list[float]] = []
+    labels: list[str] = []
+
+    for _ in range(n):
+        attempt_count = int(rng.integers(1, 9))
+        underlying_score = float(rng.uniform(0.0, 1.0))
+        ratios = np.clip(
+            underlying_score + rng.normal(0.0, 0.18, size=attempt_count),
+            0.0,
+            1.0,
+        )
+        average_ratio = float(np.mean(ratios))
+        latest_ratio = float(ratios[-1])
+        best_ratio = float(np.max(ratios))
+        trend = latest_ratio - average_ratio
+
+        weighted_score = (
+            0.40 * average_ratio
+            + 0.35 * latest_ratio
+            + 0.25 * best_ratio
+            + (0.05 if trend > 0 else -0.05 if trend < 0 else 0.0)
+            + float(rng.normal(0.0, 0.015))
+        )
+        if weighted_score < 0.50:
+            label = "Weak"
+        elif weighted_score < 0.70:
+            label = "Good"
+        elif weighted_score < 0.90:
+            label = "Better"
+        else:
+            label = "Excellent"
+
+        feature_rows.append([
+            average_ratio,
+            latest_ratio,
+            best_ratio,
+            float(attempt_count),
+            trend,
+        ])
+        labels.append(label)
+
+    return np.asarray(feature_rows, dtype=float), np.asarray(labels, dtype=object)
+
+
+def train_topic_model(
+    dataset: tuple[np.ndarray, np.ndarray] | None = None,
+    seed: int = 42,
+    model_path: Path | str | None = None,
+    metrics_path: Path | str | None = None,
+    tree_path: Path | str | None = None,
+) -> dict[str, Any]:
+    """Train and evaluate the fixed entropy, depth-5 topic mastery Decision Tree."""
+    if dataset is None:
+        X, y = generate_synthetic_topic_dataset(seed=seed)
+    else:
+        X, y = dataset
+
+    X_train, X_test, y_train, y_test = train_test_split(
+        X,
+        y,
+        test_size=0.2,
+        random_state=seed,
+        stratify=y,
+    )
+    model = DecisionTreeClassifier(
+        criterion="entropy",
+        max_depth=5,
+        random_state=seed,
+    )
+    model.fit(X_train, y_train)
+
+    train_predictions = model.predict(X_train)
+    test_predictions = model.predict(X_test)
+    train_accuracy = float(accuracy_score(y_train, train_predictions))
+    test_accuracy = float(accuracy_score(y_test, test_predictions))
+    report = classification_report(
+        y_test,
+        test_predictions,
+        labels=LABELS,
+        output_dict=True,
+        zero_division=0,
+    )
+    report_text = classification_report(
+        y_test,
+        test_predictions,
+        labels=LABELS,
+        zero_division=0,
+    )
+    matrix = confusion_matrix(y_test, test_predictions, labels=LABELS)
+    feature_importances = dict(
+        zip(
+            TOPIC_FEATURE_NAMES,
+            [round(float(value), 4) for value in model.feature_importances_],
+        )
+    )
+
+    target_model_path = Path(model_path) if model_path else DEFAULT_TOPIC_MODEL_PATH
+    target_model_path.parent.mkdir(parents=True, exist_ok=True)
+    joblib.dump(model, target_model_path)
+
+    metrics_payload = {
+        "model_type": "DecisionTreeClassifier",
+        "best_params": {"criterion": "entropy", "max_depth": 5},
+        "train_accuracy": round(train_accuracy, 4),
+        "test_accuracy": round(test_accuracy, 4),
+        "feature_importances": feature_importances,
+        "per_class_metrics": {
+            label: {
+                "precision": round(float(report[label]["precision"]), 4),
+                "recall": round(float(report[label]["recall"]), 4),
+                "f1_score": round(float(report[label]["f1-score"]), 4),
+                "support": int(report[label]["support"]),
+            }
+            for label in LABELS
+        },
+        "macro_avg": {
+            "precision": round(float(report["macro avg"]["precision"]), 4),
+            "recall": round(float(report["macro avg"]["recall"]), 4),
+            "f1_score": round(float(report["macro avg"]["f1-score"]), 4),
+        },
+        "confusion_matrix": {
+            "labels": LABELS,
+            "matrix": matrix.tolist(),
+        },
+    }
+
+    target_metrics_path = (
+        Path(metrics_path) if metrics_path else DEFAULT_TOPIC_METRICS_PATH
+    )
+    target_metrics_path.parent.mkdir(parents=True, exist_ok=True)
+    with open(target_metrics_path, "w", encoding="utf-8") as metrics_file:
+        json.dump(metrics_payload, metrics_file, indent=2)
+
+    tree_text = export_text(model, feature_names=TOPIC_FEATURE_NAMES)
+    target_tree_path = Path(tree_path) if tree_path else DEFAULT_TOPIC_TREE_PATH
+    target_tree_path.parent.mkdir(parents=True, exist_ok=True)
+    with open(target_tree_path, "w", encoding="utf-8") as tree_file:
+        tree_file.write(tree_text)
+
+    return {
+        "model": model,
+        "best_params": {"criterion": "entropy", "max_depth": 5},
+        "train_accuracy": train_accuracy,
+        "test_accuracy": test_accuracy,
+        "classification_report_str": report_text,
+        "metrics": metrics_payload,
+        "confusion_matrix": matrix,
+        "feature_importances": feature_importances,
+        "tree_text": tree_text,
+        "model_path": str(target_model_path),
+        "metrics_path": str(target_metrics_path),
+        "tree_path": str(target_tree_path),
+    }
+
+
+def predict_topic_label(
+    features: Any,
+    model: DecisionTreeClassifier | None = None,
+) -> str:
+    """Predict mastery from a five-value aggregate topic feature vector."""
+    if model is None:
+        if not DEFAULT_TOPIC_MODEL_PATH.exists():
+            model = train_topic_model(seed=42)["model"]
+        else:
+            model = joblib.load(DEFAULT_TOPIC_MODEL_PATH)
+
+    if isinstance(features, dict):
+        vector = [float(features.get(name, 0.0)) for name in TOPIC_FEATURE_NAMES]
+    elif isinstance(features, (list, tuple, np.ndarray)):
+        vector = np.asarray(features, dtype=float).reshape(-1).tolist()
+    else:
+        raise ValueError(f"Unsupported topic features type: {type(features)}")
+
+    if len(vector) != len(TOPIC_FEATURE_NAMES):
+        raise ValueError(
+            f"Expected {len(TOPIC_FEATURE_NAMES)} topic features, got {len(vector)}"
+        )
+    return str(model.predict([vector])[0])
 
 
 def _coerce_feature_vector(features: Any) -> np.ndarray:

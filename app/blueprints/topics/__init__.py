@@ -11,7 +11,7 @@ from app.extensions import db
 from app.models.course import Course, CoursePrerequisite
 from app.models.prerequisite import Prerequisite
 from app.models.topic import Topic
-from app.models.attempt import Attempt, MasteryLabel
+from app.models.attempt import Attempt
 from app.services.markdown_renderer import (
     calculate_reading_time,
     render_topic_markdown,
@@ -23,9 +23,11 @@ from app.services.recommendation_service import (
 )
 from app.services.gap_analysis import get_prerequisite_gaps
 from app.services.adaptive_service import (
-    normalize_label,
     rerank_related,
-    get_user_latest_topic_attempts,
+)
+from app.services.label_service import (
+    get_user_topic_labels,
+    predict_topic_labels_from_attempts,
 )
 
 topics_bp: Blueprint = Blueprint("topics", __name__)
@@ -269,17 +271,14 @@ def topic_detail(topic_id: int):
     recent_attempts = attempts_history[:5]
     last_attempt = attempts_history[0].attempt if attempts_history else None
     attempt_count = len(user_attempts)
+    topic_mastery_label = predict_topic_labels_from_attempts(
+        {topic.id: user_attempts}
+    ).get(topic.id)
 
-    # When the student's latest attempt on this topic is Weak, compute prerequisite gaps
+    # Prerequisite remediation is based on all attempts on this topic.
     prereq_gaps = []
-    if last_attempt and last_attempt.label:
-        lbl_val = (
-            last_attempt.label.value
-            if hasattr(last_attempt.label, "value")
-            else str(last_attempt.label)
-        )
-        if lbl_val == MasteryLabel.WEAK.value or lbl_val == "Weak":
-            prereq_gaps = get_prerequisite_gaps(topic.id, current_user.id)
+    if topic_mastery_label and topic_mastery_label.value == "Weak":
+        prereq_gaps = get_prerequisite_gaps(topic.id, current_user.id)
 
     return render_template(
         "topics/topic.html",
@@ -292,6 +291,7 @@ def topic_detail(topic_id: int):
         last_attempt=last_attempt,
         attempt_count=attempt_count,
         recent_attempts=recent_attempts,
+        topic_mastery_label=topic_mastery_label,
         prereq_gaps=prereq_gaps,
     )
 
@@ -381,16 +381,15 @@ def related_topics(topic_id: int):
     if is_adaptive and current_user.is_authenticated:
         results = rerank_related(current_user, results)
     else:
-        # Default order preserved; attach optional label field
-        attempts_map = (
-            get_user_latest_topic_attempts(current_user.id)
+        # Default order preserved; attach aggregate topic mastery when available.
+        labels_by_topic = (
+            get_user_topic_labels(current_user.id)
             if current_user.is_authenticated
             else {}
         )
         for r in results:
-            att = attempts_map.get(r["id"])
-            lbl = normalize_label(att.label) if att else "Not attempted"
-            r["label"] = lbl or "Not attempted"
+            label = labels_by_topic.get(r["id"])
+            r["label"] = label.value if label else "Not attempted"
 
     return jsonify(results)
 

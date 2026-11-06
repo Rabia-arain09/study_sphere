@@ -475,28 +475,33 @@ def load_questions_command(csv_file: str, dry_run: bool) -> None:
     "--seed",
     default=42,
     type=int,
-    help="Random seed for dataset generation and CV (default: 42).",
+    help="Random seed for synthetic data generation and holdout split (default: 42).",
 )
 @click.option(
     "--n-samples",
     default=1000,
     type=int,
-    help="Number of synthetic samples (default: 1000).",
+    help="Number of synthetic topic histories (default: 1000).",
 )
 @with_appcontext
 def train_label_model_command(seed: int, n_samples: int) -> None:
-    """Train the Decision Tree mastery classifier, print metrics, and save artifacts."""
-    from ml.label_model import train_model, generate_synthetic_dataset, LABELS
+    """Train the aggregate topic mastery classifier and save evaluation artifacts."""
+    from ml.label_model import (
+        LABELS,
+        generate_synthetic_topic_dataset,
+        train_topic_model,
+    )
 
     click.echo("=" * 65)
-    click.echo(f" Training Decision Tree Mastery Classifier (n={n_samples}, seed={seed})")
+    click.echo(
+        f" Training Topic Mastery Decision Tree (n={n_samples}, seed={seed})"
+    )
     click.echo("=" * 65)
 
-    dataset = generate_synthetic_dataset(n=n_samples, seed=seed)
-    result = train_model(dataset=dataset, seed=seed)
+    dataset = generate_synthetic_topic_dataset(n=n_samples, seed=seed)
+    result = train_topic_model(dataset=dataset, seed=seed)
 
-    click.echo(f"\nBest Hyperparameters : {result['best_params']}")
-    click.echo(f"5-Fold CV Score      : {result['cv_best_score']:.4f}")
+    click.echo(f"\nModel Parameters     : {result['best_params']}")
     click.echo(f"Training Accuracy    : {result['train_accuracy']:.4f}")
     click.echo(f"Holdout Test Accuracy: {result['test_accuracy']:.4f}")
     diff = result["train_accuracy"] - result["test_accuracy"]
@@ -533,7 +538,7 @@ def train_label_model_command(seed: int, n_samples: int) -> None:
 )
 @with_appcontext
 def label_attempts_command(force: bool) -> None:
-    """Label existing attempts that have no mastery label (idempotent)."""
+    """Recompute per-attempt History labels without changing aggregate topic labels."""
     from app.models.attempt import Attempt
     from app.services.label_service import label_attempt_record
 
@@ -552,18 +557,7 @@ def label_attempts_command(force: bool) -> None:
     labeled_counts: dict[str, int] = {}
 
     for attempt in attempts_to_label:
-        # Locate the immediately preceding attempt for the same user and topic
-        # so the improvement rule has access to the previous score ratio.
-        prev_attempt = (
-            Attempt.query.filter(
-                Attempt.user_id == attempt.user_id,
-                Attempt.topic_id == attempt.topic_id,
-                Attempt.id != attempt.id,
-            )
-            .order_by(Attempt.id.desc())
-            .first()
-        )
-        label = label_attempt_record(attempt, prev_attempt=prev_attempt, commit=False)
+        label = label_attempt_record(attempt, commit=False)
         val = label.value
         labeled_counts[val] = labeled_counts.get(val, 0) + 1
 

@@ -617,13 +617,13 @@ StudySphere features a content-based recommendation engine (`ml/recommender.py` 
 - **Fractional Scoring & Mathematical Consistency**: Verified `Attempt.score` is already `sa.Float()` in schema and migrated `attempts.wrong_count` to `sa.Float()` so theory self-grading ("Got it" = 1.0 pt, "Partly" = 0.5 pt / 0.5 wrong, "Missed" = 0.0 pt / 1.0 wrong) maintains strict score-wrong-total invariant (`score + wrong_count == total_questions`) without schema bloat.
 - **Decision Tree Model Artifact Caching & Zero-Setup Fallback**: Cached the deserialized `label_model.joblib` once per process in `label_service.py`, auto-training and persisting the model with fixed seed=42 if the artifact is missing so teammates and CI environments require zero manual setup.
 - **Atomic In-Transaction Mastery Label Assignment**: Assigned `Attempt.label` inside the active database transaction during `submit_quiz` using auto-scored questions, and dynamically recomputed the label in `self-grade` after theory self-ratings update scores, wrong counts, and totals.
-- **Indexed Prior Attempt Resolution for Monotonic Inference**: Utilized the compound database index `ix_attempts_user_id_topic_id` (`user_id`, `topic_id`) to resolve the student's prior attempt in a single query (<1ms) to derive `previous_score_ratio` and `improvement`.
+- **Indexed Prior Attempt Resolution for Per-Attempt History Labels**: Utilized the compound database index `ix_attempts_user_id_topic_id` (`user_id`, `topic_id`) to derive the previous-score features used by the per-attempt History label.
+- **Topic-Level Mastery Aggregation**: Derive each user's topic label from every attempt's average, latest, best, count, and trend features; use this label for dashboard analytics, recommendations, gap analysis, topic pages, and quiz results while preserving per-attempt History labels.
 - **Phase 5 Test Assertion Progression**: Upgraded `test_attempt_number_increments_for_same_user_and_topic` to verify that `Attempt.label` is populated with a valid `MasteryLabel` upon quiz submission rather than remaining `None` (which was a Phase 4 placeholder).
 - **In-Memory Sequential Delta Calculation**: Computed attempt score percentage changes relative to the prior attempt sequentially in pure Python using `calculate_attempts_history`, eliminating secondary database queries and keeping queries strictly $O(1)$.
 - **Compact Sidebar Metric Preservation & Multi-Attempt History Table**: Retained latest attempt summary metrics on the topic sidebar while integrating the 5-attempt table with directional delta arrows and conditional 'View all attempts' links to maintain backward compatibility with existing topic summary checks.
 - **Prerequisite Knowledge Gap Graph Traversal**: Engineered pure Python breadth-first search (BFS) traversal (`app/services/gap_analysis.py`) over the topic prerequisite DAG with cycle-safe visited sets, bounded depth (max 4), and constant 4-query retrieval (`joinedload` course, deferred content) prioritizing foundational deficits for personalized student revision.
-- **Post-Classifier Improvement Rule**: Added a pure function (`ml/improvement.py`) that promotes a Decision Tree label by exactly one tier (e.g. Weak → Good) when the student's score ratio improves by ≥ 0.2 over their previous attempt on the same topic; labels are never lowered and Excellent is capped, so the rule only corrects the classifier's conservatism at boundary gains without destabilising confident predictions.
-- **Dashboard Course Progress Chart Real Course Names and Elective Placeholders**: Resolved course names on the progress bar chart from stored database titles while mapping elective placeholder codes without fixed names (CS3xx-E1, CS3xx-E2) to 'Elective 1' and 'Elective 2', wrapping long names across lines and surfacing full names with course codes in interactive tooltips.
+- **Dashboard Course Progress Chart Real Course Names and Elective Placeholders**: Resolved course names on the progress bar chart from stored database titles, preserving named electives and formatting only generic or unnamed electives as 'Elective N', while wrapping long names and surfacing full names with course codes in interactive tooltips.
 
 ---
 
@@ -695,83 +695,19 @@ The loader is completely idempotent: running it against already-ingested files w
 
 ---
 
-## Decision Tree Mastery Classification (Phase 5)
+## Topic-Level Mastery Classification
 
-StudySphere incorporates an adaptive **scikit-learn Decision Tree classifier** (`ml/label_model.py`) that categorizes a learner's topic mastery into four distinct tiers: **Weak**, **Good**, **Better**, or **Excellent**.
+The topic mastery Decision Tree uses **all attempts** by one user on one topic. Its five features are average score ratio, latest score ratio, best score ratio, attempt count, and trend (latest minus average). With no attempts, a topic has no mastery label. The dashboard, recommendations, prerequisite gap analysis, topic page, and quiz result use this aggregate label; the History page continues to show each attempt's individual label.
 
-### What the Tree Decides
-Following each quiz session, the classifier evaluates the student's performance vector and historical learning trajectory. The resulting label directly governs:
-1. **Interactive Results Feedback**: Displayed as a stylized badge (`Weak`: red, `Good`: amber, `Better`: blue, `Excellent`: green) alongside plain-English pedagogical advice.
-2. **Topic Mastery Reader Header**: Informs the student of their current mastery level directly from the study notes sidebar.
-3. **Downstream Knowledge Gap Analysis (Phase 6)**: Determines when foundational deficits require recursive DAG traversal across curriculum prerequisite trees.
+The synthetic training labels use a weighted score (40% average, 35% latest, 25% best), a 0.05 bonus for a positive trend or penalty for a negative trend, and small Gaussian noise. Scores below 0.50 map to Weak, below 0.70 to Good, below 0.90 to Better, and the rest to Excellent. The topic model is a Decision Tree with `criterion="entropy"` and `max_depth=5`; the training command reports holdout accuracy and the confusion matrix in `ml/reports/topic_label_model_metrics.json`.
 
-### Input Features
-For each attempt record, the feature engineering pipeline extracts 6 numerical features:
-- `score_ratio`: $\text{score} / \text{total\_questions}$ (primary indicator of accuracy, scaled $[0.0, 1.0]$).
-- `wrong_ratio`: $\text{wrong\_count} / \text{total\_questions}$ (explicit complement accounting for half-credit theory questions).
-- `total_questions`: Total questions evaluated (typically 4 to 6).
-- `attempt_number`: Attempt count capped at 5 ($\min(\text{attempt\_number}, 5)$) to avoid distorted terminal branches.
-- `previous_score_ratio`: Score ratio on the same user's immediately preceding attempt on the same topic ($-1.0$ if first attempt).
-- `improvement`: $\text{score\_ratio} - \text{previous\_score\_ratio}$ ($0.0$ if first attempt), capturing the student's velocity of learning.
-
-### Synthetic Data Generation & Rule Heuristics
-The initial training dataset ($N = 1000$, `seed=42`) reflects realistic classroom assessment conditions:
-- **Score Steps**: Increments of $0.5$ points to account for fractional theory self-grading.
-- **Base Thresholds**:
-  - Score ratio $< 0.50$ &rarr; `Weak`
-  - $0.50 \le \text{Score ratio} < 0.70$ &rarr; `Good`
-  - $0.70 \le \text{Score ratio} < 0.90$ &rarr; `Better`
-  - $\text{Score ratio} \ge 0.90$ &rarr; `Excellent`
-- **Attempt History Rule**:
-  - High score on a first attempt remains `Excellent`.
-  - Chronic difficulty: If $\text{attempt\_number} \ge 3$, the previous attempt was `Weak` ($< 0.50$), and the current score is near the boundary ($0.50 \le \text{score\_ratio} < 0.55$), the learner remains labeled `Weak` to reflect persistent conceptual gaps.
-- **Boundary Noise**:
-  - Approximately $5\%$ label noise is injected exclusively within $\pm 0.03$ of decision boundaries ($0.5, 0.7, 0.9$). Points far from boundaries remain deterministic, ensuring realistic decision boundaries without trivial perfection.
-
-### Hyperparameter Tuning: Gini vs. Entropy & Max Depth
-We evaluated the classifier using 5-fold cross-validation (`StratifiedKFold`, $K=5$, `seed=42`) across hyperparameter combinations:
-- **Splitting Criterion**:
-  - **Gini Impurity**: $I_G(p) = 1 - \sum_{i=1}^C p_i^2$, measuring misclassification probability.
-  - **Entropy (Information Gain)**: $H(p) = -\sum_{i=1}^C p_i \log_2(p_i)$, measuring information disorder.
-- **Max Depth**: Explored depths from 2 to 8. Bounding `max_depth` is critical to prevent the tree from memorizing idiosyncratic noise at leaf nodes (overfitting).
-- **Optimal Hyperparameters**: The cross-validation grid search selected **`criterion='entropy'`** and **`max_depth=5`** with a cross-validation score of **$0.9887$**.
-
-### Transparent Generalization & Overfitting Check
-To demonstrate generalization honestly, both training and holdout test set ($20\%$ stratified split) accuracies are reported:
-- **Training Accuracy**: **$99.38\%$** ($0.9938$)
-- **Holdout Test Accuracy**: **$99.00\%$** ($0.9900$)
-- **Generalization Gap**: **$0.38\%$** ($0.0038$) &mdash; negligible divergence confirms absence of overfitting.
-
-### Test Set Confusion Matrix & Metrics Table
-
-| Class | Precision | Recall | F1-Score | Support |
-| :--- | :---: | :---: | :---: | :---: |
-| **Weak** | 1.0000 | 0.9894 | 0.9947 | 94 |
-| **Good** | 0.9714 | 1.0000 | 0.9855 | 34 |
-| **Better** | 1.0000 | 0.9737 | 0.9867 | 38 |
-| **Excellent** | 0.9714 | 1.0000 | 0.9855 | 34 |
-| **Macro Average** | **0.9857** | **0.9908** | **0.9881** | **200** |
-
-```text
-Confusion Matrix (Holdout Test Split):
-Actual \ Predicted       Weak     Good   Better Excellent
-Weak                       93        1        0        0
-Good                        0       34        0        0
-Better                      0        0       37        1
-Excellent                   0        0        0       34
-```
-
-### Transparent Note on Synthetic Data & Future Retraining
-> [!NOTE]
-> **Viva Discussion Point**: The initial training dataset is generated from pedagogical heuristic rules. Consequently, the Decision Tree model primarily learns and smooths these programmatic heuristics. As real students take quizzes on StudySphere, the platform stores actual student scores, attempt trajectories, and instructor self-grading inputs. The automated retraining CLI (`flask --app run.py train-label-model`) is designed to ingest real student attempt logs to continually refine the classification boundaries.
-
-### CLI Commands
+The existing per-attempt model remains in place for History labels and is not post-adjusted by a separate improvement rule.
 
 ```bash
-# 1. Train Decision Tree, evaluate CV & holdout test metrics, and write committed reports:
+# Train the aggregate topic model and write its model, metrics, and tree artifacts:
 flask --app run.py train-label-model
 
-# 2. Idempotently classify existing attempts in database that lack mastery labels:
+# Idempotently fill missing per-attempt History labels:
 flask --app run.py label-attempts
 ```
 
@@ -790,8 +726,8 @@ When a student struggles on a quiz and receives a **Weak** mastery assessment, S
 1. **The Gap Rule**:
    - A prerequisite topic is flagged as a **"gap"** if:
      - The student has **never attempted** that prerequisite topic (no attempt history), OR
-     - The student's **latest quiz attempt** on that prerequisite is labeled **Weak**.
-   - Prerequisites where the student's latest performance is **Good**, **Better**, or **Excellent** are **not gaps** (they are already understood).
+     - The student's **aggregate topic mastery** on that prerequisite is **Weak**.
+   - Prerequisites with aggregate mastery **Good**, **Better**, or **Excellent** are **not gaps** (they are already understood).
    - **Crucial Traversal Behavior**: Even when a prerequisite is mastered (`Good`/`Better`/`Excellent`), the graph walk **does not stop** at that node. It continues traversing through that node to inspect any deeper, transitive prerequisites that might still be unattempted or weak.
 
 2. **The Depth Limit (Max Depth 4)**:
@@ -812,7 +748,7 @@ When a student struggles on a quiz and receives a **Weak** mastery assessment, S
 5. **Strict Query Budget (Constant $O(1)$ Queries)**:
    - To achieve sub-10ms response times and prevent $N+1$ database performance degradation, the service executes at most **3 SQL queries** (or **4 queries** total including target topic validation in web routes):
      - **Query 1**: Load all `Prerequisite` edges in a single query to construct the in-memory adjacency list.
-     - **Query 2**: Query the student's latest quiz attempts across all visited topic IDs in a single query using a `GROUP BY topic_id` subquery over `MAX(attempts.id)` filtered strictly by `user_id`.
+     - **Query 2**: Load all of the student's attempts across visited topic IDs in one query, then calculate aggregate topic labels in memory/model inference.
      - **Query 3**: Fetch topic metadata and related courses for all identified gap topic IDs in a single query using `joinedload(Topic.course)` and `defer(Topic.content)`.
    - The query count remains strictly constant regardless of whether the curriculum graph contains 5 topics or 5,000 topics.
 
@@ -974,14 +910,14 @@ Quizzes generated from uploaded study material use the platform's core evaluatio
 StudySphere synthesizes student assessment history and curriculum graph structure to generate personalized study recommendations through a 5-tier pedagogical priority hierarchy:
 
 1. **Tier 1: Prerequisite Gaps of Weak Topics (Deepest First)**
-   - When a student struggles on a topic (latest quiz labeled **Weak** by the Decision Tree classifier), the system does not merely tell them to repeat the same quiz. Instead, it recursively traverses backwards through the curriculum prerequisite DAG (using breadth-first search up to depth 4).
-   - Any foundational prerequisite that the student either has never attempted or previously scored **Weak** on is identified as a critical gap.
+   - When a student's aggregate topic mastery is **Weak**, the system does not merely tell them to repeat the same quiz. Instead, it recursively traverses backwards through the curriculum prerequisite DAG (using breadth-first search up to depth 4).
+   - Any foundational prerequisite the student has never attempted or has **Weak aggregate topic mastery** on is identified as a critical gap.
    - These prerequisite gaps are placed at the absolute top of the study queue, ordered **deepest first** (highest DAG depth), ensuring the student repairs foundational root causes before advancing.
-   - Rationale: *"Prerequisite of [Weak Topic Name], which you scored Weak on"*.
+   - Rationale: *"Prerequisite of [Weak Topic Name], which has Weak topic mastery"*.
 
 2. **Tier 2: The Weak Topics Themselves (Retake)**
    - After addressing the prerequisite gaps, the student must revisit the topic they struggled with to verify remediation and rebuild mastery.
-   - Rationale: *"Scored Weak on last quiz — retake to build mastery"*.
+   - Rationale: *"Topic mastery is Weak — retake to build mastery"*.
 
 3. **Tier 3: Ready to Learn (Unattempted Topics)**
    - Topics in the student's enrolled academic semester that have **not yet been attempted**, but whose prerequisites have **all been satisfied** (attempted and scored Good, Better, or Excellent, or having no prior prerequisites).
@@ -1014,7 +950,7 @@ A key question in academic vivas is: *Why use a rule-based ranking system rather
      - Rule-based sequencing over the DAG guarantees pedagogical correctness, curriculum adherence, and zero hallucinations.
 
 2. **Full Explainability & Student Agency**:
-   - Every recommendation comes with an explicit, plain-English reason (e.g., *"Prerequisite of Perceptron, which you scored Weak on"*).
+   - Every recommendation comes with an explicit, plain-English reason (e.g., *"Prerequisite of Perceptron, which has Weak topic mastery"*).
    - Students understand *why* a topic is recommended, building trust and educational clarity.
 
 3. **Sub-50ms Predictability & Low Latency**:
@@ -1049,6 +985,3 @@ flowchart LR
 3. **The Knowledge Gap Analysis (`app/services/gap_analysis.py` & `app/services/adaptive_service.py`)**:
    - When the Decision Tree flags an attempt as **Weak**, graph traversal algorithms trace directed dependency edges backwards to isolate unmastered root causes.
    - Dynamically reorganizes the student's dashboard ("Revise First" and "Recommended Next") and re-ranks the topic page's "Related Topics" sidebar to direct student attention to foundational gaps before advancing.
-
-
-

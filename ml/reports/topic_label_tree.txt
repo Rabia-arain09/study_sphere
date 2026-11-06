@@ -1,0 +1,55 @@
+|--- latest_score_ratio <= 0.49
+|   |--- best_score_ratio <= 0.78
+|   |   |--- latest_score_ratio <= 0.44
+|   |   |   |--- class: Weak
+|   |   |--- latest_score_ratio >  0.44
+|   |   |   |--- attempt_count <= 4.50
+|   |   |   |   |--- class: Weak
+|   |   |   |--- attempt_count >  4.50
+|   |   |   |   |--- trend <= 0.12
+|   |   |   |   |   |--- class: Good
+|   |   |   |   |--- trend >  0.12
+|   |   |   |   |   |--- class: Weak
+|   |--- best_score_ratio >  0.78
+|   |   |--- latest_score_ratio <= 0.29
+|   |   |   |--- class: Weak
+|   |   |--- latest_score_ratio >  0.29
+|   |   |   |--- class: Good
+|--- latest_score_ratio >  0.49
+|   |--- latest_score_ratio <= 0.83
+|   |   |--- latest_score_ratio <= 0.64
+|   |   |   |--- average_score_ratio <= 0.74
+|   |   |   |   |--- best_score_ratio <= 0.57
+|   |   |   |   |   |--- class: Good
+|   |   |   |   |--- best_score_ratio >  0.57
+|   |   |   |   |   |--- class: Good
+|   |   |   |--- average_score_ratio >  0.74
+|   |   |   |   |--- average_score_ratio <= 0.80
+|   |   |   |   |   |--- class: Better
+|   |   |   |   |--- average_score_ratio >  0.80
+|   |   |   |   |   |--- class: Better
+|   |   |--- latest_score_ratio >  0.64
+|   |   |   |--- average_score_ratio <= 0.52
+|   |   |   |   |--- latest_score_ratio <= 0.79
+|   |   |   |   |   |--- class: Good
+|   |   |   |   |--- latest_score_ratio >  0.79
+|   |   |   |   |   |--- class: Better
+|   |   |   |--- average_score_ratio >  0.52
+|   |   |   |   |--- best_score_ratio <= 0.69
+|   |   |   |   |   |--- class: Good
+|   |   |   |   |--- best_score_ratio >  0.69
+|   |   |   |   |   |--- class: Better
+|   |--- latest_score_ratio >  0.83
+|   |   |--- latest_score_ratio <= 0.93
+|   |   |   |--- average_score_ratio <= 0.77
+|   |   |   |   |--- class: Better
+|   |   |   |--- average_score_ratio >  0.77
+|   |   |   |   |--- best_score_ratio <= 0.88
+|   |   |   |   |   |--- class: Better
+|   |   |   |   |--- best_score_ratio >  0.88
+|   |   |   |   |   |--- class: Excellent
+|   |   |--- latest_score_ratio >  0.93
+|   |   |   |--- average_score_ratio <= 0.65
+|   |   |   |   |--- class: Better
+|   |   |   |--- average_score_ratio >  0.65
+|   |   |   |   |--- class: Excellent

@@ -36,6 +36,7 @@ from app.services.gap_analysis import (
     build_prerequisite_graph,
     traverse_prerequisites_bfs,
 )
+from app.services.label_service import get_topic_label
 
 
 @pytest.fixture
@@ -112,6 +113,35 @@ def _make_attempt(
 # ============================================================================
 # 1. Chain A <- B <- C where C is weak (B weak, A not attempted, order A then B)
 # ============================================================================
+def test_gap_status_uses_aggregate_topic_label(
+    app: Flask,
+    gap_course: Course,
+    test_user: User,
+) -> None:
+    """A strong latest score can clear a gap despite stale per-attempt Weak labels."""
+    with app.app_context():
+        prerequisite = _make_topic(gap_course.id, "Improving prerequisite")
+        target = _make_topic(gap_course.id, "Target with prerequisite")
+        _make_prereq(target.id, prerequisite.id)
+        _make_attempt(
+            test_user.id,
+            prerequisite.id,
+            label=MasteryLabel.WEAK,
+            score=0.0,
+            attempt_number=1,
+        )
+        _make_attempt(
+            test_user.id,
+            prerequisite.id,
+            label=MasteryLabel.WEAK,
+            score=4.0,
+            attempt_number=2,
+        )
+
+        assert get_topic_label(test_user.id, prerequisite.id) != MasteryLabel.WEAK
+        assert get_prerequisite_gaps(target.id, test_user.id) == []
+
+
 def test_chain_ordering(app: Flask, gap_course: Course, test_user: User):
     """Verify chain A <- B <- C where C is weak returns order [A, B] (deeper first)."""
     with app.app_context():
@@ -440,7 +470,7 @@ def test_json_shape(auth_client: FlaskClient, gap_course: Course, test_user: Use
     prereq = _make_topic(gap_course.id, "JSON Prereq")
     _make_prereq(target.id, prereq.id)
 
-    _make_attempt(test_user.id, prereq.id, label=MasteryLabel.WEAK, score=2.0)
+    _make_attempt(test_user.id, prereq.id, label=MasteryLabel.WEAK, score=1.0)
 
     res = auth_client.get(f"/topics/{target.id}/revise.json")
     assert res.status_code == 200
@@ -465,7 +495,7 @@ def test_json_shape(auth_client: FlaskClient, gap_course: Course, test_user: Use
     assert item["name"] == "JSON Prereq"
     assert item["status"] == "Weak"
     assert item["depth"] == 1
-    assert item["latest_percentage"] == 50.0
+    assert item["latest_percentage"] == 25.0
 
 
 # ============================================================================

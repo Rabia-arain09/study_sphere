@@ -10,13 +10,13 @@ from __future__ import annotations
 import collections
 import re
 from typing import Any
-from sqlalchemy import func
 from sqlalchemy.orm import defer, joinedload
 
 from app.extensions import db
 from app.models.attempt import Attempt, MasteryLabel
 from app.models.prerequisite import Prerequisite
 from app.models.topic import Topic
+from app.services.label_service import predict_topic_labels_from_attempts
 
 
 class GapList(list):
@@ -106,8 +106,8 @@ def get_prerequisite_gaps(
     Steps:
     1. Load all prerequisite edges with ONE query and build in-memory adjacency dict.
     2. Walk back from given topic through its prerequisites (BFS, max_depth 4, cycle-safe).
-    3. Query user's latest attempt per visited topic with ONE query (max attempt ID per topic).
-    4. Flag visited topics as gaps if latest label is Weak or if unattempted.
+    3. Query all of the user's attempts for visited topics once and derive topic labels.
+    4. Flag visited topics as gaps if aggregate topic mastery is Weak or unattempted.
        (Good, Better, and Excellent are not gaps, but the walk continues through them).
     5. Fetch topic entities with ONE query (joinedload course, defer content).
     6. Return gaps ordered: deeper prerequisites first (-depth), ties by difficulty, then week.
@@ -145,54 +145,45 @@ def get_prerequisite_gaps(
     if not visited_topic_ids:
         return GapList([], has_prerequisites=True)
 
-    # 3. Query user's latest attempt per visited topic with ONE query
-    subq = (
-        db.session.query(
-            Attempt.topic_id.label("topic_id"),
-            func.max(Attempt.id).label("max_id"),
-        )
+    # 3. Load complete histories so gap status uses aggregate topic mastery.
+    topic_attempts: dict[int, list[Attempt]] = {}
+    all_attempts = (
+        db.session.query(Attempt)
         .filter(
             Attempt.user_id == user_id,
             Attempt.topic_id.in_(visited_topic_ids),
         )
-        .group_by(Attempt.topic_id)
-        .subquery()
-    )
-
-    latest_attempts = (
-        db.session.query(Attempt)
-        .join(subq, Attempt.id == subq.c.max_id)
+        .order_by(Attempt.topic_id.asc(), Attempt.id.asc())
         .all()
     )
-
-    attempts_by_topic: dict[int, Attempt] = {att.topic_id: att for att in latest_attempts}
+    for attempt in all_attempts:
+        topic_attempts.setdefault(attempt.topic_id, []).append(attempt)
+    topic_labels = predict_topic_labels_from_attempts(topic_attempts)
+    latest_attempts = {
+        topic_id: attempts[-1] for topic_id, attempts in topic_attempts.items()
+    }
 
     # 4. Identify gaps (Weak or Not attempted)
     gaps_metadata: dict[int, dict[str, Any]] = {}
     for tid in visited_topic_ids:
-        attempt = attempts_by_topic.get(tid)
+        attempt = latest_attempts.get(tid)
         if attempt is None:
             # Never attempted -> Gap!
             gaps_metadata[tid] = {
                 "status": "Not attempted",
                 "latest_percentage": None,
             }
-        else:
-            lbl_val = (
-                attempt.label.value if hasattr(attempt.label, "value") else str(attempt.label)
-            ) if attempt.label else None
-
-            if lbl_val == MasteryLabel.WEAK.value or lbl_val == "Weak":
-                pct = (
-                    round((attempt.score / attempt.total_questions * 100.0), 1)
-                    if attempt.total_questions > 0
-                    else 0.0
-                )
-                gaps_metadata[tid] = {
-                    "status": "Weak",
-                    "latest_percentage": pct,
-                }
-            # Good, Better, Excellent: not gaps!
+        elif topic_labels.get(tid) == MasteryLabel.WEAK:
+            pct = (
+                round((attempt.score / attempt.total_questions * 100.0), 1)
+                if attempt.total_questions > 0
+                else 0.0
+            )
+            gaps_metadata[tid] = {
+                "status": "Weak",
+                "latest_percentage": pct,
+            }
+        # Good, Better, Excellent: not gaps!
 
     if not gaps_metadata:
         return GapList([], has_prerequisites=True)

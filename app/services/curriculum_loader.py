@@ -420,6 +420,26 @@ class CurriculumLoader:
             existing_courses = {c.code: c for c in Course.query.all()}
             courses_by_title: dict[str, Course] = {}
             courses_by_code: dict[str, Course] = {}
+            target_titles = {
+                row["course_code"]: row["title"] for row in courses_rows
+            }
+            reserved_titles = {
+                course.title for course in existing_courses.values()
+            } | set(target_titles.values())
+
+            # Free existing unique titles before applying changes such as a title swap.
+            for course in existing_courses.values():
+                target_title = target_titles.get(course.code)
+                if target_title is None or course.title == target_title:
+                    continue
+                temporary_title = f"__curriculum_sync_{course.id}__"
+                suffix = 1
+                while temporary_title in reserved_titles:
+                    temporary_title = f"__curriculum_sync_{course.id}_{suffix}__"
+                    suffix += 1
+                course.title = temporary_title
+                reserved_titles.add(temporary_title)
+            self.session.flush()
 
             for row in courses_rows:
                 code = row["course_code"]

@@ -76,11 +76,24 @@
                     </p>
                 {% endif %}
             </div>
+
+            <div class="score-card score-card-mastery">
+                <span class="score-label">Topic mastery</span>
+                <span class="score-tier">
+                    {% if topic_mastery_label %}
+                        <span class="badge {{ topic_mastery_label | label_badge_class }}">
+                            {{ topic_mastery_label.value if topic_mastery_label.value is defined else topic_mastery_label }}
+                        </span>
+                    {% else %}
+                        <span class="badge badge-subtle">No label</span>
+                    {% endif %}
+                </span>
+            </div>
         </div>
     </header>
 
-    {% set attempt_lbl = attempt.label.value if (attempt.label and attempt.label.value is defined) else (attempt.label if attempt.label else '') %}
-    {% if attempt_lbl == 'Weak' %}
+    {% set topic_lbl = topic_mastery_label.value if (topic_mastery_label and topic_mastery_label.value is defined) else (topic_mastery_label if topic_mastery_label else '') %}
+    {% if topic_lbl == 'Weak' %}
         <!-- Revise these first card for Weak mastery -->
         <section class="revise-first-card" style="margin-top: 1.5rem; margin-bottom: 2rem; background: var(--bg-surface); border: 1px solid var(--danger-border); border-left: 4px solid var(--danger); border-radius: var(--radius); padding: 1.25rem 1.5rem; box-shadow: var(--shadow-sm);">
             <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.75rem; flex-wrap: wrap; gap: 0.5rem;">

@@ -16,6 +16,7 @@ from app.extensions import db
 from app.models.attempt import Attempt, MasteryLabel
 from app.models.topic import Topic
 from app.models.user import User
+from app.services.label_service import get_user_topic_labels
 from app.services.gap_analysis import (
     _parse_week,
     build_prerequisite_graph,
@@ -23,22 +24,6 @@ from app.services.gap_analysis import (
 )
 
 logger = logging.getLogger(__name__)
-
-
-def normalize_label(label: MasteryLabel | str | None) -> str:
-    """Normalize a MasteryLabel enum instance, string, or None into a canonical label string.
-
-    Args:
-        label: MasteryLabel enum member, raw string, or None.
-
-    Returns:
-        str: Canonical label string ("Weak", "Good", "Better", "Excellent", or "").
-    """
-    if label is None:
-        return ""
-    if hasattr(label, "value"):
-        return str(label.value)
-    return str(label)
 
 
 def get_user_latest_topic_attempts(user_id: int) -> dict[int, Attempt]:
@@ -100,7 +85,7 @@ def get_next_topics(user: User, limit: int = 8) -> list[dict[str, Any]]:
             - course (str): Associated course title
             - course_name (str): Associated course title alias
             - difficulty (int): Difficulty rating (1-5)
-            - label (str): Latest mastery label or "Not attempted"
+            - label (str): Aggregate topic mastery label or "Not attempted"
             - reason (str): Plain-English pedagogical rationale
             - tier (int): Priority tier rank (1-5)
     """
@@ -109,15 +94,16 @@ def get_next_topics(user: User, limit: int = 8) -> list[dict[str, Any]]:
 
     # Query 1: Single batched query for user's latest attempt per topic
     attempts_by_topic = get_user_latest_topic_attempts(user.id)
+    topic_labels = get_user_topic_labels(user.id)
 
     # Query 2: Single query loading curriculum prerequisite DAG edges
     adj = build_prerequisite_graph()
 
     # In-memory identification of weak topics for this user
     weak_topic_ids_all: set[int] = {
-        tid
-        for tid, att in attempts_by_topic.items()
-        if normalize_label(att.label) == MasteryLabel.WEAK.value or normalize_label(att.label) == "Weak"
+        topic_id
+        for topic_id, label in topic_labels.items()
+        if label == MasteryLabel.WEAK
     }
 
     # Identify prerequisite gaps of weak topics via BFS (Tier 1)
@@ -127,14 +113,18 @@ def get_next_topics(user: User, limit: int = 8) -> list[dict[str, Any]]:
         depths = traverse_prerequisites_bfs(wt_id, adj, max_depth=4)
         for prereq_id, depth in depths.items():
             att = attempts_by_topic.get(prereq_id)
-            lbl = normalize_label(att.label) if att else ""
+            label = topic_labels.get(prereq_id)
             # A visited prerequisite is a gap if unattempted or Weak
-            if att is None or lbl == MasteryLabel.WEAK.value or lbl == "Weak":
+            if att is None or label == MasteryLabel.WEAK:
                 if prereq_id not in prereq_gaps_meta or depth > prereq_gaps_meta[prereq_id]["depth"]:
                     prereq_gaps_meta[prereq_id] = {
                         "depth": depth,
                         "weak_topic_id": wt_id,
-                        "status": "Weak" if att is not None else "Not attempted",
+                        "status": (
+                            "Weak"
+                            if label == MasteryLabel.WEAK
+                            else "Not attempted"
+                        ),
                     }
 
     # Query 3: Fetch all semester topics and any external prerequisite gap topics in ONE query
@@ -191,7 +181,7 @@ def get_next_topics(user: User, limit: int = 8) -> list[dict[str, Any]]:
         if t is not None:
             parent_wt = topic_map.get(meta["weak_topic_id"])
             parent_name = parent_wt.name if parent_wt else "a topic"
-            reason = f"Prerequisite of {parent_name}, which you scored Weak on"
+            reason=f"Prerequisite of {parent_name}, which has Weak topic mastery"
             tier_1_items.append(
                 _format_item(
                     t=t,
@@ -217,9 +207,8 @@ def get_next_topics(user: User, limit: int = 8) -> list[dict[str, Any]]:
 
     for t in semester_topic_rows:
         att = attempts_by_topic.get(t.id)
-        lbl = normalize_label(att.label) if att else "Not attempted"
-        if not lbl:
-            lbl = "Not attempted"
+        topic_label = topic_labels.get(t.id)
+        lbl = topic_label.value if topic_label else "Not attempted"
 
         if lbl == MasteryLabel.WEAK.value or lbl == "Weak":
             # Tier 2: The Weak topics themselves (to retake)
@@ -227,7 +216,7 @@ def get_next_topics(user: User, limit: int = 8) -> list[dict[str, Any]]:
                 _format_item(
                     t=t,
                     lbl="Weak",
-                    reason="Scored Weak on last quiz — retake to build mastery",
+                    reason="Topic mastery is Weak — retake to build mastery",
                     tier=2,
                 )
             )
@@ -238,8 +227,8 @@ def get_next_topics(user: User, limit: int = 8) -> list[dict[str, Any]]:
             has_gap = False
             for p_id in prereq_depths:
                 p_att = attempts_by_topic.get(p_id)
-                p_lbl = normalize_label(p_att.label) if p_att else ""
-                if p_att is None or p_lbl == MasteryLabel.WEAK.value or p_lbl == "Weak":
+                p_label = topic_labels.get(p_id)
+                if p_att is None or p_label == MasteryLabel.WEAK:
                     has_gap = True
                     break
 
@@ -360,15 +349,16 @@ def rerank_related(
 
     # 1. User latest attempts in ONE query
     attempts_by_topic = get_user_latest_topic_attempts(user.id)
+    topic_labels = get_user_topic_labels(user.id)
 
     # 2. Prerequisite graph in ONE query
     adj = build_prerequisite_graph()
 
     # Identify prerequisite gaps of weak topics
     weak_topic_ids: set[int] = {
-        tid
-        for tid, att in attempts_by_topic.items()
-        if normalize_label(att.label) == MasteryLabel.WEAK.value or normalize_label(att.label) == "Weak"
+        topic_id
+        for topic_id, label in topic_labels.items()
+        if label == MasteryLabel.WEAK
     }
 
     prereq_gaps_of_weak: set[int] = set()
@@ -376,17 +366,15 @@ def rerank_related(
         depths = traverse_prerequisites_bfs(wt_id, adj, max_depth=4)
         for p_id in depths:
             att = attempts_by_topic.get(p_id)
-            lbl = normalize_label(att.label) if att else ""
-            if att is None or lbl == MasteryLabel.WEAK.value or lbl == "Weak":
+            label = topic_labels.get(p_id)
+            if att is None or label == MasteryLabel.WEAK:
                 prereq_gaps_of_weak.add(p_id)
 
     annotated: list[tuple[int, float, dict[str, Any]]] = []
     for item in related_items:
         tid = item["id"]
-        att = attempts_by_topic.get(tid)
-        lbl = normalize_label(att.label) if att else "Not attempted"
-        if not lbl:
-            lbl = "Not attempted"
+        topic_label = topic_labels.get(tid)
+        lbl = topic_label.value if topic_label else "Not attempted"
 
         # Determine Tier
         if tid in prereq_gaps_of_weak:

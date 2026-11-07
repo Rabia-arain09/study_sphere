@@ -29,28 +29,24 @@
     </header>
 
     <!-- Quiz Form -->
-    <form method="POST" action="{{ url_for('upload.submit_quiz', upload_id=upload.id) }}" novalidate>
+    <form method="POST" action="{{ url_for('upload.submit_quiz', upload_id=upload.id) }}" data-quiz-validation novalidate>
         <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-        <script>
-            document.currentScript.parentElement.addEventListener('submit', function (event) {
-                var answered = Array.from(this.querySelectorAll(
-                    'input:not([type="hidden"]), textarea, select'
-                )).some(function (field) {
-                    if (field.type === 'radio' || field.type === 'checkbox') {
-                        return field.checked;
-                    }
-                    return field.value.trim().length > 0;
-                });
-                if (!answered) {
-                    event.preventDefault();
-                    window.alert('Please answer at least one question before submitting.');
-                }
-            });
-        </script>
+        <div class="quiz-validation-error" data-quiz-error role="alert" {% if not quiz_incomplete %}hidden{% endif %}>
+            <p>Please answer every question before submitting.</p>
+            <ul data-quiz-missing-list>
+                {% if quiz_incomplete %}
+                    {% for q in upload.questions %}
+                        {% if not saved_answers.get(q.id, '') | trim %}
+                            <li><a href="#upload-question-card-{{ q.id }}">Question {{ loop.index }}</a></li>
+                        {% endif %}
+                    {% endfor %}
+                {% endif %}
+            </ul>
+        </div>
 
         <div style="display: flex; flex-direction: column; gap: 1.5rem;">
             {% for q in upload.questions %}
-                <div class="card" style="background: var(--bg-surface); border: 1px solid var(--neutral-200); border-radius: var(--radius-lg); padding: 1.5rem; box-shadow: var(--shadow-sm);">
+                <div class="card{% if quiz_incomplete and not saved_answers.get(q.id, '') | trim %} quiz-unanswered{% endif %}" id="upload-question-card-{{ q.id }}" data-question-card data-question-label="Question {{ loop.index }}" style="background: var(--bg-surface); border: 1px solid var(--neutral-200); border-radius: var(--radius-lg); padding: 1.5rem; box-shadow: var(--shadow-sm);">
                     <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.85rem; padding-bottom: 0.6rem; border-bottom: 1px solid var(--neutral-200);">
                         <span style="font-weight: 700; font-size: 0.9rem; color: var(--neutral-700);">
                             Question {{ loop.index }} of {{ upload.questions | length }}
@@ -81,6 +77,7 @@
                                         <input type="radio"
                                                name="question_{{ q.id }}"
                                                value="{{ opt_key }}"
+                                               {% if saved_answers.get(q.id) == opt_key %}checked{% endif %}
                                                style="margin-top: 0.25rem;">
                                         <div style="font-size: 0.95rem; color: var(--neutral-800);">
                                              <strong style="color: var(--primary); margin-right: 0.35rem;">{{ opt_key }}.</strong>
@@ -95,13 +92,13 @@
                                 <label style="flex: 1; display: flex; align-items: center; justify-content: center; gap: 0.6rem; padding: 0.85rem; border: 1px solid var(--neutral-200); border-radius: var(--radius); cursor: pointer; font-weight: 600; color: var(--neutral-800);"
                                        onmouseover="this.style.background='var(--neutral-50)'"
                                        onmouseout="this.style.background='var(--bg-surface)'">
-                                    <input type="radio" name="question_{{ q.id }}" value="True">
+                                    <input type="radio" name="question_{{ q.id }}" value="True" {% if saved_answers.get(q.id) == 'True' %}checked{% endif %}>
                                     <span>True</span>
                                 </label>
                                 <label style="flex: 1; display: flex; align-items: center; justify-content: center; gap: 0.6rem; padding: 0.85rem; border: 1px solid var(--neutral-200); border-radius: var(--radius); cursor: pointer; font-weight: 600; color: var(--neutral-800);"
                                        onmouseover="this.style.background='var(--neutral-50)'"
                                        onmouseout="this.style.background='var(--bg-surface)'">
-                                    <input type="radio" name="question_{{ q.id }}" value="False">
+                                    <input type="radio" name="question_{{ q.id }}" value="False" {% if saved_answers.get(q.id) == 'False' %}checked{% endif %}>
                                     <span>False</span>
                                 </label>
                             </div>
@@ -111,6 +108,7 @@
                                 <input type="text"
                                        name="question_{{ q.id }}"
                                        class="form-input"
+                                       value="{{ saved_answers.get(q.id, '') }}"
                                        placeholder="Type concise answer or keyword..."
                                        maxlength="200"
                                        autocomplete="off"
@@ -126,7 +124,7 @@
                                           rows="4"
                                           class="form-input"
                                           placeholder="Formulate your detailed conceptual explanation here..."
-                                          style="width: 100%; padding: 0.75rem; border: 1px solid var(--neutral-300); border-radius: var(--radius); font-family: var(--font-sans); font-size: 0.95rem; line-height: 1.5; resize: vertical;"></textarea>
+                                          style="width: 100%; padding: 0.75rem; border: 1px solid var(--neutral-300); border-radius: var(--radius); font-family: var(--font-sans); font-size: 0.95rem; line-height: 1.5; resize: vertical;">{{ saved_answers.get(q.id, '') }}</textarea>
                                 <span style="display: block; font-size: 0.8rem; color: var(--neutral-500); margin-top: 0.35rem;">
                                     The model answer will be presented after submission to compare with your explanation.
                                 </span>
@@ -148,4 +146,5 @@
         </div>
     </form>
 </div>
+<script src="{{ url_for('static', filename='js/quiz-validation.js') }}" defer></script>
 {% endblock %}

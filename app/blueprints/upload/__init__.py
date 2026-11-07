@@ -11,6 +11,7 @@ from flask import (
     redirect,
     render_template,
     request,
+    session,
     url_for,
 )
 from flask_login import current_user, login_required
@@ -185,7 +186,18 @@ def take_quiz(upload_id: int) -> Any:
     if not upload or upload.user_id != current_user.id:
         abort(404)
 
-    return render_template("upload/quiz.html", upload=upload)
+    saved_answers = {
+        int(question_id): answer
+        for question_id, answer in session.pop(
+            f"upload_quiz_answers_{upload.id}", {}
+        ).items()
+    }
+    return render_template(
+        "upload/quiz.html",
+        upload=upload,
+        saved_answers=saved_answers,
+        quiz_incomplete=session.pop(f"upload_quiz_incomplete_{upload.id}", False),
+    )
 
 
 @upload_bp.route("/<int:upload_id>/quiz/submit", methods=["POST"])
@@ -204,8 +216,14 @@ def submit_quiz(upload_id: int) -> Any:
             ans = request.form.get(f"question_{qid}", "")
             student_answers[qid] = ans
 
-    if not any(answer.strip() for answer in student_answers.values()):
-        flash("Please answer at least one question before submitting.", "warning")
+    if any(
+        not student_answers.get(question.get("id"), "").strip()
+        for question in upload.questions
+        if question.get("id") is not None
+    ):
+        session[f"upload_quiz_answers_{upload.id}"] = student_answers
+        session[f"upload_quiz_incomplete_{upload.id}"] = True
+        flash("Please answer every question before submitting.", "warning")
         return redirect(url_for("upload.take_quiz", upload_id=upload.id))
 
     result = score_upload_quiz(upload, student_answers)

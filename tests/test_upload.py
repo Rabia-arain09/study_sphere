@@ -4,6 +4,7 @@ from __future__ import annotations
 import io
 import json
 from pathlib import Path
+import re
 import socket
 import struct
 import zlib
@@ -843,10 +844,10 @@ def test_quiz_scoring_and_stats(auth_client: FlaskClient, app: Flask, test_user:
         assert Attempt.query.count() == initial_attempts_in_db
 
 
-def test_empty_upload_quiz_submission_is_rejected(
+def test_upload_quiz_with_missing_answer_is_rejected_and_preserved(
     auth_client: FlaskClient, app: Flask, test_user: User
 ) -> None:
-    """Reject an unanswered uploaded-material quiz without updating its statistics."""
+    """Reject an incomplete upload quiz without changing stats and preserve answers."""
     with app.app_context():
         upload, _ = process_text_upload(
             test_user.id,
@@ -857,11 +858,20 @@ def test_empty_upload_quiz_submission_is_rejected(
 
     response = auth_client.post(
         f"/upload/{upload_id}/quiz/submit",
-        data={},
+        data={
+            "question_1": "C",
+            "question_2": "A",
+            "question_3": "D",
+            "question_4": "False",
+            "question_5": "DNS",
+        },
         follow_redirects=True,
     )
     assert response.status_code == 200
-    assert b"Please answer at least one question before submitting." in response.data
+    assert b"Please answer every question before submitting." in response.data
+    assert re.search(rb'value="C"\s+checked', response.data)
+    assert b'value="False" checked' in response.data
+    assert b'value="DNS"' in response.data
 
     with app.app_context():
         upload = db.session.get(Upload, upload_id)
@@ -871,10 +881,10 @@ def test_empty_upload_quiz_submission_is_rejected(
         assert Attempt.query.count() == attempts_before
 
 
-def test_upload_quiz_submission_with_one_answer_is_accepted(
+def test_upload_quiz_submission_with_all_answers_is_accepted(
     auth_client: FlaskClient, app: Flask, test_user: User
 ) -> None:
-    """Accept an uploaded-material quiz when at least one question has an answer."""
+    """Accept an uploaded-material quiz when every question has an answer."""
     with app.app_context():
         upload, _ = process_text_upload(
             test_user.id,
@@ -884,10 +894,17 @@ def test_upload_quiz_submission_with_one_answer_is_accepted(
 
     response = auth_client.post(
         f"/upload/{upload_id}/quiz/submit",
-        data={"question_1": "C"},
+        data={
+            "question_1": "C",
+            "question_2": "A",
+            "question_3": "D",
+            "question_4": "False",
+            "question_5": "DNS",
+            "question_6": "TCP is reliable and UDP is connectionless.",
+        },
     )
     assert response.status_code == 200
-    assert b"Please answer at least one question before submitting." not in response.data
+    assert b"Please answer every question before submitting." not in response.data
 
     with app.app_context():
         upload = db.session.get(Upload, upload_id)

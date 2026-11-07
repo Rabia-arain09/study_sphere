@@ -2834,6 +2834,38 @@ html[data-theme="highlight"] .ai-notes-banner {
         padding: 0.9rem;
     }
 
+    .quiz-validation-error {
+        margin-bottom: 1rem;
+        padding: 0.85rem 1rem;
+        color: var(--danger-text);
+        background: var(--danger-bg);
+        border: 1px solid var(--danger-border);
+        border-radius: var(--radius);
+    }
+
+    .quiz-validation-error[hidden] {
+        display: none;
+    }
+
+    .quiz-validation-error p {
+        margin: 0;
+        font-weight: 700;
+    }
+
+    .quiz-validation-error ul {
+        margin: 0.35rem 0 0;
+    }
+
+    .quiz-validation-error a {
+        color: inherit;
+        text-decoration: underline;
+    }
+
+    .quiz-unanswered {
+        outline: 2px solid var(--danger);
+        outline-offset: 2px;
+    }
+
     .study-chat-header {
         align-items: flex-start;
     }

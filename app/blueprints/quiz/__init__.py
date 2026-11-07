@@ -120,7 +120,24 @@ def topic_quiz(topic_id: int):
     if topic is None:
         abort(404)
 
-    questions = get_topic_quiz_questions(topic.id, limit=10, shuffle=True)
+    if session.get("quiz_topic_id") == topic.id:
+        served_ids = session.get("quiz_question_ids", [])
+        questions_by_id = {
+            question.id: question
+            for question in Question.query.filter(
+                Question.id.in_(served_ids or []),
+                Question.topic_id == topic.id,
+            ).all()
+        }
+        questions = [
+            questions_by_id[question_id]
+            for question_id in served_ids
+            if question_id in questions_by_id
+        ]
+    else:
+        questions = []
+    if not questions:
+        questions = get_topic_quiz_questions(topic.id, limit=10, shuffle=True)
     if not questions:
         return render_template("quiz/no_questions.html", topic=topic), 200
 
@@ -130,10 +147,18 @@ def topic_quiz(topic_id: int):
     session["quiz_question_ids"] = [q.id for q in questions]
     session.modified = True
 
+    saved_answers = {
+        int(question_id): answer
+        for question_id, answer in session.pop(
+            f"quiz_answers_{topic.id}", {}
+        ).items()
+    }
     return render_template(
         "quiz/take.html",
         topic=topic,
         questions=questions,
+        saved_answers=saved_answers,
+        quiz_incomplete=session.pop(f"quiz_incomplete_{topic.id}", False),
     )
 
 
@@ -170,8 +195,10 @@ def submit_quiz(topic_id: int):
         clean_val = str(raw_val)[:MAX_ANSWER_LENGTH]
         student_answers[q.id] = clean_val
 
-    if not any(answer.strip() for answer in student_answers.values()):
-        flash("Please answer at least one question before submitting.", "warning")
+    if any(not answer.strip() for answer in student_answers.values()):
+        session[f"quiz_answers_{topic.id}"] = student_answers
+        session[f"quiz_incomplete_{topic.id}"] = True
+        flash("Please answer every question before submitting.", "warning")
         return redirect(url_for("quiz.topic_quiz", topic_id=topic.id))
 
     # Score answers via evaluation engine (theory questions excluded from score/total_questions)
@@ -217,6 +244,8 @@ def submit_quiz(topic_id: int):
     # Remove answers and active quiz state from session; result page reads from DB
     session.pop("quiz_question_ids", None)
     session.pop("quiz_topic_id", None)
+    session.pop(f"quiz_answers_{topic.id}", None)
+    session.pop(f"quiz_incomplete_{topic.id}", None)
     session.pop(f"quiz_attempt_{attempt.id}", None)
     session.modified = True
 

@@ -279,10 +279,10 @@ def test_no_correct_answer_leakage_in_quiz_html(
     assert "Classification predicts discrete classes, whereas regression" not in html
 
 
-def test_empty_topic_quiz_submission_is_rejected(
+def test_topic_quiz_with_missing_answer_is_rejected_and_preserved(
     auth_client: FlaskClient, quiz_setup: dict, app: Flask, test_user: User
 ) -> None:
-    """Reject an unanswered topic quiz without persisting an attempt."""
+    """Reject an incomplete topic quiz while preserving answers and question order."""
     topic_id = quiz_setup["topic_id"]
     auth_client.get(f"/quiz/topic/{topic_id}")
 
@@ -294,11 +294,18 @@ def test_empty_topic_quiz_submission_is_rejected(
 
     response = auth_client.post(
         f"/quiz/topic/{topic_id}/submit",
-        data={},
+        data={
+            f"question_{quiz_setup['q_mcq_id']}": "A",
+            f"question_{quiz_setup['q_tf_id']}": "True",
+            f"question_{quiz_setup['q_short_id']}": "supervised",
+        },
         follow_redirects=True,
     )
     assert response.status_code == 200
-    assert b"Please answer at least one question before submitting." in response.data
+    assert b"Please answer every question before submitting." in response.data
+    assert b'value="A" checked' in response.data
+    assert b'value="True" checked' in response.data
+    assert b'value="supervised"' in response.data
 
     with app.app_context():
         assert Attempt.query.filter_by(
@@ -307,19 +314,24 @@ def test_empty_topic_quiz_submission_is_rejected(
         ).count() == attempts_before
 
 
-def test_topic_quiz_submission_with_one_answer_is_accepted(
+def test_topic_quiz_submission_with_all_answers_is_accepted(
     auth_client: FlaskClient, quiz_setup: dict, app: Flask, test_user: User
 ) -> None:
-    """Accept a topic quiz when at least one question has an answer."""
+    """Accept a topic quiz only after every question has an answer."""
     topic_id = quiz_setup["topic_id"]
     auth_client.get(f"/quiz/topic/{topic_id}")
     response = auth_client.post(
         f"/quiz/topic/{topic_id}/submit",
-        data={f"question_{quiz_setup['q_mcq_id']}": "A"},
+        data={
+            f"question_{quiz_setup['q_mcq_id']}": "A",
+            f"question_{quiz_setup['q_tf_id']}": "True",
+            f"question_{quiz_setup['q_short_id']}": "supervised",
+            f"question_{quiz_setup['q_theory_id']}": "Classification differs from regression.",
+        },
         follow_redirects=True,
     )
     assert response.status_code == 200
-    assert b"Please answer at least one question before submitting." not in response.data
+    assert b"Please answer every question before submitting." not in response.data
 
     with app.app_context():
         assert Attempt.query.filter_by(

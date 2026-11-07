@@ -31,29 +31,25 @@
     </header>
 
     <!-- Quiz Form -->
-    <form method="POST" action="{{ url_for('quiz.submit_quiz', topic_id=topic.id) }}" class="quiz-form" novalidate>
+    <form method="POST" action="{{ url_for('quiz.submit_quiz', topic_id=topic.id) }}" class="quiz-form" data-quiz-validation novalidate>
         <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-        <script>
-            document.currentScript.parentElement.addEventListener('submit', function (event) {
-                var answered = Array.from(this.querySelectorAll(
-                    'input:not([type="hidden"]), textarea, select'
-                )).some(function (field) {
-                    if (field.type === 'radio' || field.type === 'checkbox') {
-                        return field.checked;
-                    }
-                    return field.value.trim().length > 0;
-                });
-                if (!answered) {
-                    event.preventDefault();
-                    window.alert('Please answer at least one question before submitting.');
-                }
-            });
-        </script>
+        <div class="quiz-validation-error" data-quiz-error role="alert" {% if not quiz_incomplete %}hidden{% endif %}>
+            <p>Please answer every question before submitting.</p>
+            <ul data-quiz-missing-list>
+                {% if quiz_incomplete %}
+                    {% for q in questions %}
+                        {% if not saved_answers.get(q.id, '') | trim %}
+                            <li><a href="#question-card-{{ q.id }}">Question {{ loop.index }}</a></li>
+                        {% endif %}
+                    {% endfor %}
+                {% endif %}
+            </ul>
+        </div>
 
         <div class="quiz-questions-list">
             {% for q in questions %}
                 {% set q_type = q.type.value if q.type.value is defined else q.type %}
-                <div class="quiz-question-card" id="question-card-{{ q.id }}">
+                <div class="quiz-question-card{% if quiz_incomplete and not saved_answers.get(q.id, '') | trim %} quiz-unanswered{% endif %}" id="question-card-{{ q.id }}" data-question-card data-question-label="Question {{ loop.index }}">
                     <div class="quiz-card-top">
                         <span class="quiz-q-num">Question {{ loop.index }} of {{ questions | length }}</span>
                         {% if q_type == 'mcq' %}
@@ -77,7 +73,7 @@
                                 {% if q.options and q.options is mapping %}
                                     {% for opt_key, opt_val in q.options.items() %}
                                         <label class="quiz-radio-option" for="q{{ q.id }}_{{ opt_key }}">
-                                            <input type="radio" id="q{{ q.id }}_{{ opt_key }}" name="question_{{ q.id }}" value="{{ opt_key }}">
+                                            <input type="radio" id="q{{ q.id }}_{{ opt_key }}" name="question_{{ q.id }}" value="{{ opt_key }}" {% if saved_answers.get(q.id) == opt_key %}checked{% endif %}>
                                             <span class="quiz-radio-custom"></span>
                                             <span class="quiz-opt-key">{{ opt_key }}.</span>
                                             <span class="quiz-opt-text">{{ opt_val }}</span>
@@ -86,7 +82,7 @@
                                 {% elif q.options and q.options is iterable %}
                                     {% for opt_val in q.options %}
                                         <label class="quiz-radio-option" for="q{{ q.id }}_{{ loop.index }}">
-                                            <input type="radio" id="q{{ q.id }}_{{ loop.index }}" name="question_{{ q.id }}" value="{{ opt_val }}">
+                                            <input type="radio" id="q{{ q.id }}_{{ loop.index }}" name="question_{{ q.id }}" value="{{ opt_val }}" {% if saved_answers.get(q.id) == opt_val %}checked{% endif %}>
                                             <span class="quiz-radio-custom"></span>
                                             <span class="quiz-opt-text">{{ opt_val }}</span>
                                         </label>
@@ -97,12 +93,12 @@
                         {% elif q_type == 'tf' %}
                             <div class="quiz-options-group quiz-tf-group">
                                 <label class="quiz-radio-option" for="q{{ q.id }}_true">
-                                    <input type="radio" id="q{{ q.id }}_true" name="question_{{ q.id }}" value="True">
+                                    <input type="radio" id="q{{ q.id }}_true" name="question_{{ q.id }}" value="True" {% if saved_answers.get(q.id) == 'True' %}checked{% endif %}>
                                     <span class="quiz-radio-custom"></span>
                                     <span class="quiz-opt-text">True</span>
                                 </label>
                                 <label class="quiz-radio-option" for="q{{ q.id }}_false">
-                                    <input type="radio" id="q{{ q.id }}_false" name="question_{{ q.id }}" value="False">
+                                    <input type="radio" id="q{{ q.id }}_false" name="question_{{ q.id }}" value="False" {% if saved_answers.get(q.id) == 'False' %}checked{% endif %}>
                                     <span class="quiz-radio-custom"></span>
                                     <span class="quiz-opt-text">False</span>
                                 </label>
@@ -114,6 +110,7 @@
                                        name="question_{{ q.id }}"
                                        id="q_{{ q.id }}"
                                        class="form-input"
+                                       value="{{ saved_answers.get(q.id, '') }}"
                                        placeholder="Enter concise answer..."
                                        maxlength="500"
                                        autocomplete="off">
@@ -127,7 +124,7 @@
                                           class="form-input quiz-textarea"
                                           rows="4"
                                           placeholder="Write your explanation or analysis..."
-                                          maxlength="5000"></textarea>
+                                          maxlength="5000">{{ saved_answers.get(q.id, '') }}</textarea>
                                 <span class="quiz-input-hint">Your explanation will be compared against an instructor model answer.</span>
                             </div>
                         {% endif %}
@@ -147,4 +144,5 @@
         </div>
     </form>
 </div>
+<script src="{{ url_for('static', filename='js/quiz-validation.js') }}" defer></script>
 {% endblock %}

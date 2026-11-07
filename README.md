@@ -992,3 +992,7 @@ flowchart LR
 3. **The Knowledge Gap Analysis (`app/services/gap_analysis.py` & `app/services/adaptive_service.py`)**:
    - When the Decision Tree flags an attempt as **Weak**, graph traversal algorithms trace directed dependency edges backwards to isolate unmastered root causes.
    - Dynamically reorganizes the student's dashboard ("Revise First" and "Recommended Next") and re-ranks the topic page's "Related Topics" sidebar to direct student attention to foundational gaps before advancing.
+
+## Design decisions
+
+- The request specified three commits but only two implementation tasks and commit messages; the third commit records this scope gap rather than inventing product work.

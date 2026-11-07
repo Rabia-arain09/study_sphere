@@ -2,8 +2,10 @@
 
 from __future__ import annotations
 from datetime import datetime, time, timezone
+from difflib import SequenceMatcher
 import json
 import logging
+import re
 from typing import Any
 from app.extensions import db
 from app.models.chat_message import ChatMessage
@@ -18,6 +20,32 @@ MAX_HISTORY_MESSAGES = 6
 MAX_DISPLAY_MESSAGES = 50
 NOT_COVERED_ANSWER = "This is not covered in this note."
 NOT_IN_NOTE_PREFIX = "Not in your note:"
+CHAT_STOP_WORDS = {
+    "about",
+    "and",
+    "are",
+    "can",
+    "does",
+    "explain",
+    "for",
+    "give",
+    "how",
+    "is",
+    "it",
+    "me",
+    "of",
+    "please",
+    "tell",
+    "the",
+    "this",
+    "to",
+    "what",
+    "when",
+    "where",
+    "which",
+    "who",
+    "why",
+}
 
 CHAT_RESPONSE_SCHEMA: dict[str, Any] = {
     "type": "OBJECT",
@@ -148,22 +176,91 @@ def _build_prompt(
         "and translate to simple words. These study tasks must be done using the "
         "source_material and must never be refused just because they are not "
         "literal questions.\n"
-        "4. Set covered to true when the source supports an answer or a requested "
-        "study task. Include an exact short excerpt copied from source_material in "
-        "evidence. If a genuine question asks for information the source does not "
-        "contain, set covered to false and refused to false. Give one short line "
-        "saying the note does not cover it, followed by a brief, correct general "
-        "answer marked with the exact prefix 'Not in your note:'. Leave evidence "
-        "empty.\n"
-        "5. Set refused to true only for clearly unrelated or harmful requests. "
+        "4. Judge topical relation by meaning, not exact wording. A question is "
+        "related when it mentions any term, concept, or keyword in or semantically "
+        "related to topic_title, subject, or source_material. A short or partial "
+        "question such as 'what is X', 'X?', 'explain X', or 'explain in detail' "
+        "is about this selected topic; use the title and note context to resolve "
+        "what X means. Tolerate misspelled or incomplete terms.\n"
+        "5. Set covered to true whenever source_material contains related "
+        "information, even if it only explains part of the concept or does not "
+        "give a complete definition. Answer from the relevant note text and include "
+        "an exact short excerpt copied from source_material in evidence. Never set "
+        "covered to false merely because the wording is vague, partial, misspelled, "
+        "or the note explains only part of the related concept.\n"
+        "6. Set covered to false only when topic_title, subject, and "
+        "source_material truly contain nothing related to the question; set "
+        "refused to false and give one short line saying the note does not cover "
+        "it, followed by a brief, correct general answer marked with the exact "
+        "prefix 'Not in your note:'. Leave evidence empty.\n"
+        "7. Set refused to true only for clearly unrelated or harmful requests. "
         "Politely refuse briefly and steer the student back to this study topic. "
         "Leave evidence empty. Do not refuse an ordinary request because it is "
         "short, misspelled, vague, or asks for a transformation of the note.\n"
-        "6. Keep the answer to at most three short sentences in simple English. "
+        "8. Keep the answer to at most three short sentences in simple English. "
         "Never invent note evidence. Return only the requested JSON object.\n"
         "UNTRUSTED_DATA_JSON:\n"
         f"{json.dumps(data, ensure_ascii=False)}"
     )
+
+
+def _topic_related_excerpt(
+    question: str,
+    source_text: str,
+    topic_title: str | None,
+) -> str | None:
+    """Find a short note excerpt when the question shares a term with its title."""
+    title_terms = {
+        term
+        for term in re.findall(r"[a-z0-9]+", (topic_title or "").casefold())
+        if len(term) >= 4 and term not in CHAT_STOP_WORDS
+    }
+    question_terms = [
+        term
+        for term in re.findall(r"[a-z0-9]+", question.casefold())
+        if len(term) >= 4 and term not in CHAT_STOP_WORDS
+    ]
+    related_terms = {
+        title_term
+        for title_term in title_terms
+        if any(
+            question_term == title_term
+            or (
+                min(len(question_term), len(title_term)) >= 5
+                and (
+                    question_term.startswith(title_term)
+                    or title_term.startswith(question_term)
+                    or SequenceMatcher(
+                        None, question_term, title_term
+                    ).ratio() >= 0.82
+                )
+            )
+            for question_term in question_terms
+        )
+    }
+    if not related_terms:
+        return None
+
+    for line in source_text.strip()[:MAX_SOURCE_LENGTH].splitlines():
+        if line.lstrip().startswith("#"):
+            continue
+        plain_line = re.sub(r"[*_`#>-]", "", line).strip()
+        for sentence in re.split(r"(?<=[.!?])\s+", plain_line):
+            if (
+                len(sentence.split()) >= 5
+                and any(
+                    term in {
+                        word
+                        for word in re.findall(r"[a-z0-9]+", sentence.casefold())
+                    }
+                    for term in related_terms
+                )
+            ):
+                return sentence[:350]
+
+    if topic_title:
+        return f"This topic covers {topic_title}."[:350]
+    return None
 
 
 def _generate_answer(
@@ -248,6 +345,13 @@ def _generate_answer(
                 "The study assistant returned an invalid answer.",
                 raw_response=response,
             ) from err
+        related_excerpt = _topic_related_excerpt(
+            question,
+            source_text,
+            topic_title,
+        )
+        if related_excerpt:
+            return f"The note explains: {related_excerpt}"[:500]
         return answer.strip()[:500]
     if not result["covered"]:
         if evidence:
@@ -257,6 +361,13 @@ def _generate_answer(
                 "The study assistant returned an invalid answer.",
                 raw_response=response,
             ) from err
+        related_excerpt = _topic_related_excerpt(
+            question,
+            source_text,
+            topic_title,
+        )
+        if related_excerpt:
+            return f"The note explains: {related_excerpt}"[:500]
         if NOT_IN_NOTE_PREFIX.casefold() not in answer.casefold():
             return f"The note does not cover this. {NOT_IN_NOTE_PREFIX} {answer}"[:500]
         if "note does not cover" not in answer.casefold():
@@ -267,6 +378,13 @@ def _generate_answer(
     )
     normalized_evidence = " ".join(evidence.casefold().split())
     if not normalized_evidence or normalized_evidence not in normalized_source:
+        related_excerpt = _topic_related_excerpt(
+            question,
+            source_text,
+            topic_title,
+        )
+        if related_excerpt:
+            return f"The note explains: {related_excerpt}"[:500]
         return NOT_COVERED_ANSWER
     return answer.strip()[:500]
 

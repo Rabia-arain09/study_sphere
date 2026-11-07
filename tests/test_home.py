@@ -80,6 +80,7 @@ def test_home_page_html_authenticated(auth_client: FlaskClient) -> None:
     assert response.status_code == 200
     assert b"Welcome back, Test!" in response.data
     assert b"What do you want to learn today?" in response.data
+    assert b"Other answers are marked 'Not in your note'." in response.data
     assert b'data-home-semester' in response.data
     assert b'data-home-subject' in response.data
     assert b'data-home-topic' in response.data

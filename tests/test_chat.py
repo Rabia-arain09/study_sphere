@@ -255,6 +255,64 @@ def test_chat_handles_a_clearly_unrelated_request_with_a_polite_refusal(
     }
 
 
+def test_short_topic_title_question_uses_related_note_content(
+    app: Flask,
+    auth_client: FlaskClient,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """Resolve a short title-related question from the note despite a false flag."""
+    course = Course(
+        code="COMPILER101",
+        title="Compiler Construction",
+        semester=5,
+        domain="Computer Science",
+        credit_hours=3,
+        contact_hours="3-0-3",
+    )
+    db.session.add(course)
+    db.session.flush()
+    topic = Topic(
+        course_id=course.id,
+        semester=5,
+        subject="Compiler Construction",
+        name="Dependency Graphs, S-Attributed and L-Attributed Definitions",
+        difficulty=4,
+        content=(
+            "# Dependency Graphs, S-Attributed and L-Attributed Definitions\n\n"
+            "**Key concept:** A dependency graph gives a valid evaluation order "
+            "for attributes, and S- and L-attributed definitions are classes that "
+            "can be evaluated during parsing.\n\n"
+            "The dependency graph has an edge from attribute b to attribute c "
+            "if c needs b."
+        ),
+    )
+    db.session.add(topic)
+    db.session.commit()
+    llm = _mock_llm(
+        monkeypatch,
+        covered=False,
+        answer="This is not covered in this note.",
+        evidence="",
+    )
+
+    response = auth_client.post(
+        f"/chat/topic/{topic.id}",
+        json={"question": "what is dependency"},
+    )
+
+    assert response.status_code == 200
+    assert "dependency graph gives a valid evaluation order" in (
+        response.json["answer"].casefold()
+    )
+    assert response.json["answer"] != "This is not covered in this note."
+    prompt = llm.generate.call_args.kwargs["prompt"].casefold()
+    assert "any term, concept, or keyword" in prompt
+    assert "what is x" in prompt
+    assert "x?" in prompt
+    assert "even if it only explains part" in prompt
+    assert "only when" in prompt and "truly contain nothing related" in prompt
+
+
 def test_chat_rejects_answer_without_source_evidence(
     auth_client: FlaskClient,
     chat_topic: int,

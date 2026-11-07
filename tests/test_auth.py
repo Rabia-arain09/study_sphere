@@ -228,7 +228,7 @@ def test_regression_user_loader_session_routes(client: FlaskClient, app):
     # 3. Request '/', '/topics/', and topic page using the SAME client (session cookie kept)
     resp_home = client.get("/")
     assert resp_home.status_code == 200
-    assert b"Browse Semester 5 Notes" in resp_home.data
+    assert b"What do you want to learn today?" in resp_home.data
 
     g.pop("_login_user", None)
     resp_topics = client.get("/topics/")
@@ -285,7 +285,8 @@ def test_user_loader_deleted_or_invalid_user_session(client: FlaskClient, app):
     g.pop("_login_user", None)
     resp_home = client.get("/")
     assert resp_home.status_code == 200
-    assert b"Sign In to Account" in resp_home.data
+    assert b"Sign Up" in resp_home.data
+    assert b"Login" in resp_home.data
 
     # Also test completely malformed non-integer user_id in session cookie
     with client.session_transaction() as sess:
@@ -295,4 +296,3 @@ def test_user_loader_deleted_or_invalid_user_session(client: FlaskClient, app):
     resp_malformed = client.get("/topics/")
     assert resp_malformed.status_code == 302
     assert "/auth/login" in resp_malformed.headers["Location"]
-

@@ -1,60 +1,149 @@
 {% extends "base.html" %}
 
-{% block title %}StudySphere - Adaptive ML Study Platform{% endblock %}
+{% block title %}StudySphere - Learn with focus{% endblock %}
 
 {% block content %}
-<div class="hero-section">
-    <div class="hero-badge">Curriculum-Aligned Learning</div>
-    <h1 class="hero-title">Master Your Computer Science Curriculum with Precision</h1>
-    <p class="hero-subtitle">
-        StudySphere bridges accredited course syllabi and personalized mastery. Navigate concepts hierarchically across semesters, study comprehensive lecture notes, and track prerequisite knowledge graphs.
-    </p>
+{% if current_user.is_authenticated %}
+<main
+    class="learning-home"
+    data-home-chat
+    data-csrf-token="{{ csrf_token() }}"
+    data-chat-history-url="{{ url_for('chat.chat_history') }}"
+>
+    <header class="learning-home-header">
+        <p class="home-eyebrow">Your focused study space</p>
+        <h1>What do you want to learn today?</h1>
+        <p>Choose a topic or your own material to start a study chat grounded in your notes.</p>
+    </header>
 
-    <div class="hero-actions">
-        {% if current_user.is_authenticated %}
-            <a href="{{ url_for('dashboard.index') }}" class="btn btn-primary btn-lg">
-                Go to dashboard &rarr;
-            </a>
-            <a href="{{ url_for('topics.semester_picker') }}" class="btn btn-secondary btn-lg">
-                Browse Semester {{ current_user.semester }} Notes &rarr;
-            </a>
-            <a href="{{ url_for('topics.semester_view', semester=current_user.semester) }}" class="btn btn-outline btn-lg">
-                View My Subjects
-            </a>
-        {% else %}
-            <a href="{{ url_for('auth.signup') }}" class="btn btn-primary btn-lg">
-                Get Started Free &rarr;
-            </a>
-            <a href="{{ url_for('auth.login') }}" class="btn btn-outline btn-lg">
-                Sign In to Account
-            </a>
-        {% endif %}
-    </div>
-</div>
+    <section class="home-study-card" aria-label="Choose what to study">
+        <div class="home-select-grid">
+            <div class="home-field">
+                <label for="home-semester">Semester</label>
+                <select id="home-semester" data-home-semester>
+                    {% for semester in range(1, 9) %}
+                        <option value="{{ semester }}" {% if semester == current_user.semester %}selected{% endif %}>
+                            Semester {{ semester }}
+                        </option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div class="home-field">
+                <label for="home-subject">Subject</label>
+                <select id="home-subject" data-home-subject disabled>
+                    <option value="">Choose a subject</option>
+                    <option value="__uploads__">My uploaded material</option>
+                </select>
+            </div>
+            <div class="home-field">
+                <label for="home-topic" data-home-topic-label>Topic</label>
+                <select id="home-topic" data-home-topic disabled>
+                    <option value="">Choose a topic</option>
+                </select>
+            </div>
+        </div>
 
-<div class="features-grid">
-    <div class="feature-card">
-        <div class="feature-icon">📚</div>
-        <h3 class="feature-title">Structured Curriculum</h3>
-        <p class="feature-desc">
-            Explore 44 degree courses and 165+ topics mapped week-by-week with difficulty ratings and domain categorizations.
+        <form class="home-chat-form" data-home-chat-form>
+            <label class="sr-only" for="home-question">Your study question</label>
+            <textarea
+                id="home-question"
+                name="question"
+                rows="3"
+                maxlength="500"
+                placeholder="Ask a question about your selected study material..."
+                data-home-question
+                required
+            ></textarea>
+            <div class="home-chat-actions">
+                <span>Answers use only the selected note or material.</span>
+                <button type="submit" class="btn btn-primary" data-home-send>Send</button>
+            </div>
+        </form>
+
+        <div class="home-conversation-heading">
+            <h2>Study chat</h2>
+            <div>
+                <a class="btn btn-outline btn-sm" data-home-open-note hidden>Open full note</a>
+                <button type="button" class="btn btn-outline btn-sm" data-home-clear hidden>
+                    Clear chat
+                </button>
+            </div>
+        </div>
+        <p class="home-chat-hint" data-home-hint>
+            Choose a topic or your uploaded material above to start a grounded chat.
         </p>
-    </div>
+        <p class="home-chat-status" data-home-status role="status" aria-live="polite"></p>
+        <div class="home-conversation" data-home-messages aria-live="polite"></div>
+    </section>
 
-    <div class="feature-card">
-        <div class="feature-icon">🔍</div>
-        <h3 class="feature-title">Concept Dependency Graph</h3>
-        <p class="feature-desc">
-            Direct links to prerequisite concepts prevent foundational learning gaps before advancing to complex topics.
+    <section class="home-quick-section" aria-labelledby="home-quick-heading">
+        <h2 id="home-quick-heading">Your study shortcuts</h2>
+        <div class="home-quick-grid">
+            <a class="home-quick-card" href="{{ url_for('topics.semester_picker') }}">
+                <span aria-hidden="true">⌁</span>
+                <strong>Browse</strong>
+                <small>Explore your curriculum</small>
+            </a>
+            <a class="home-quick-card" href="{{ url_for('dashboard.index') }}">
+                <span aria-hidden="true">◷</span>
+                <strong>Dashboard</strong>
+                <small>Review your progress</small>
+            </a>
+            <a class="home-quick-card" href="{{ url_for('upload.history') }}">
+                <span aria-hidden="true">▤</span>
+                <strong>My material</strong>
+                <small>Open your uploads</small>
+            </a>
+            <a class="home-quick-card" href="{{ url_for('quiz.history') }}">
+                <span aria-hidden="true">✓</span>
+                <strong>History</strong>
+                <small>See your quiz attempts</small>
+            </a>
+            {% if last_attempt and last_attempt.topic %}
+                <a
+                    class="home-quick-card home-continue-card"
+                    href="{{ url_for('topics.topic_detail', topic_id=last_attempt.topic.id) }}"
+                >
+                    <span aria-hidden="true">↗</span>
+                    <strong>Continue where you left off</strong>
+                    <small>{{ last_attempt.topic.name }}</small>
+                </a>
+            {% endif %}
+        </div>
+    </section>
+</main>
+<script src="{{ url_for('static', filename='js/home.js') }}" defer></script>
+{% else %}
+<main class="guest-home">
+    <section class="guest-home-hero">
+        <p class="home-eyebrow">A calmer way to study</p>
+        <h1>Learn with clarity. Grow with confidence.</h1>
+        <p>
+            Explore your curriculum, study clear notes, and get personal practice
+            grounded in your course material.
         </p>
-    </div>
-
-    <div class="feature-card">
-        <div class="feature-icon">📖</div>
-        <h3 class="feature-title">Rich Notes Reader</h3>
-        <p class="feature-desc">
-            Distraction-free Markdown study notes with clear provenance badges distinguishing vetted lecture material from AI-synthesized drafts.
-        </p>
-    </div>
-</div>
+        <div class="guest-home-actions">
+            <a href="{{ url_for('auth.signup') }}" class="btn btn-primary btn-lg">Sign Up</a>
+            <a href="{{ url_for('auth.login') }}" class="btn btn-outline btn-lg">Login</a>
+        </div>
+    </section>
+    <section class="guest-home-features" aria-label="StudySphere features">
+        <article class="home-feature-card">
+            <span aria-hidden="true">📚</span>
+            <h2>Follow your curriculum</h2>
+            <p>Find subjects and topics organized by semester.</p>
+        </article>
+        <article class="home-feature-card">
+            <span aria-hidden="true">✦</span>
+            <h2>Ask grounded questions</h2>
+            <p>Study with answers based only on your notes and materials.</p>
+        </article>
+        <article class="home-feature-card">
+            <span aria-hidden="true">◷</span>
+            <h2>See your progress</h2>
+            <p>Practice with quizzes and keep track of your learning.</p>
+        </article>
+    </section>
+</main>
+{% endif %}
 {% endblock %}

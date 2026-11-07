@@ -573,6 +573,7 @@ StudySphere features a content-based recommendation engine (`ml/recommender.py` 
 
 - **Complete Quiz Submissions**: Require a non-blank response to every question and preserve the current question set and submitted answers when redirecting students to incomplete quizzes.
 - **Accessible Study Chat Drawer**: Keep the existing saved chat and endpoints in a keyboard-accessible drawer, launched from both page content and fixed Ask AI controls.
+- **Homepage Study Context**: Reuse the private topic/upload chat routes and saved histories, with authenticated selectors that expose only semester-matched subjects and the current student's uploads.
 - **Empty Quiz Submission Handling**: Reject submissions with no non-whitespace answers on both the server and client, without recording an attempt or changing upload quiz statistics.
 - **Grounded Study Chat**: Keep topic and upload conversations private per user, save turns for review, enforce a daily question quota, and instruct the existing LLM client to answer only from the displayed study material.
 - **Document Upload Extraction**: Accept PDF, PPTX, and DOCX files up to 10 MB, extract text in memory, and include the sanitized filename in duplicate identity so saved materials retain their source name without retaining original files.

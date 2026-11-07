@@ -1,18 +1,27 @@
 """Application factory module for StudySphere."""
 
 from __future__ import annotations
+
 import os
 from pathlib import Path
+from typing import Any
+
 from flask import Flask, jsonify, render_template, request
+from flask_login import current_user, login_required
 from werkzeug.exceptions import HTTPException
-from app.config import config_by_name, Config
+
+from app.config import Config, config_by_name
 from app.extensions import db, migrate, login_manager, csrf
+from app.models.attempt import Attempt
+from app.models.course import Course
+from app.models.topic import Topic
+from app.models.upload import Upload
+from app.models.user import User
 from app.services.markdown_renderer import (
     calculate_reading_time,
     render_markdown,
 )
 import app.models  # noqa: F401 - Register models with SQLAlchemy metadata
-from app.models.user import User
 
 
 def create_app(config_name: str | None = None) -> Flask:
@@ -112,7 +121,63 @@ def create_app(config_name: str | None = None) -> Flask:
                     "docs": "/dashboard",
                 }
             ), 200
-        return render_template("home.html")
+        last_attempt = None
+        if current_user.is_authenticated:
+            last_attempt = (
+                Attempt.query.filter_by(user_id=current_user.id)
+                .order_by(Attempt.created_at.desc(), Attempt.id.desc())
+                .first()
+            )
+        return render_template("home.html", last_attempt=last_attempt)
+
+    @app.route("/home/courses", methods=["GET"])
+    @login_required
+    def home_courses() -> Any:
+        """Return subjects for one semester for the authenticated homepage."""
+        semester = request.args.get("semester", type=int)
+        if semester is None or not 1 <= semester <= 8:
+            return jsonify(error="Choose a semester from 1 to 8."), 400
+        courses = (
+            Course.query.filter_by(semester=semester)
+            .order_by(Course.code)
+            .all()
+        )
+        return jsonify(
+            courses=[
+                {"id": course.id, "code": course.code, "name": course.title}
+                for course in courses
+            ]
+        )
+
+    @app.route("/home/topics", methods=["GET"])
+    @login_required
+    def home_topics() -> Any:
+        """Return topics belonging only to the selected curriculum subject."""
+        course_id = request.args.get("course_id", type=int)
+        if course_id is None:
+            return jsonify(error="Choose a subject."), 400
+        course = db.session.get(Course, course_id)
+        if course is None:
+            return jsonify(error="Subject not found."), 404
+        topics = Topic.query.filter_by(course_id=course.id).order_by(Topic.name).all()
+        return jsonify(
+            topics=[{"id": topic.id, "name": topic.name} for topic in topics]
+        )
+
+    @app.route("/home/uploads", methods=["GET"])
+    @login_required
+    def home_uploads() -> Any:
+        """Return only the current student's uploaded study materials."""
+        uploads = (
+            Upload.query.filter_by(user_id=current_user.id)
+            .order_by(Upload.created_at.desc(), Upload.id.desc())
+            .all()
+        )
+        return jsonify(
+            uploads=[
+                {"id": upload.id, "title": upload.title} for upload in uploads
+            ]
+        )
 
     # Error handlers
     @app.errorhandler(404)

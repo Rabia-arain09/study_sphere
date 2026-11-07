@@ -14,11 +14,46 @@ from app.services.chat_service import (
     ChatInputError,
     build_upload_chat_source,
     clear_chat_history,
+    load_chat_history,
     send_chat_message,
 )
 
 logger = logging.getLogger(__name__)
 chat_bp: Blueprint = Blueprint("chat", __name__)
+
+
+@chat_bp.route("/history", methods=["GET"])
+@login_required
+def chat_history() -> Any:
+    """Return saved messages for a selected topic or owned upload."""
+    topic_value = request.args.get("topic_id")
+    upload_value = request.args.get("upload_id")
+    if bool(topic_value) == bool(upload_value):
+        return jsonify(error="Choose one topic or uploaded material."), 400
+    try:
+        topic_id = int(topic_value) if topic_value else None
+        upload_id = int(upload_value) if upload_value else None
+    except ValueError:
+        return jsonify(error="The selected chat is invalid."), 400
+
+    if topic_id is not None and db.session.get(Topic, topic_id) is None:
+        abort(404)
+    if upload_id is not None:
+        upload = db.session.get(Upload, upload_id)
+        if upload is None or upload.user_id != current_user.id:
+            abort(404)
+
+    messages = load_chat_history(
+        current_user.id,
+        topic_id=topic_id,
+        upload_id=upload_id,
+    )
+    return jsonify(
+        messages=[
+            {"role": message.role, "content": message.content}
+            for message in messages
+        ]
+    )
 
 
 def _submit_chat(

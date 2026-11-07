@@ -196,6 +196,10 @@ def submit_quiz(upload_id: int) -> Any:
             ans = request.form.get(f"question_{qid}", "")
             student_answers[qid] = ans
 
+    if not any(answer.strip() for answer in student_answers.values()):
+        flash("Please answer at least one question before submitting.", "warning")
+        return redirect(url_for("upload.take_quiz", upload_id=upload.id))
+
     result = score_upload_quiz(upload, student_answers)
 
     return render_template(

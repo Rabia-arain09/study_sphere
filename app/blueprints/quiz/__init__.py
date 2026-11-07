@@ -170,6 +170,10 @@ def submit_quiz(topic_id: int):
         clean_val = str(raw_val)[:MAX_ANSWER_LENGTH]
         student_answers[q.id] = clean_val
 
+    if not any(answer.strip() for answer in student_answers.values()):
+        flash("Please answer at least one question before submitting.", "warning")
+        return redirect(url_for("quiz.topic_quiz", topic_id=topic.id))
+
     # Score answers via evaluation engine (theory questions excluded from score/total_questions)
     score_result = score_quiz(ordered_questions, student_answers)
 

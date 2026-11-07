@@ -843,6 +843,58 @@ def test_quiz_scoring_and_stats(auth_client: FlaskClient, app: Flask, test_user:
         assert Attempt.query.count() == initial_attempts_in_db
 
 
+def test_empty_upload_quiz_submission_is_rejected(
+    auth_client: FlaskClient, app: Flask, test_user: User
+) -> None:
+    """Reject an unanswered uploaded-material quiz without updating its statistics."""
+    with app.app_context():
+        upload, _ = process_text_upload(
+            test_user.id,
+            "Topic notes for testing empty quiz submissions.",
+        )
+        upload_id = upload.id
+        attempts_before = Attempt.query.count()
+
+    response = auth_client.post(
+        f"/upload/{upload_id}/quiz/submit",
+        data={},
+        follow_redirects=True,
+    )
+    assert response.status_code == 200
+    assert b"Please answer at least one question before submitting." in response.data
+
+    with app.app_context():
+        upload = db.session.get(Upload, upload_id)
+        assert upload is not None
+        assert upload.attempts_count == 0
+        assert upload.last_score is None
+        assert Attempt.query.count() == attempts_before
+
+
+def test_upload_quiz_submission_with_one_answer_is_accepted(
+    auth_client: FlaskClient, app: Flask, test_user: User
+) -> None:
+    """Accept an uploaded-material quiz when at least one question has an answer."""
+    with app.app_context():
+        upload, _ = process_text_upload(
+            test_user.id,
+            "Topic notes for testing partial quiz submissions.",
+        )
+        upload_id = upload.id
+
+    response = auth_client.post(
+        f"/upload/{upload_id}/quiz/submit",
+        data={"question_1": "C"},
+    )
+    assert response.status_code == 200
+    assert b"Please answer at least one question before submitting." not in response.data
+
+    with app.app_context():
+        upload = db.session.get(Upload, upload_id)
+        assert upload is not None
+        assert upload.attempts_count == 1
+
+
 # ==============================================================================
 # 14. No Answer Leakage in Quiz HTML
 # ==============================================================================

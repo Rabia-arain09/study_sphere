@@ -33,6 +33,22 @@
     <!-- Quiz Form -->
     <form method="POST" action="{{ url_for('quiz.submit_quiz', topic_id=topic.id) }}" class="quiz-form" novalidate>
         <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+        <script>
+            document.currentScript.parentElement.addEventListener('submit', function (event) {
+                var answered = Array.from(this.querySelectorAll(
+                    'input:not([type="hidden"]), textarea, select'
+                )).some(function (field) {
+                    if (field.type === 'radio' || field.type === 'checkbox') {
+                        return field.checked;
+                    }
+                    return field.value.trim().length > 0;
+                });
+                if (!answered) {
+                    event.preventDefault();
+                    window.alert('Please answer at least one question before submitting.');
+                }
+            });
+        </script>
 
         <div class="quiz-questions-list">
             {% for q in questions %}

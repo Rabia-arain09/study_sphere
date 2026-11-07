@@ -571,6 +571,7 @@ StudySphere features a content-based recommendation engine (`ml/recommender.py` 
 
 ## Design Decisions
 
+- **Empty Quiz Submission Handling**: Reject submissions with no non-whitespace answers on both the server and client, without recording an attempt or changing upload quiz statistics.
 - **Document Upload Extraction**: Accept PDF, PPTX, and DOCX files up to 10 MB, extract text in memory, and include the sanitized filename in duplicate identity so saved materials retain their source name without retaining original files.
 - **Course Note Scope**: Use three foundational topics per named course, each with a short note and six generated questions; omit placeholder electives without real course names.
 - **Application Factory Pattern**: Adopted `create_app()` factory with modular Blueprint separation (`auth`, `topics`, `quiz`, `upload`, `dashboard`) to isolate developer workflows and eliminate circular dependencies.

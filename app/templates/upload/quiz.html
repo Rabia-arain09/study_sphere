@@ -31,6 +31,22 @@
     <!-- Quiz Form -->
     <form method="POST" action="{{ url_for('upload.submit_quiz', upload_id=upload.id) }}" novalidate>
         <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+        <script>
+            document.currentScript.parentElement.addEventListener('submit', function (event) {
+                var answered = Array.from(this.querySelectorAll(
+                    'input:not([type="hidden"]), textarea, select'
+                )).some(function (field) {
+                    if (field.type === 'radio' || field.type === 'checkbox') {
+                        return field.checked;
+                    }
+                    return field.value.trim().length > 0;
+                });
+                if (!answered) {
+                    event.preventDefault();
+                    window.alert('Please answer at least one question before submitting.');
+                }
+            });
+        </script>
 
         <div style="display: flex; flex-direction: column; gap: 1.5rem;">
             {% for q in upload.questions %}

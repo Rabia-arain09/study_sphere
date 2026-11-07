@@ -279,6 +279,55 @@ def test_no_correct_answer_leakage_in_quiz_html(
     assert "Classification predicts discrete classes, whereas regression" not in html
 
 
+def test_empty_topic_quiz_submission_is_rejected(
+    auth_client: FlaskClient, quiz_setup: dict, app: Flask, test_user: User
+) -> None:
+    """Reject an unanswered topic quiz without persisting an attempt."""
+    topic_id = quiz_setup["topic_id"]
+    auth_client.get(f"/quiz/topic/{topic_id}")
+
+    with app.app_context():
+        attempts_before = Attempt.query.filter_by(
+            user_id=test_user.id,
+            topic_id=topic_id,
+        ).count()
+
+    response = auth_client.post(
+        f"/quiz/topic/{topic_id}/submit",
+        data={},
+        follow_redirects=True,
+    )
+    assert response.status_code == 200
+    assert b"Please answer at least one question before submitting." in response.data
+
+    with app.app_context():
+        assert Attempt.query.filter_by(
+            user_id=test_user.id,
+            topic_id=topic_id,
+        ).count() == attempts_before
+
+
+def test_topic_quiz_submission_with_one_answer_is_accepted(
+    auth_client: FlaskClient, quiz_setup: dict, app: Flask, test_user: User
+) -> None:
+    """Accept a topic quiz when at least one question has an answer."""
+    topic_id = quiz_setup["topic_id"]
+    auth_client.get(f"/quiz/topic/{topic_id}")
+    response = auth_client.post(
+        f"/quiz/topic/{topic_id}/submit",
+        data={f"question_{quiz_setup['q_mcq_id']}": "A"},
+        follow_redirects=True,
+    )
+    assert response.status_code == 200
+    assert b"Please answer at least one question before submitting." not in response.data
+
+    with app.app_context():
+        assert Attempt.query.filter_by(
+            user_id=test_user.id,
+            topic_id=topic_id,
+        ).count() == 1
+
+
 def test_tampered_question_ids_are_ignored(
     auth_client: FlaskClient, quiz_setup: dict, app: Flask
 ):
@@ -1250,4 +1299,3 @@ def test_migration_applies_on_fresh_sqlite_database(tmp_path: Path) -> None:
         upgrade(revision="b4f8a1e2c9d0")
         inspector_re = inspect(db.engine)
         assert "attempt_answers" in inspector_re.get_table_names()
-

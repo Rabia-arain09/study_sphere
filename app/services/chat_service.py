@@ -3,11 +3,14 @@
 from __future__ import annotations
 from datetime import datetime, time, timezone
 import json
+import logging
 from typing import Any
 from app.extensions import db
 from app.models.chat_message import ChatMessage
 from app.models.upload import Upload
 from app.services.llm_client import LLMError, get_llm_client
+
+logger = logging.getLogger(__name__)
 
 MAX_QUESTION_LENGTH = 500
 MAX_SOURCE_LENGTH = 12000
@@ -38,6 +41,16 @@ class ChatDailyLimitError(ValueError):
 
 class ChatGenerationError(RuntimeError):
     """Raised when grounded chat output cannot be generated or validated."""
+
+    def __init__(
+        self,
+        message: str,
+        *,
+        raw_response: str | None = None,
+    ) -> None:
+        """Retain a model reply for the developer-only chat diagnostic command."""
+        super().__init__(message)
+        self.raw_response = raw_response
 
 
 def _validate_context(topic_id: int | None, upload_id: int | None) -> None:
@@ -163,29 +176,57 @@ def _generate_answer(
     material_title: str | None = None,
 ) -> str:
     """Request and validate a short answer grounded in the supplied material."""
+    prompt = _build_prompt(
+        source_text,
+        question,
+        history,
+        topic_title=topic_title,
+        subject=subject,
+        material_title=material_title,
+    )
     try:
         response = get_llm_client().generate(
-            prompt=_build_prompt(
-                source_text,
-                question,
-                history,
-                topic_title=topic_title,
-                subject=subject,
-                material_title=material_title,
-            ),
+            prompt=prompt,
             response_schema=CHAT_RESPONSE_SCHEMA,
         )
+    except (LLMError, TypeError) as err:
+        logger.error(
+            "Chat model request failed (%s): %s",
+            type(err).__name__,
+            err,
+            exc_info=True,
+        )
+        raise ChatGenerationError(
+            "The study assistant could not answer right now."
+        ) from err
+
+    try:
         result = json.loads(response)
-    except (LLMError, json.JSONDecodeError, TypeError) as err:
-        message = "The study assistant could not answer right now."
-        raise ChatGenerationError(message) from err
+    except (json.JSONDecodeError, TypeError) as err:
+        logger.error(
+            "Chat model reply could not be parsed (%s): %s",
+            type(err).__name__,
+            err,
+            exc_info=True,
+        )
+        raise ChatGenerationError(
+            "The study assistant could not answer right now.",
+            raw_response=response if isinstance(response, str) else None,
+        ) from err
 
     if (
         not isinstance(result, dict)
         or not isinstance(result.get("covered"), bool)
         or not isinstance(result.get("refused"), bool)
     ):
-        raise ChatGenerationError("The study assistant returned an invalid answer.")
+        err = ValueError(
+            "The JSON reply must include boolean 'covered' and 'refused' fields."
+        )
+        logger.error("Invalid chat model reply (%s): %s", type(err).__name__, err)
+        raise ChatGenerationError(
+            "The study assistant returned an invalid answer.",
+            raw_response=response,
+        ) from err
     answer = result.get("answer")
     evidence = result.get("evidence")
     if (
@@ -193,14 +234,29 @@ def _generate_answer(
         or not answer.strip()
         or not isinstance(evidence, str)
     ):
-        raise ChatGenerationError("The study assistant returned an invalid answer.")
+        err = ValueError("The JSON reply must include a non-empty answer and evidence.")
+        logger.error("Invalid chat model reply (%s): %s", type(err).__name__, err)
+        raise ChatGenerationError(
+            "The study assistant returned an invalid answer.",
+            raw_response=response,
+        ) from err
     if result["refused"]:
         if result["covered"]:
-            raise ChatGenerationError("The study assistant returned an invalid answer.")
+            err = ValueError("A refused answer cannot be marked covered.")
+            logger.error("Invalid chat model reply (%s): %s", type(err).__name__, err)
+            raise ChatGenerationError(
+                "The study assistant returned an invalid answer.",
+                raw_response=response,
+            ) from err
         return answer.strip()[:500]
     if not result["covered"]:
         if evidence:
-            raise ChatGenerationError("The study assistant returned an invalid answer.")
+            err = ValueError("An uncovered answer must have empty evidence.")
+            logger.error("Invalid chat model reply (%s): %s", type(err).__name__, err)
+            raise ChatGenerationError(
+                "The study assistant returned an invalid answer.",
+                raw_response=response,
+            ) from err
         if NOT_IN_NOTE_PREFIX.casefold() not in answer.casefold():
             return f"The note does not cover this. {NOT_IN_NOTE_PREFIX} {answer}"[:500]
         if "note does not cover" not in answer.casefold():

@@ -181,7 +181,10 @@ class GeminiClient(LLMClient):
             "temperature": 0.2,
             "responseMimeType": "application/json",
         }
-        if "thinkingConfig" not in self._unsupported_fields:
+        if (
+            "thinkingConfig" not in self._unsupported_fields
+            and response_schema is None
+        ):
             # Lowest thinking setting supported by Gemini reasoning models
             generation_config["thinkingConfig"] = {"thinkingBudget": 0}
 

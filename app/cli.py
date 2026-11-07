@@ -642,7 +642,31 @@ def chat_check_command(topic_id: int, message: str) -> None:
     except ChatInputError as err:
         raise click.BadParameter(str(err), param_hint="message") from err
     except ChatGenerationError as err:
-        raise click.ClickException(str(err)) from err
+        from app.services.llm_client import sanitize_text
+
+        cause = err.__cause__
+        if cause is not None:
+            error_type = type(cause).__name__
+            error_message = sanitize_text(
+                str(cause),
+                current_app.config.get("GEMINI_API_KEY"),
+            )
+        else:
+            error_type = type(err).__name__
+            error_message = str(err)
+
+        click.echo(f"Chat failure type: {error_type}", err=True)
+        click.echo(f"Chat failure: {error_message}", err=True)
+        if err.raw_response is not None:
+            raw_response = sanitize_text(
+                err.raw_response,
+                current_app.config.get("GEMINI_API_KEY"),
+            )
+            click.echo("Raw model reply:", err=True)
+            click.echo(raw_response, err=True)
+        else:
+            click.echo("Raw model reply: unavailable.", err=True)
+        raise click.ClickException("Chat generation failed.") from err
     click.echo(answer)
 
 

@@ -332,6 +332,37 @@ def test_chat_check_cli_runs_one_live_request_without_saving_history(
         assert ChatMessage.query.filter_by(topic_id=chat_topic).count() == 0
 
 
+def test_chat_check_reports_invalid_model_reply_without_exposing_api_key(
+    app: Flask,
+    chat_topic: int,
+    monkeypatch: pytest.MonkeyPatch,
+    caplog: pytest.LogCaptureFixture,
+) -> None:
+    """Print parse diagnostics and raw reply safely when chat-check gets bad JSON."""
+    secret = "chat-check-test-secret"
+    monkeypatch.setitem(app.config, "GEMINI_API_KEY", secret)
+    client = MagicMock()
+    client.generate.return_value = f"not JSON {secret}"
+    monkeypatch.setattr(
+        "app.services.chat_service.get_llm_client",
+        lambda: client,
+    )
+    runner = app.test_cli_runner()
+
+    with caplog.at_level("ERROR", logger="app.services.chat_service"):
+        result = runner.invoke(
+            args=["chat-check", "--topic-id", str(chat_topic), "summarize"],
+        )
+
+    assert result.exit_code == 1
+    assert "Chat failure type: JSONDecodeError" in result.output
+    assert "Raw model reply:" in result.output
+    assert f"not JSON [REDACTED_API_KEY]" in result.output
+    assert secret not in result.output
+    assert secret not in caplog.text
+    assert "Chat model reply could not be parsed (JSONDecodeError)" in caplog.text
+
+
 def test_topic_page_displays_only_the_latest_fifty_chat_messages(
     app: Flask,
     auth_client: FlaskClient,

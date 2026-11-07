@@ -190,6 +190,35 @@ def test_400_on_response_schema_retries_without_field() -> None:
         assert "responseSchema" in GeminiClient._unsupported_fields
 
 
+def test_response_schema_omits_incompatible_thinking_config() -> None:
+    """Keep Gemini structured output enabled without its incompatible thinking config."""
+    GeminiClient.reset_unsupported_fields()
+    mock_resp = MagicMock()
+    mock_resp.status_code = 200
+    mock_resp.json.return_value = {
+        "candidates": [{"content": {"parts": [{"text": '{"answer": "ok"}'}]}}]
+    }
+    response_schema = {
+        "type": "OBJECT",
+        "properties": {"answer": {"type": "STRING"}},
+        "required": ["answer"],
+    }
+
+    with patch("requests.post", return_value=mock_resp) as mock_post:
+        client = GeminiClient(api_key="test-api-key")
+
+        result = client.generate(
+            "Return a short answer.",
+            response_schema=response_schema,
+        )
+
+    assert result == '{"answer": "ok"}'
+    assert mock_post.call_count == 1
+    generation_config = mock_post.call_args.kwargs["json"]["generationConfig"]
+    assert generation_config["responseSchema"] == response_schema
+    assert "thinkingConfig" not in generation_config
+
+
 # ==============================================================================
 # 4. Parallel Generation & Two Parts Merged Correctly
 # ==============================================================================

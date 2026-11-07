@@ -14,6 +14,15 @@
             <span style="color: var(--neutral-800); font-weight: 500;">{{ upload.title }}</span>
         </div>
         <div style="display: flex; gap: 0.75rem;">
+            <button
+                type="button"
+                class="btn btn-outline btn-sm"
+                data-chat-open
+                aria-controls="study-chat-drawer"
+                aria-expanded="false"
+            >
+                ✦ Ask AI
+            </button>
             <a href="{{ url_for('upload.take_quiz', upload_id=upload.id) }}" class="btn btn-primary btn-sm">
                 🎯 {% if upload.attempts_count > 0 %}Retake Quiz{% else %}Take Quiz{% endif %}
             </a>
@@ -150,12 +159,7 @@
                 Model: <code>{{ model_name or config.get('GEMINI_MODEL', 'gemini-3.5-flash-lite') }}</code>
             </p>
         </footer>
-        {% with
-            chat_send_url=url_for('chat.upload_chat', upload_id=upload.id),
-            chat_clear_url=url_for('chat.clear_upload_chat', upload_id=upload.id)
-        %}
-            {% include "chat/_widget.html" %}
-        {% endwith %}
     </div>
 </div>
+{% include "chat/_drawer.html" %}
 {% endblock %}

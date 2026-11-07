@@ -2874,3 +2874,127 @@ html[data-theme="highlight"] .ai-notes-banner {
         max-width: 100%;
     }
 }
+
+.sr-only {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    padding: 0;
+    margin: -1px;
+    overflow: hidden;
+    clip: rect(0, 0, 0, 0);
+    white-space: nowrap;
+    border: 0;
+}
+
+.ask-ai-fab {
+    position: fixed;
+    right: 1.5rem;
+    bottom: 1.5rem;
+    z-index: 1040;
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.85rem 1.1rem;
+    color: var(--btn-primary-text, #ffffff);
+    background: var(--primary);
+    border: 1px solid var(--primary);
+    border-radius: 999px;
+    box-shadow: var(--shadow-md);
+    font: inherit;
+    font-weight: 700;
+    cursor: pointer;
+}
+
+.ask-ai-fab:hover {
+    filter: brightness(0.95);
+}
+
+.ask-ai-fab:focus-visible,
+.study-chat-drawer button:focus-visible,
+.study-chat-drawer textarea:focus-visible {
+    outline: 3px solid var(--border-focus);
+    outline-offset: 3px;
+}
+
+.study-chat-overlay {
+    position: fixed;
+    z-index: 1050;
+    inset: 0;
+}
+
+.study-chat-overlay[hidden],
+.study-chat-drawer[hidden] {
+    display: none !important;
+}
+
+.study-chat-backdrop {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    padding: 0;
+    background: rgb(0 0 0 / 48%);
+    border: 0;
+    cursor: default;
+}
+
+.study-chat-drawer {
+    position: absolute;
+    inset: 0 0 0 auto;
+    display: flex;
+    flex-direction: column;
+    width: min(460px, 100%);
+    height: 100%;
+    overflow: hidden;
+    color: var(--neutral-900);
+    background: var(--bg-surface);
+    box-shadow: var(--shadow-lg);
+}
+
+.study-chat-drawer-header {
+    display: flex;
+    flex: 0 0 auto;
+    align-items: center;
+    justify-content: space-between;
+    padding: 0.75rem 1rem;
+    border-bottom: 1px solid var(--neutral-200);
+}
+
+.study-chat-drawer-label {
+    color: var(--neutral-600);
+    font-size: 0.85rem;
+    font-weight: 700;
+}
+
+.study-chat-drawer .study-chat {
+    display: flex;
+    flex: 1 1 auto;
+    flex-direction: column;
+    min-height: 0;
+    max-width: none;
+    margin: 0;
+    overflow: hidden;
+    border: 0;
+    border-radius: 0;
+    box-shadow: none;
+}
+
+.study-chat-drawer .study-chat-messages {
+    flex: 1 1 auto;
+    min-height: 0;
+    max-height: none;
+}
+
+@media (max-width: 600px) {
+    .ask-ai-fab {
+        right: 1rem;
+        bottom: 1rem;
+    }
+
+    .study-chat-drawer {
+        width: 100%;
+        height: 100vh;
+        height: 100dvh;
+    }
+}

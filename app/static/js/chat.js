@@ -2,12 +2,75 @@
     var widget = document.querySelector('[data-study-chat]');
     if (!widget) return;
 
+    var drawer = widget.closest('[data-chat-drawer]');
+    var overlay = document.querySelector('[data-chat-overlay]');
+    var openButtons = Array.from(document.querySelectorAll('[data-chat-open]'));
+    var closeButton = document.querySelector('[data-chat-close]');
+    var backdrop = document.querySelector('[data-chat-backdrop]');
     var form = widget.querySelector('[data-chat-form]');
     var textarea = form.querySelector('textarea');
     var sendButton = widget.querySelector('[data-chat-send]');
     var clearButton = widget.querySelector('[data-chat-clear]');
     var messages = widget.querySelector('[data-chat-messages]');
     var status = widget.querySelector('[data-chat-status]');
+    var lastOpenButton = null;
+
+    function openDrawer(event) {
+        lastOpenButton = event.currentTarget;
+        overlay.hidden = false;
+        drawer.hidden = false;
+        drawer.setAttribute('aria-hidden', 'false');
+        openButtons.forEach(function (button) {
+            button.setAttribute('aria-expanded', 'true');
+        });
+        closeButton.focus();
+        scrollToLatest();
+    }
+
+    function closeDrawer() {
+        drawer.hidden = true;
+        drawer.setAttribute('aria-hidden', 'true');
+        overlay.hidden = true;
+        openButtons.forEach(function (button) {
+            button.setAttribute('aria-expanded', 'false');
+        });
+        if (lastOpenButton) lastOpenButton.focus();
+    }
+
+    openButtons.forEach(function (button) {
+        button.addEventListener('click', openDrawer);
+    });
+    closeButton.addEventListener('click', closeDrawer);
+    backdrop.addEventListener('click', closeDrawer);
+
+    document.addEventListener('keydown', function (event) {
+        if (drawer.hidden) return;
+        if (event.key === 'Escape') {
+            closeDrawer();
+            return;
+        }
+        if (event.key !== 'Tab') return;
+
+        var focusable = Array.from(drawer.querySelectorAll(
+            'button:not(:disabled), textarea:not(:disabled), a[href], [tabindex]:not([tabindex="-1"])'
+        )).filter(function (element) {
+            return !element.hidden;
+        });
+        if (!focusable.length) {
+            event.preventDefault();
+            drawer.focus();
+            return;
+        }
+        var first = focusable[0];
+        var last = focusable[focusable.length - 1];
+        if (event.shiftKey && document.activeElement === first) {
+            event.preventDefault();
+            last.focus();
+        } else if (!event.shiftKey && document.activeElement === last) {
+            event.preventDefault();
+            first.focus();
+        }
+    });
 
     function scrollToLatest() {
         messages.scrollTop = messages.scrollHeight;

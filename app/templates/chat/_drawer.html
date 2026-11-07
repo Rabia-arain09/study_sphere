@@ -1,0 +1,39 @@
+<button
+    type="button"
+    class="ask-ai-fab"
+    data-chat-open
+    aria-controls="study-chat-drawer"
+    aria-expanded="false"
+>
+    <span aria-hidden="true">✦</span>
+    Ask AI
+</button>
+
+<div class="study-chat-overlay" data-chat-overlay hidden>
+    <button
+        type="button"
+        class="study-chat-backdrop"
+        data-chat-backdrop
+        aria-label="Close Ask AI panel"
+        tabindex="-1"
+    ></button>
+    <aside
+        class="study-chat-drawer"
+        id="study-chat-drawer"
+        data-chat-drawer
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="study-chat-title"
+        tabindex="-1"
+        hidden
+    >
+        <div class="study-chat-drawer-header">
+            <span class="study-chat-drawer-label">StudySphere assistant</span>
+            <button type="button" class="btn btn-outline btn-sm" data-chat-close>
+                <span aria-hidden="true">×</span>
+                <span class="sr-only">Close Ask AI panel</span>
+            </button>
+        </div>
+        {% include "chat/_widget.html" %}
+    </aside>
+</div>

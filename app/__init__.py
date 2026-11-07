@@ -85,12 +85,14 @@ def create_app(config_name: str | None = None) -> Flask:
     from app.blueprints.quiz import quiz_bp
     from app.blueprints.upload import upload_bp
     from app.blueprints.dashboard import dashboard_bp
+    from app.blueprints.chat import chat_bp
 
     app.register_blueprint(auth_bp, url_prefix="/auth")
     app.register_blueprint(topics_bp, url_prefix="/topics")
     app.register_blueprint(quiz_bp, url_prefix="/quiz")
     app.register_blueprint(upload_bp, url_prefix="/upload")
     app.register_blueprint(dashboard_bp, url_prefix="/dashboard")
+    app.register_blueprint(chat_bp, url_prefix="/chat")
 
     # Core health & index probe
     @app.route("/health", methods=["GET"])

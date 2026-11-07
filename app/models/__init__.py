@@ -9,6 +9,7 @@ from app.models.question import Question, QuestionType, QuestionSource
 from app.models.attempt import Attempt, MasteryLabel
 from app.models.attempt_answer import AttemptAnswer, SelfRating
 from app.models.upload import Upload, UploadSourceType
+from app.models.chat_message import ChatMessage
 
 __all__: list[str] = [
     "User",
@@ -28,4 +29,5 @@ __all__: list[str] = [
     "SelfRating",
     "Upload",
     "UploadSourceType",
+    "ChatMessage",
 ]

@@ -31,6 +31,7 @@ from app.services.upload_service import (
     process_url_upload,
     score_upload_quiz,
 )
+from app.services.chat_service import load_chat_history
 
 logger = logging.getLogger(__name__)
 
@@ -166,7 +167,14 @@ def view_upload(upload_id: int) -> Any:
         abort(404)
 
     model_name = current_app.config.get("GEMINI_MODEL", "gemini-3.5-flash-lite")
-    return render_template("upload/view.html", upload=upload, model_name=model_name)
+    return render_template(
+        "upload/view.html",
+        upload=upload,
+        model_name=model_name,
+        chat_messages=load_chat_history(current_user.id, upload_id=upload.id),
+        chat_send_url=url_for("chat.upload_chat", upload_id=upload.id),
+        chat_clear_url=url_for("chat.clear_upload_chat", upload_id=upload.id),
+    )
 
 
 @upload_bp.route("/<int:upload_id>/quiz", methods=["GET"])

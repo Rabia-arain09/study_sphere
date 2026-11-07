@@ -1,0 +1,56 @@
+<section
+    class="study-chat card"
+    data-study-chat
+    data-send-url="{{ chat_send_url }}"
+    data-clear-url="{{ chat_clear_url }}"
+    data-csrf-token="{{ csrf_token() }}"
+    aria-labelledby="study-chat-title"
+>
+    <header class="study-chat-header">
+        <div>
+            <h2 id="study-chat-title">Ask about this material</h2>
+            <p>Answers are based only on the study text shown on this page.</p>
+        </div>
+        <button type="button" class="btn btn-outline btn-sm" data-chat-clear>
+            Clear chat
+        </button>
+    </header>
+
+    <div class="study-chat-messages" data-chat-messages aria-live="polite">
+        {% if chat_messages %}
+            {% for message in chat_messages %}
+                <article class="study-chat-message study-chat-{{ message.role }}">
+                    <span class="study-chat-role">
+                        {{ "You" if message.role == "user" else "Study assistant" }}
+                    </span>
+                    <p>{{ message.content }}</p>
+                </article>
+            {% endfor %}
+        {% else %}
+            <p class="study-chat-empty" data-chat-empty>
+                Ask a question about this note or material.
+            </p>
+        {% endif %}
+    </div>
+
+    <p class="study-chat-status" data-chat-status role="status" aria-live="polite"></p>
+
+    <form class="study-chat-form" data-chat-form>
+        <label for="study-chat-question">Your question</label>
+        <textarea
+            id="study-chat-question"
+            name="question"
+            rows="2"
+            maxlength="500"
+            placeholder="Ask a question (up to 500 characters)"
+            required
+        ></textarea>
+        <div class="study-chat-actions">
+            <span>500 characters maximum</span>
+            <button type="submit" class="btn btn-primary" data-chat-send>
+                Send
+            </button>
+        </div>
+    </form>
+</section>
+<script src="{{ url_for('static', filename='js/chat.js') }}" defer></script>

@@ -198,6 +198,7 @@ class Config:
     URL_FETCH_TIMEOUT: int = int(os.getenv("URL_FETCH_TIMEOUT", "10"))
     URL_MAX_BYTES: int = int(os.getenv("URL_MAX_BYTES", "2000000"))
     UPLOAD_DAILY_LIMIT: int = int(os.getenv("UPLOAD_DAILY_LIMIT", "10"))
+    CHAT_DAILY_LIMIT: int = int(os.getenv("CHAT_DAILY_LIMIT", "30"))
 
 
 class DevelopmentConfig(Config):

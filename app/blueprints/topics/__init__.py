@@ -3,7 +3,7 @@
 from __future__ import annotations
 import re
 from typing import Any
-from flask import Blueprint, render_template, abort, jsonify, request
+from flask import Blueprint, render_template, abort, jsonify, request, url_for
 from flask_login import login_required, current_user
 from sqlalchemy import func
 from sqlalchemy.orm import defer, joinedload, selectinload
@@ -12,6 +12,7 @@ from app.models.course import Course, CoursePrerequisite
 from app.models.prerequisite import Prerequisite
 from app.models.topic import Topic
 from app.models.attempt import Attempt
+from app.services.chat_service import load_chat_history
 from app.services.markdown_renderer import (
     calculate_reading_time,
     render_topic_markdown,
@@ -283,6 +284,9 @@ def topic_detail(topic_id: int):
     return render_template(
         "topics/topic.html",
         topic=topic,
+        chat_messages=load_chat_history(current_user.id, topic_id=topic.id),
+        chat_send_url=url_for("chat.topic_chat", topic_id=topic.id),
+        chat_clear_url=url_for("chat.clear_topic_chat", topic_id=topic.id),
         rendered_notes=rendered_notes,
         prerequisites=prerequisites,
         resources=topic.resources,

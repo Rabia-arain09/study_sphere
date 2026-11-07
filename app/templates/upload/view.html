@@ -150,6 +150,12 @@
                 Model: <code>{{ model_name or config.get('GEMINI_MODEL', 'gemini-3.5-flash-lite') }}</code>
             </p>
         </footer>
+        {% with
+            chat_send_url=url_for('chat.upload_chat', upload_id=upload.id),
+            chat_clear_url=url_for('chat.clear_upload_chat', upload_id=upload.id)
+        %}
+            {% include "chat/_widget.html" %}
+        {% endwith %}
     </div>
 </div>
 {% endblock %}

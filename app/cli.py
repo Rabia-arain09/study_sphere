@@ -615,6 +615,37 @@ def llm_check_command() -> None:
         click.echo(f"Details: {sanitized_msg}")
 
 
+@click.command("chat-check")
+@click.option("--topic-id", required=True, type=int, help="Topic note to use.")
+@click.argument("message")
+@with_appcontext
+def chat_check_command(topic_id: int, message: str) -> None:
+    """Run one live chat request against a topic without saving chat history."""
+    from app.models.topic import Topic
+    from app.services.chat_service import (
+        ChatGenerationError,
+        ChatInputError,
+        generate_chat_answer,
+    )
+
+    topic = db.session.get(Topic, topic_id)
+    if topic is None:
+        raise click.ClickException(f"Topic {topic_id} was not found.")
+
+    try:
+        answer = generate_chat_answer(
+            message,
+            topic.content or "",
+            topic_title=topic.name,
+            subject=topic.subject,
+        )
+    except ChatInputError as err:
+        raise click.BadParameter(str(err), param_hint="message") from err
+    except ChatGenerationError as err:
+        raise click.ClickException(str(err)) from err
+    click.echo(answer)
+
+
 def register_cli_commands(app: Flask) -> None:
     """Register custom CLI commands with the Flask application.
 
@@ -630,3 +661,4 @@ def register_cli_commands(app: Flask) -> None:
     app.cli.add_command(train_label_model_command)
     app.cli.add_command(label_attempts_command)
     app.cli.add_command(llm_check_command)
+    app.cli.add_command(chat_check_command)

@@ -61,6 +61,9 @@ def _submit_chat(
     *,
     topic_id: int | None = None,
     upload_id: int | None = None,
+    topic_title: str | None = None,
+    subject: str | None = None,
+    material_title: str | None = None,
 ) -> Any:
     """Validate a JSON question and return a grounded chat response."""
     payload = request.get_json(silent=True)
@@ -72,6 +75,9 @@ def _submit_chat(
             source_text=source_text,
             topic_id=topic_id,
             upload_id=upload_id,
+            topic_title=topic_title,
+            subject=subject,
+            material_title=material_title,
         )
     except ChatInputError as err:
         return jsonify(error=str(err)), 400
@@ -90,7 +96,12 @@ def topic_chat(topic_id: int) -> Any:
     topic = db.session.get(Topic, topic_id)
     if topic is None:
         abort(404)
-    return _submit_chat(topic.content or "", topic_id=topic.id)
+    return _submit_chat(
+        topic.content or "",
+        topic_id=topic.id,
+        topic_title=topic.name,
+        subject=topic.subject,
+    )
 
 
 @chat_bp.route("/topic/<int:topic_id>/clear", methods=["POST"])
@@ -113,6 +124,7 @@ def upload_chat(upload_id: int) -> Any:
     return _submit_chat(
         build_upload_chat_source(upload),
         upload_id=upload.id,
+        material_title=upload.title,
     )
 
 

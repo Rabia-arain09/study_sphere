@@ -50,13 +50,19 @@ def _mock_llm(
     monkeypatch: pytest.MonkeyPatch,
     *,
     covered: bool = True,
+    refused: bool = False,
     answer: str = "Chlorophyll absorbs light.",
     evidence: str = "Chlorophyll absorbs light.",
 ) -> MagicMock:
     """Replace the configured LLM client with a deterministic chat response."""
     client = MagicMock()
     client.generate.return_value = json.dumps(
-        {"covered": covered, "answer": answer, "evidence": evidence}
+        {
+            "covered": covered,
+            "refused": refused,
+            "answer": answer,
+            "evidence": evidence,
+        }
     )
     monkeypatch.setattr(
         "app.services.chat_service.get_llm_client",
@@ -97,6 +103,19 @@ def test_topic_chat_saves_history_and_renders_escaped_messages(
     prompt = llm.generate.call_args.kwargs["prompt"]
     assert "Chlorophyll absorbs light." in prompt
     assert question in prompt
+    prompt_data = json.loads(prompt.split("UNTRUSTED_DATA_JSON:\n", 1)[1])
+    assert prompt_data["topic_title"] == "Photosynthesis"
+    assert prompt_data["subject"] == "Study Chat Testing"
+    assert prompt_data["source_material"] == (
+        "Photosynthesis uses light energy to make glucose from water and "
+        "carbon dioxide. Chlorophyll absorbs light."
+    )
+    assert "tolerate spelling mistakes" in prompt.casefold()
+    assert "summarize" in prompt.casefold()
+    assert "must never be refused" in prompt.casefold()
+    assert "not in your note:" in prompt.casefold()
+    assert "clearly unrelated or harmful" in prompt.casefold()
+    assert "untrusted data" in prompt.casefold()
 
     with app.app_context():
         messages = ChatMessage.query.filter_by(topic_id=chat_topic).order_by(
@@ -151,16 +170,19 @@ def test_upload_chat_uses_summary_and_text_and_reloads_history(
     assert b'Take Quiz' in page.data
 
 
-def test_chat_uses_not_covered_answer_when_model_reports_no_support(
+def test_chat_returns_general_answer_when_model_reports_no_note_support(
     auth_client: FlaskClient,
     chat_topic: int,
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
-    """Normalize unsupported questions to the required exact response."""
+    """Keep the model's marked general answer for a real unsupported question."""
     _mock_llm(
         monkeypatch,
         covered=False,
-        answer="An unrelated model answer.",
+        answer=(
+            "The note does not cover this. Not in your note: Hans Lippershey "
+            "is often credited with inventing the telescope."
+        ),
         evidence="",
     )
     response = auth_client.post(
@@ -168,7 +190,65 @@ def test_chat_uses_not_covered_answer_when_model_reports_no_support(
         json={"question": "Who invented the telescope?"},
     )
     assert response.status_code == 200
-    assert response.json == {"answer": "This is not covered in this note."}
+    assert response.json == {
+        "answer": (
+            "The note does not cover this. Not in your note: Hans Lippershey "
+            "is often credited with inventing the telescope."
+        )
+    }
+
+
+@pytest.mark.parametrize(
+    "question",
+    ["summarize", "wat du clorofil do?"],
+)
+def test_chat_passes_natural_language_requests_to_model_without_refusing(
+    auth_client: FlaskClient,
+    chat_topic: int,
+    monkeypatch: pytest.MonkeyPatch,
+    question: str,
+) -> None:
+    """Pass short and misspelled study prompts to the model as ordinary questions."""
+    llm = _mock_llm(
+        monkeypatch,
+        answer="Chlorophyll absorbs light.",
+    )
+    response = auth_client.post(
+        f"/chat/topic/{chat_topic}",
+        json={"question": question},
+    )
+
+    assert response.status_code == 200
+    assert response.json == {"answer": "Chlorophyll absorbs light."}
+    prompt = llm.generate.call_args.kwargs["prompt"]
+    prompt_data = json.loads(prompt.split("UNTRUSTED_DATA_JSON:\n", 1)[1])
+    assert prompt_data["question"] == question
+    assert "Tolerate spelling mistakes" in prompt
+
+
+def test_chat_handles_a_clearly_unrelated_request_with_a_polite_refusal(
+    auth_client: FlaskClient,
+    chat_topic: int,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """Return a short refusal for a request explicitly marked as refused."""
+    _mock_llm(
+        monkeypatch,
+        covered=False,
+        refused=True,
+        answer="I can't help with that. Let's focus on photosynthesis instead.",
+        evidence="",
+    )
+
+    response = auth_client.post(
+        f"/chat/topic/{chat_topic}",
+        json={"question": "Help me do something harmful."},
+    )
+
+    assert response.status_code == 200
+    assert response.json == {
+        "answer": "I can't help with that. Let's focus on photosynthesis instead."
+    }
 
 
 def test_chat_rejects_answer_without_source_evidence(
@@ -223,6 +303,29 @@ def test_chat_sends_only_the_last_six_saved_messages_as_context(
     assert [message["content"] for message in prompt_data["recent_conversation"]] == [
         f"stored-message-{index}" for index in range(2, 8)
     ]
+
+
+def test_chat_check_cli_runs_one_live_request_without_saving_history(
+    app: Flask,
+    chat_topic: int,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """Run the chat-check command with the selected topic note and print its answer."""
+    llm = _mock_llm(monkeypatch, answer="Chlorophyll absorbs light.")
+    runner = app.test_cli_runner()
+
+    result = runner.invoke(
+        args=["chat-check", "--topic-id", str(chat_topic), "summarize"],
+    )
+
+    assert result.exit_code == 0
+    assert result.output.strip() == "Chlorophyll absorbs light."
+    prompt = llm.generate.call_args.kwargs["prompt"]
+    prompt_data = json.loads(prompt.split("UNTRUSTED_DATA_JSON:\n", 1)[1])
+    assert prompt_data["topic_title"] == "Photosynthesis"
+    assert prompt_data["source_material"].startswith("Photosynthesis uses light")
+    with app.app_context():
+        assert ChatMessage.query.filter_by(topic_id=chat_topic).count() == 0
 
 
 def test_topic_page_displays_only_the_latest_fifty_chat_messages(

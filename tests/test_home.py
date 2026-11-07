@@ -216,11 +216,17 @@ def test_home_chat_uses_existing_topic_and_upload_chat_history(
     llm = MagicMock()
     llm.generate.side_effect = [
         json.dumps(
-            {"covered": True, "answer": "Topic answer.", "evidence": "Topic fact."}
+            {
+                "covered": True,
+                "refused": False,
+                "answer": "Topic answer.",
+                "evidence": "Topic fact.",
+            }
         ),
         json.dumps(
             {
                 "covered": True,
+                "refused": False,
                 "answer": "Upload answer.",
                 "evidence": "Upload fact.",
             }
@@ -254,6 +260,20 @@ def test_home_chat_uses_existing_topic_and_upload_chat_history(
     upload_prompt = llm.generate.call_args_list[1].kwargs["prompt"]
     assert "Topic fact." in topic_prompt
     assert "Upload fact." in upload_prompt
+    topic_prompt_data = json.loads(
+        topic_prompt.split("UNTRUSTED_DATA_JSON:\n", 1)[1]
+    )
+    upload_prompt_data = json.loads(
+        upload_prompt.split("UNTRUSTED_DATA_JSON:\n", 1)[1]
+    )
+    assert topic_prompt_data["topic_title"] == "Chat Topic"
+    assert topic_prompt_data["subject"] == "Chat Subject"
+    assert topic_prompt_data["source_material"] == "Topic fact."
+    assert upload_prompt_data["material_title"] == "Chat upload"
+
+    topic_page = auth_client.get(f"/topics/{topic_id}")
+    assert topic_page.status_code == 200
+    assert f'data-send-url="/chat/topic/{topic_id}"'.encode() in topic_page.data
 
 
 def test_home_dropdown_endpoints_require_login(client: FlaskClient) -> None:

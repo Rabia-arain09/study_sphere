@@ -1172,6 +1172,18 @@ body {
     flex-wrap: wrap;
 }
 
+.topic-title-row {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 1rem;
+    flex-wrap: wrap;
+}
+
+.topic-title-row .topic-title {
+    flex: 1 1 18rem;
+}
+
 .topic-title {
     font-size: 2.2rem;
     font-weight: 800;
@@ -2887,30 +2899,7 @@ html[data-theme="highlight"] .ai-notes-banner {
     border: 0;
 }
 
-.ask-ai-fab {
-    position: fixed;
-    right: 1.5rem;
-    bottom: 1.5rem;
-    z-index: 1040;
-    display: inline-flex;
-    align-items: center;
-    gap: 0.5rem;
-    padding: 0.85rem 1.1rem;
-    color: var(--btn-primary-text, #ffffff);
-    background: var(--primary);
-    border: 1px solid var(--primary);
-    border-radius: 999px;
-    box-shadow: var(--shadow-md);
-    font: inherit;
-    font-weight: 700;
-    cursor: pointer;
-}
-
-.ask-ai-fab:hover {
-    filter: brightness(0.95);
-}
-
-.ask-ai-fab:focus-visible,
+[data-chat-open]:focus-visible,
 .study-chat-drawer button:focus-visible,
 .study-chat-drawer textarea:focus-visible {
     outline: 3px solid var(--border-focus);
@@ -2987,11 +2976,6 @@ html[data-theme="highlight"] .ai-notes-banner {
 }
 
 @media (max-width: 600px) {
-    .ask-ai-fab {
-        right: 1rem;
-        bottom: 1rem;
-    }
-
     .study-chat-drawer {
         width: 100%;
         height: 100vh;
@@ -3012,6 +2996,13 @@ html[data-theme="highlight"] .ai-notes-banner {
     max-width: 780px;
     margin: 0 auto 2rem;
     text-align: center;
+}
+
+.home-greeting {
+    margin: 0 0 0.65rem;
+    color: var(--primary);
+    font-size: clamp(1.05rem, 2.5vw, 1.3rem);
+    font-weight: 700;
 }
 
 .learning-home-header h1,
@@ -3277,6 +3268,21 @@ html[data-theme="highlight"] .ai-notes-banner {
     line-height: 1.5;
 }
 
+.upload-page-topbar {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 0.75rem;
+    margin-bottom: 1.5rem;
+    flex-wrap: wrap;
+}
+
+.upload-page-actions {
+    display: flex;
+    gap: 0.75rem;
+    flex-wrap: wrap;
+}
+
 [data-home-chat] [hidden] {
     display: none !important;
 }
@@ -3296,6 +3302,14 @@ html[data-theme="highlight"] .ai-notes-banner {
 
     .home-continue-card {
         grid-column: auto;
+    }
+
+    .upload-page-topbar {
+        align-items: flex-start;
+    }
+
+    .upload-page-actions {
+        width: 100%;
     }
 }
 

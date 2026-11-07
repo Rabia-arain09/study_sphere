@@ -41,7 +41,19 @@
             {% endif %}
         </div>
 
-        <h1 class="topic-title">{{ topic.name }}</h1>
+        <div class="topic-title-row">
+            <h1 class="topic-title">{{ topic.name }}</h1>
+            <button
+                type="button"
+                class="btn btn-primary"
+                data-chat-open
+                aria-controls="study-chat-drawer"
+                aria-expanded="false"
+            >
+                <span aria-hidden="true">✦</span>
+                Ask AI
+            </button>
+        </div>
 
         <div class="topic-stats-bar">
             <div class="stat-item">

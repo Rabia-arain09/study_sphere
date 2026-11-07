@@ -131,9 +131,12 @@ def test_topic_chat_saves_history_and_renders_escaped_messages(
     assert b"The note says &lt;script&gt;alert(1)&lt;/script&gt;." in page.data
     assert b"<script>alert(1)</script>" not in page.data
     assert b"What does chlorophyll absorb?" in page.data
-    assert b'class="ask-ai-fab"' in page.data
+    assert b"ask-ai-fab" not in page.data
     assert b'role="dialog"' in page.data
-    assert b'data-chat-open' in page.data
+    assert page.data.count(b'data-chat-open') == 1
+    assert page.data.index(b'data-chat-open') < page.data.index(
+        b'class="topic-body-layout"'
+    )
 
 
 def test_upload_chat_uses_summary_and_text_and_reloads_history(
@@ -165,7 +168,8 @@ def test_upload_chat_uses_summary_and_text_and_reloads_history(
     assert page.status_code == 200
     assert b"Where does this process mainly happen?" in page.data
     assert b"Mitochondria are a main site." in page.data
-    assert page.data.count(b'data-chat-open') == 2
+    assert page.data.count(b'data-chat-open') == 1
+    assert b"ask-ai-fab" not in page.data
     assert b'role="dialog"' in page.data
     assert b'Take Quiz' in page.data
 

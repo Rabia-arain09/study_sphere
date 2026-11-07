@@ -11,6 +11,8 @@
     data-chat-history-url="{{ url_for('chat.chat_history') }}"
 >
     <header class="learning-home-header">
+        {% set first_name = current_user.name.strip().split()[0] if current_user.name.strip() else 'there' %}
+        <p class="home-greeting">Welcome back, {{ first_name }}!</p>
         <p class="home-eyebrow">Your focused study space</p>
         <h1>What do you want to learn today?</h1>
         <p>Choose a topic or your own material to start a study chat grounded in your notes.</p>

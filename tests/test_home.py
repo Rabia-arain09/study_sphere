@@ -78,6 +78,7 @@ def test_home_page_html_authenticated(auth_client: FlaskClient) -> None:
     """Show the linked learning selectors, chat, and student shortcuts."""
     response = auth_client.get("/", headers={"Accept": "text/html"})
     assert response.status_code == 200
+    assert b"Welcome back, Test!" in response.data
     assert b"What do you want to learn today?" in response.data
     assert b'data-home-semester' in response.data
     assert b'data-home-subject' in response.data
@@ -86,6 +87,31 @@ def test_home_page_html_authenticated(auth_client: FlaskClient) -> None:
     assert b"Choose a topic or your uploaded material above" in response.data
     assert b"Dashboard" in response.data
     assert b"History" in response.data
+
+
+def test_home_greeting_escapes_the_users_first_name(
+    app: Flask,
+    client: FlaskClient,
+    test_user: User,
+) -> None:
+    """Escape user-controlled first-name text in the authenticated greeting."""
+    with app.app_context():
+        user = db.session.get(User, test_user.id)
+        assert user is not None
+        user.name = "<Rabia>"
+        db.session.commit()
+
+    login_response = client.post(
+        "/auth/login",
+        data={"email": "student@example.com", "password": "SecurePassword123"},
+        follow_redirects=True,
+    )
+    assert login_response.status_code == 200
+    response = client.get("/")
+
+    assert response.status_code == 200
+    assert b"Welcome back, &lt;Rabia&gt;!" in response.data
+    assert b"Welcome back, <Rabia>!" not in response.data
 
 
 def test_home_page_shows_continue_topic_for_latest_attempt(

@@ -1,0 +1,362 @@
+subject,topic,title,type,url
+Machine Learning,Introduction to Machine Learning,scikit-learn User Guide,link,https://scikit-learn.org/stable/user_guide.html
+Machine Learning,Introduction to Machine Learning,Google Machine Learning Crash Course,link,https://developers.google.com/machine-learning/crash-course
+Machine Learning,Python Setup for Machine Learning,Python (programming language),link,https://en.wikipedia.org/wiki/Python_(programming_language)
+Machine Learning,Python Setup for Machine Learning,scikit-learn User Guide,link,https://scikit-learn.org/stable/user_guide.html
+Machine Learning,Python Setup for Machine Learning,Google Machine Learning Crash Course,link,https://developers.google.com/machine-learning/crash-course
+Machine Learning,Artificial Neurons and the Perceptron,Artificial neuron,link,https://en.wikipedia.org/wiki/Artificial_neuron
+Machine Learning,Artificial Neurons and the Perceptron,scikit-learn User Guide,link,https://scikit-learn.org/stable/user_guide.html
+Machine Learning,Artificial Neurons and the Perceptron,Google Machine Learning Crash Course,link,https://developers.google.com/machine-learning/crash-course
+Machine Learning,Adaptive Linear Neuron (Adaline),ADALINE,link,https://en.wikipedia.org/wiki/ADALINE
+Machine Learning,Adaptive Linear Neuron (Adaline),scikit-learn User Guide,link,https://scikit-learn.org/stable/user_guide.html
+Machine Learning,Adaptive Linear Neuron (Adaline),Google Machine Learning Crash Course,link,https://developers.google.com/machine-learning/crash-course
+Machine Learning,"Python Basics: Data Types, Control Structures and Collections",Microsoft SQL Server,link,https://en.wikipedia.org/wiki/Microsoft_SQL_Server
+Machine Learning,"Python Basics: Data Types, Control Structures and Collections",scikit-learn User Guide,link,https://scikit-learn.org/stable/user_guide.html
+Machine Learning,"Python Basics: Data Types, Control Structures and Collections",Google Machine Learning Crash Course,link,https://developers.google.com/machine-learning/crash-course
+Machine Learning,NumPy Arrays,NumPy,link,https://en.wikipedia.org/wiki/NumPy
+Machine Learning,NumPy Arrays,scikit-learn User Guide,link,https://scikit-learn.org/stable/user_guide.html
+Machine Learning,NumPy Arrays,Google Machine Learning Crash Course,link,https://developers.google.com/machine-learning/crash-course
+Machine Learning,Reading and Writing Data with pandas,Google Data Protocol,link,https://en.wikipedia.org/wiki/Google_Data_Protocol
+Machine Learning,Reading and Writing Data with pandas,scikit-learn User Guide,link,https://scikit-learn.org/stable/user_guide.html
+Machine Learning,Reading and Writing Data with pandas,Google Machine Learning Crash Course,link,https://developers.google.com/machine-learning/crash-course
+Machine Learning,"Plotting with Matplotlib: Line, Bar and Scatter Graphs",Stem-and-leaf display,link,https://en.wikipedia.org/wiki/Stem-and-leaf_display
+Machine Learning,"Plotting with Matplotlib: Line, Bar and Scatter Graphs",scikit-learn User Guide,link,https://scikit-learn.org/stable/user_guide.html
+Machine Learning,"Plotting with Matplotlib: Line, Bar and Scatter Graphs",Google Machine Learning Crash Course,link,https://developers.google.com/machine-learning/crash-course
+Machine Learning,"Box Plots, Pie Charts and Dataset Visualization",Box plot,link,https://en.wikipedia.org/wiki/Box_plot
+Machine Learning,"Box Plots, Pie Charts and Dataset Visualization",scikit-learn User Guide,link,https://scikit-learn.org/stable/user_guide.html
+Machine Learning,"Box Plots, Pie Charts and Dataset Visualization",Google Machine Learning Crash Course,link,https://developers.google.com/machine-learning/crash-course
+Machine Learning,Choosing a Classification Algorithm,Statistical classification,link,https://en.wikipedia.org/wiki/Statistical_classification
+Machine Learning,Choosing a Classification Algorithm,scikit-learn User Guide,link,https://scikit-learn.org/stable/user_guide.html
+Machine Learning,Choosing a Classification Algorithm,Google Machine Learning Crash Course,link,https://developers.google.com/machine-learning/crash-course
+Machine Learning,First Steps with scikit-learn,scikit-learn User Guide,link,https://scikit-learn.org/stable/user_guide.html
+Machine Learning,First Steps with scikit-learn,Google Machine Learning Crash Course,link,https://developers.google.com/machine-learning/crash-course
+Machine Learning,Logistic Regression and Class Probabilities,scikit-learn User Guide,link,https://scikit-learn.org/stable/user_guide.html
+Machine Learning,Logistic Regression and Class Probabilities,Google Machine Learning Crash Course,link,https://developers.google.com/machine-learning/crash-course
+Machine Learning,Support Vector Machines,scikit-learn User Guide,link,https://scikit-learn.org/stable/user_guide.html
+Machine Learning,Support Vector Machines,Google Machine Learning Crash Course,link,https://developers.google.com/machine-learning/crash-course
+Machine Learning,Decision Tree Learning,scikit-learn User Guide,link,https://scikit-learn.org/stable/user_guide.html
+Machine Learning,Decision Tree Learning,Google Machine Learning Crash Course,link,https://developers.google.com/machine-learning/crash-course
+Machine Learning,K-Nearest Neighbors (KNN),scikit-learn User Guide,link,https://scikit-learn.org/stable/user_guide.html
+Machine Learning,K-Nearest Neighbors (KNN),Google Machine Learning Crash Course,link,https://developers.google.com/machine-learning/crash-course
+Machine Learning,Dealing with Missing Data,scikit-learn User Guide,link,https://scikit-learn.org/stable/user_guide.html
+Machine Learning,Dealing with Missing Data,Google Machine Learning Crash Course,link,https://developers.google.com/machine-learning/crash-course
+Machine Learning,Handling Categorical Data,scikit-learn User Guide,link,https://scikit-learn.org/stable/user_guide.html
+Machine Learning,Handling Categorical Data,Google Machine Learning Crash Course,link,https://developers.google.com/machine-learning/crash-course
+Machine Learning,Partitioning a Dataset into Training and Test Sets,scikit-learn User Guide,link,https://scikit-learn.org/stable/user_guide.html
+Machine Learning,Partitioning a Dataset into Training and Test Sets,Google Machine Learning Crash Course,link,https://developers.google.com/machine-learning/crash-course
+Machine Learning,Feature Scaling,scikit-learn User Guide,link,https://scikit-learn.org/stable/user_guide.html
+Machine Learning,Feature Scaling,Google Machine Learning Crash Course,link,https://developers.google.com/machine-learning/crash-course
+Machine Learning,Selecting Meaningful Features,scikit-learn User Guide,link,https://scikit-learn.org/stable/user_guide.html
+Machine Learning,Selecting Meaningful Features,Google Machine Learning Crash Course,link,https://developers.google.com/machine-learning/crash-course
+Machine Learning,Assessing Feature Importance with Random Forests,scikit-learn User Guide,link,https://scikit-learn.org/stable/user_guide.html
+Machine Learning,Assessing Feature Importance with Random Forests,Google Machine Learning Crash Course,link,https://developers.google.com/machine-learning/crash-course
+Machine Learning,Principal Component Analysis (PCA),scikit-learn User Guide,link,https://scikit-learn.org/stable/user_guide.html
+Machine Learning,Principal Component Analysis (PCA),Google Machine Learning Crash Course,link,https://developers.google.com/machine-learning/crash-course
+Machine Learning,Linear Discriminant Analysis (LDA),scikit-learn User Guide,link,https://scikit-learn.org/stable/user_guide.html
+Machine Learning,Linear Discriminant Analysis (LDA),Google Machine Learning Crash Course,link,https://developers.google.com/machine-learning/crash-course
+Machine Learning,Streamlining Workflows with Pipelines,scikit-learn User Guide,link,https://scikit-learn.org/stable/user_guide.html
+Machine Learning,Streamlining Workflows with Pipelines,Google Machine Learning Crash Course,link,https://developers.google.com/machine-learning/crash-course
+Machine Learning,K-Fold Cross-Validation,scikit-learn User Guide,link,https://scikit-learn.org/stable/user_guide.html
+Machine Learning,K-Fold Cross-Validation,Google Machine Learning Crash Course,link,https://developers.google.com/machine-learning/crash-course
+Machine Learning,Learning and Validation Curves,scikit-learn User Guide,link,https://scikit-learn.org/stable/user_guide.html
+Machine Learning,Learning and Validation Curves,Google Machine Learning Crash Course,link,https://developers.google.com/machine-learning/crash-course
+Machine Learning,Hyperparameter Tuning with Grid Search,scikit-learn User Guide,link,https://scikit-learn.org/stable/user_guide.html
+Machine Learning,Hyperparameter Tuning with Grid Search,Google Machine Learning Crash Course,link,https://developers.google.com/machine-learning/crash-course
+Machine Learning,Performance Evaluation Metrics,scikit-learn User Guide,link,https://scikit-learn.org/stable/user_guide.html
+Machine Learning,Performance Evaluation Metrics,Google Machine Learning Crash Course,link,https://developers.google.com/machine-learning/crash-course
+Machine Learning,Dealing with Class Imbalance,scikit-learn User Guide,link,https://scikit-learn.org/stable/user_guide.html
+Machine Learning,Dealing with Class Imbalance,Google Machine Learning Crash Course,link,https://developers.google.com/machine-learning/crash-course
+Machine Learning,Preparing Text Data for Sentiment Analysis,scikit-learn User Guide,link,https://scikit-learn.org/stable/user_guide.html
+Machine Learning,Preparing Text Data for Sentiment Analysis,Google Machine Learning Crash Course,link,https://developers.google.com/machine-learning/crash-course
+Machine Learning,The Bag-of-Words Model,scikit-learn User Guide,link,https://scikit-learn.org/stable/user_guide.html
+Machine Learning,The Bag-of-Words Model,Google Machine Learning Crash Course,link,https://developers.google.com/machine-learning/crash-course
+Machine Learning,Document Classification with Logistic Regression,scikit-learn User Guide,link,https://scikit-learn.org/stable/user_guide.html
+Machine Learning,Document Classification with Logistic Regression,Google Machine Learning Crash Course,link,https://developers.google.com/machine-learning/crash-course
+Machine Learning,Topic Modeling with Latent Dirichlet Allocation,scikit-learn User Guide,link,https://scikit-learn.org/stable/user_guide.html
+Machine Learning,Topic Modeling with Latent Dirichlet Allocation,Google Machine Learning Crash Course,link,https://developers.google.com/machine-learning/crash-course
+Machine Learning,Embedding ML Models in a Flask Web Application,scikit-learn User Guide,link,https://scikit-learn.org/stable/user_guide.html
+Machine Learning,Embedding ML Models in a Flask Web Application,Google Machine Learning Crash Course,link,https://developers.google.com/machine-learning/crash-course
+Machine Learning,Introduction to Linear Regression,scikit-learn User Guide,link,https://scikit-learn.org/stable/user_guide.html
+Machine Learning,Introduction to Linear Regression,Google Machine Learning Crash Course,link,https://developers.google.com/machine-learning/crash-course
+Machine Learning,Exploring the Housing Dataset,scikit-learn User Guide,link,https://scikit-learn.org/stable/user_guide.html
+Machine Learning,Exploring the Housing Dataset,Google Machine Learning Crash Course,link,https://developers.google.com/machine-learning/crash-course
+Machine Learning,Ordinary Least Squares Linear Regression,scikit-learn User Guide,link,https://scikit-learn.org/stable/user_guide.html
+Machine Learning,Ordinary Least Squares Linear Regression,Google Machine Learning Crash Course,link,https://developers.google.com/machine-learning/crash-course
+Machine Learning,Robust Regression with RANSAC,scikit-learn User Guide,link,https://scikit-learn.org/stable/user_guide.html
+Machine Learning,Robust Regression with RANSAC,Google Machine Learning Crash Course,link,https://developers.google.com/machine-learning/crash-course
+Machine Learning,Evaluating Regression Models,scikit-learn User Guide,link,https://scikit-learn.org/stable/user_guide.html
+Machine Learning,Evaluating Regression Models,Google Machine Learning Crash Course,link,https://developers.google.com/machine-learning/crash-course
+Machine Learning,K-Means Clustering,scikit-learn User Guide,link,https://scikit-learn.org/stable/user_guide.html
+Machine Learning,K-Means Clustering,Google Machine Learning Crash Course,link,https://developers.google.com/machine-learning/crash-course
+Machine Learning,Hierarchical Clustering,scikit-learn User Guide,link,https://scikit-learn.org/stable/user_guide.html
+Machine Learning,Hierarchical Clustering,Google Machine Learning Crash Course,link,https://developers.google.com/machine-learning/crash-course
+Machine Learning,Density-Based Clustering with DBSCAN,scikit-learn User Guide,link,https://scikit-learn.org/stable/user_guide.html
+Machine Learning,Density-Based Clustering with DBSCAN,Google Machine Learning Crash Course,link,https://developers.google.com/machine-learning/crash-course
+Machine Learning,NLP Overview and Preparing Text for Deep Learning,scikit-learn User Guide,link,https://scikit-learn.org/stable/user_guide.html
+Machine Learning,NLP Overview and Preparing Text for Deep Learning,Google Machine Learning Crash Course,link,https://developers.google.com/machine-learning/crash-course
+Machine Learning,Word Embeddings,scikit-learn User Guide,link,https://scikit-learn.org/stable/user_guide.html
+Machine Learning,Word Embeddings,Google Machine Learning Crash Course,link,https://developers.google.com/machine-learning/crash-course
+Machine Learning,"Recurrent Networks: RNN, LSTM and Bi-LSTM",scikit-learn User Guide,link,https://scikit-learn.org/stable/user_guide.html
+Machine Learning,"Recurrent Networks: RNN, LSTM and Bi-LSTM",Google Machine Learning Crash Course,link,https://developers.google.com/machine-learning/crash-course
+Machine Learning,Introduction to Convolutional Neural Networks,scikit-learn User Guide,link,https://scikit-learn.org/stable/user_guide.html
+Machine Learning,Introduction to Convolutional Neural Networks,Google Machine Learning Crash Course,link,https://developers.google.com/machine-learning/crash-course
+Machine Learning,Training Convnets on Small Datasets,scikit-learn User Guide,link,https://scikit-learn.org/stable/user_guide.html
+Machine Learning,Training Convnets on Small Datasets,Google Machine Learning Crash Course,link,https://developers.google.com/machine-learning/crash-course
+Machine Learning,Using Pre-trained Convnets,scikit-learn User Guide,link,https://scikit-learn.org/stable/user_guide.html
+Machine Learning,Using Pre-trained Convnets,Google Machine Learning Crash Course,link,https://developers.google.com/machine-learning/crash-course
+Operating Systems,What Operating Systems Do,Operating Systems: Three Easy Pieces,link,https://pages.cs.wisc.edu/~remzi/OSTEP/
+Operating Systems,What Operating Systems Do,Linux Kernel Documentation,link,https://docs.kernel.org/
+Operating Systems,Computer-System Organization,Operating Systems: Three Easy Pieces,link,https://pages.cs.wisc.edu/~remzi/OSTEP/
+Operating Systems,Computer-System Organization,Linux Kernel Documentation,link,https://docs.kernel.org/
+Operating Systems,Computer-System Architecture,Operating Systems: Three Easy Pieces,link,https://pages.cs.wisc.edu/~remzi/OSTEP/
+Operating Systems,Computer-System Architecture,Linux Kernel Documentation,link,https://docs.kernel.org/
+Operating Systems,Operating-System Operations and Resource Management,Operating Systems: Three Easy Pieces,link,https://pages.cs.wisc.edu/~remzi/OSTEP/
+Operating Systems,Operating-System Operations and Resource Management,Linux Kernel Documentation,link,https://docs.kernel.org/
+Operating Systems,"Security, Protection and Virtualization",Operating Systems: Three Easy Pieces,link,https://pages.cs.wisc.edu/~remzi/OSTEP/
+Operating Systems,"Security, Protection and Virtualization",Linux Kernel Documentation,link,https://docs.kernel.org/
+Operating Systems,Kernel Data Structures and Computing Environments,Operating Systems: Three Easy Pieces,link,https://pages.cs.wisc.edu/~remzi/OSTEP/
+Operating Systems,Kernel Data Structures and Computing Environments,Linux Kernel Documentation,link,https://docs.kernel.org/
+Operating Systems,Operating-System Services and User Interface,Operating Systems: Three Easy Pieces,link,https://pages.cs.wisc.edu/~remzi/OSTEP/
+Operating Systems,Operating-System Services and User Interface,Linux Kernel Documentation,link,https://docs.kernel.org/
+Operating Systems,System Calls,Operating Systems: Three Easy Pieces,link,https://pages.cs.wisc.edu/~remzi/OSTEP/
+Operating Systems,System Calls,Linux Kernel Documentation,link,https://docs.kernel.org/
+Operating Systems,Linkers and Loaders,Operating Systems: Three Easy Pieces,link,https://pages.cs.wisc.edu/~remzi/OSTEP/
+Operating Systems,Linkers and Loaders,Linux Kernel Documentation,link,https://docs.kernel.org/
+Operating Systems,Operating-System Design and Structure,Operating Systems: Three Easy Pieces,link,https://pages.cs.wisc.edu/~remzi/OSTEP/
+Operating Systems,Operating-System Design and Structure,Linux Kernel Documentation,link,https://docs.kernel.org/
+Operating Systems,Building and Booting an Operating System,Operating Systems: Three Easy Pieces,link,https://pages.cs.wisc.edu/~remzi/OSTEP/
+Operating Systems,Building and Booting an Operating System,Linux Kernel Documentation,link,https://docs.kernel.org/
+Operating Systems,Process Concept,Operating Systems: Three Easy Pieces,link,https://pages.cs.wisc.edu/~remzi/OSTEP/
+Operating Systems,Process Concept,Linux Kernel Documentation,link,https://docs.kernel.org/
+Operating Systems,Process Scheduling and Operations on Processes,Operating Systems: Three Easy Pieces,link,https://pages.cs.wisc.edu/~remzi/OSTEP/
+Operating Systems,Process Scheduling and Operations on Processes,Linux Kernel Documentation,link,https://docs.kernel.org/
+Operating Systems,Interprocess Communication,Operating Systems: Three Easy Pieces,link,https://pages.cs.wisc.edu/~remzi/OSTEP/
+Operating Systems,Interprocess Communication,Linux Kernel Documentation,link,https://docs.kernel.org/
+Operating Systems,Multicore Programming and Multithreading Models,Operating Systems: Three Easy Pieces,link,https://pages.cs.wisc.edu/~remzi/OSTEP/
+Operating Systems,Multicore Programming and Multithreading Models,Linux Kernel Documentation,link,https://docs.kernel.org/
+Operating Systems,Thread Libraries and Implicit Threading,Operating Systems: Three Easy Pieces,link,https://pages.cs.wisc.edu/~remzi/OSTEP/
+Operating Systems,Thread Libraries and Implicit Threading,Linux Kernel Documentation,link,https://docs.kernel.org/
+Operating Systems,Threading Issues,Operating Systems: Three Easy Pieces,link,https://pages.cs.wisc.edu/~remzi/OSTEP/
+Operating Systems,Threading Issues,Linux Kernel Documentation,link,https://docs.kernel.org/
+Operating Systems,CPU Scheduling: Criteria and Algorithms,Operating Systems: Three Easy Pieces,link,https://pages.cs.wisc.edu/~remzi/OSTEP/
+Operating Systems,CPU Scheduling: Criteria and Algorithms,Linux Kernel Documentation,link,https://docs.kernel.org/
+Operating Systems,Thread and Multiprocessor Scheduling,Operating Systems: Three Easy Pieces,link,https://pages.cs.wisc.edu/~remzi/OSTEP/
+Operating Systems,Thread and Multiprocessor Scheduling,Linux Kernel Documentation,link,https://docs.kernel.org/
+Operating Systems,Real-Time CPU Scheduling,Operating Systems: Three Easy Pieces,link,https://pages.cs.wisc.edu/~remzi/OSTEP/
+Operating Systems,Real-Time CPU Scheduling,Linux Kernel Documentation,link,https://docs.kernel.org/
+Operating Systems,Algorithm Evaluation and Operating-System Examples,Operating Systems: Three Easy Pieces,link,https://pages.cs.wisc.edu/~remzi/OSTEP/
+Operating Systems,Algorithm Evaluation and Operating-System Examples,Linux Kernel Documentation,link,https://docs.kernel.org/
+Operating Systems,The Critical-Section Problem and Peterson's Solution,Operating Systems: Three Easy Pieces,link,https://pages.cs.wisc.edu/~remzi/OSTEP/
+Operating Systems,The Critical-Section Problem and Peterson's Solution,Linux Kernel Documentation,link,https://docs.kernel.org/
+Operating Systems,Hardware Support for Synchronization,Operating Systems: Three Easy Pieces,link,https://pages.cs.wisc.edu/~remzi/OSTEP/
+Operating Systems,Hardware Support for Synchronization,Linux Kernel Documentation,link,https://docs.kernel.org/
+Operating Systems,Mutex Locks and Semaphores,Operating Systems: Three Easy Pieces,link,https://pages.cs.wisc.edu/~remzi/OSTEP/
+Operating Systems,Mutex Locks and Semaphores,Linux Kernel Documentation,link,https://docs.kernel.org/
+Operating Systems,Monitors,Operating Systems: Three Easy Pieces,link,https://pages.cs.wisc.edu/~remzi/OSTEP/
+Operating Systems,Monitors,Linux Kernel Documentation,link,https://docs.kernel.org/
+Operating Systems,Deadlock System Model and Characterization,Operating Systems: Three Easy Pieces,link,https://pages.cs.wisc.edu/~remzi/OSTEP/
+Operating Systems,Deadlock System Model and Characterization,Linux Kernel Documentation,link,https://docs.kernel.org/
+Operating Systems,Methods for Handling Deadlocks and Deadlock Prevention,Deadlock (computer science),link,https://en.wikipedia.org/wiki/Deadlock_(computer_science)
+Operating Systems,Methods for Handling Deadlocks and Deadlock Prevention,Operating Systems: Three Easy Pieces,link,https://pages.cs.wisc.edu/~remzi/OSTEP/
+Operating Systems,Methods for Handling Deadlocks and Deadlock Prevention,Linux Kernel Documentation,link,https://docs.kernel.org/
+Operating Systems,Deadlock Avoidance,Deadlock (computer science),link,https://en.wikipedia.org/wiki/Deadlock_(computer_science)
+Operating Systems,Deadlock Avoidance,Operating Systems: Three Easy Pieces,link,https://pages.cs.wisc.edu/~remzi/OSTEP/
+Operating Systems,Deadlock Avoidance,Linux Kernel Documentation,link,https://docs.kernel.org/
+Operating Systems,Deadlock Detection and Recovery,Tung Hsiang-lung,link,https://en.wikipedia.org/wiki/Tung_Hsiang-lung
+Operating Systems,Deadlock Detection and Recovery,Operating Systems: Three Easy Pieces,link,https://pages.cs.wisc.edu/~remzi/OSTEP/
+Operating Systems,Deadlock Detection and Recovery,Linux Kernel Documentation,link,https://docs.kernel.org/
+Operating Systems,Contiguous Memory Allocation,Slab allocation,link,https://en.wikipedia.org/wiki/Slab_allocation
+Operating Systems,Contiguous Memory Allocation,Operating Systems: Three Easy Pieces,link,https://pages.cs.wisc.edu/~remzi/OSTEP/
+Operating Systems,Contiguous Memory Allocation,Linux Kernel Documentation,link,https://docs.kernel.org/
+Operating Systems,Paging,Demand paging,link,https://en.wikipedia.org/wiki/Demand_paging
+Operating Systems,Paging,Operating Systems: Three Easy Pieces,link,https://pages.cs.wisc.edu/~remzi/OSTEP/
+Operating Systems,Paging,Linux Kernel Documentation,link,https://docs.kernel.org/
+Operating Systems,Structure of the Page Table,Water (data page),link,https://en.wikipedia.org/wiki/Water_(data_page)
+Operating Systems,Structure of the Page Table,Operating Systems: Three Easy Pieces,link,https://pages.cs.wisc.edu/~remzi/OSTEP/
+Operating Systems,Structure of the Page Table,Linux Kernel Documentation,link,https://docs.kernel.org/
+Operating Systems,Swapping,Vote swapping,link,https://en.wikipedia.org/wiki/Vote_swapping
+Operating Systems,Swapping,Operating Systems: Three Easy Pieces,link,https://pages.cs.wisc.edu/~remzi/OSTEP/
+Operating Systems,Swapping,Linux Kernel Documentation,link,https://docs.kernel.org/
+Operating Systems,Demand Paging,Demand paging,link,https://en.wikipedia.org/wiki/Demand_paging
+Operating Systems,Demand Paging,Operating Systems: Three Easy Pieces,link,https://pages.cs.wisc.edu/~remzi/OSTEP/
+Operating Systems,Demand Paging,Linux Kernel Documentation,link,https://docs.kernel.org/
+Operating Systems,Copy-on-Write,Copy-on-write,link,https://en.wikipedia.org/wiki/Copy-on-write
+Operating Systems,Copy-on-Write,Operating Systems: Three Easy Pieces,link,https://pages.cs.wisc.edu/~remzi/OSTEP/
+Operating Systems,Copy-on-Write,Linux Kernel Documentation,link,https://docs.kernel.org/
+Operating Systems,Page Replacement Algorithms,Replacement algorithm,link,https://en.wikipedia.org/wiki/Replacement_algorithm
+Operating Systems,Page Replacement Algorithms,Operating Systems: Three Easy Pieces,link,https://pages.cs.wisc.edu/~remzi/OSTEP/
+Operating Systems,Page Replacement Algorithms,Linux Kernel Documentation,link,https://docs.kernel.org/
+Operating Systems,Allocation of Frames and Thrashing,Operating Systems: Three Easy Pieces,link,https://pages.cs.wisc.edu/~remzi/OSTEP/
+Operating Systems,Allocation of Frames and Thrashing,Linux Kernel Documentation,link,https://docs.kernel.org/
+Compiler Construction,Introduction to Compilers and Language Processors,MIT Computer Language Engineering Lecture Notes,link,https://ocw.mit.edu/courses/6-035-computer-language-engineering-spring-2010/pages/lecture-notes/
+Compiler Construction,Introduction to Compilers and Language Processors,MIT Computer Language Engineering,link,https://ocw.mit.edu/courses/6-035-computer-language-engineering-spring-2010/
+Compiler Construction,Phases and Structure of a Compiler,MIT Computer Language Engineering Lecture Notes,link,https://ocw.mit.edu/courses/6-035-computer-language-engineering-spring-2010/pages/lecture-notes/
+Compiler Construction,Phases and Structure of a Compiler,MIT Computer Language Engineering,link,https://ocw.mit.edu/courses/6-035-computer-language-engineering-spring-2010/
+Compiler Construction,"Compiler Types, Assemblers, Loaders and Tools",MIT Computer Language Engineering Lecture Notes,link,https://ocw.mit.edu/courses/6-035-computer-language-engineering-spring-2010/pages/lecture-notes/
+Compiler Construction,"Compiler Types, Assemblers, Loaders and Tools",MIT Computer Language Engineering,link,https://ocw.mit.edu/courses/6-035-computer-language-engineering-spring-2010/
+Compiler Construction,"Programming Language Basics: Names, Binding and Scope",MIT Computer Language Engineering Lecture Notes,link,https://ocw.mit.edu/courses/6-035-computer-language-engineering-spring-2010/pages/lecture-notes/
+Compiler Construction,"Programming Language Basics: Names, Binding and Scope",MIT Computer Language Engineering,link,https://ocw.mit.edu/courses/6-035-computer-language-engineering-spring-2010/
+Compiler Construction,Parameter Passing and Aliasing,MIT Computer Language Engineering Lecture Notes,link,https://ocw.mit.edu/courses/6-035-computer-language-engineering-spring-2010/pages/lecture-notes/
+Compiler Construction,Parameter Passing and Aliasing,MIT Computer Language Engineering,link,https://ocw.mit.edu/courses/6-035-computer-language-engineering-spring-2010/
+Compiler Construction,Syntax Definition and Context-Free Grammars,MIT Computer Language Engineering Lecture Notes,link,https://ocw.mit.edu/courses/6-035-computer-language-engineering-spring-2010/pages/lecture-notes/
+Compiler Construction,Syntax Definition and Context-Free Grammars,MIT Computer Language Engineering,link,https://ocw.mit.edu/courses/6-035-computer-language-engineering-spring-2010/
+Compiler Construction,Parse Trees and Ambiguity,MIT Computer Language Engineering Lecture Notes,link,https://ocw.mit.edu/courses/6-035-computer-language-engineering-spring-2010/pages/lecture-notes/
+Compiler Construction,Parse Trees and Ambiguity,MIT Computer Language Engineering,link,https://ocw.mit.edu/courses/6-035-computer-language-engineering-spring-2010/
+Compiler Construction,Associativity and Precedence of Operators,MIT Computer Language Engineering Lecture Notes,link,https://ocw.mit.edu/courses/6-035-computer-language-engineering-spring-2010/pages/lecture-notes/
+Compiler Construction,Associativity and Precedence of Operators,MIT Computer Language Engineering,link,https://ocw.mit.edu/courses/6-035-computer-language-engineering-spring-2010/
+Compiler Construction,Syntax-Directed Translation Basics,MIT Computer Language Engineering Lecture Notes,link,https://ocw.mit.edu/courses/6-035-computer-language-engineering-spring-2010/pages/lecture-notes/
+Compiler Construction,Syntax-Directed Translation Basics,MIT Computer Language Engineering,link,https://ocw.mit.edu/courses/6-035-computer-language-engineering-spring-2010/
+Compiler Construction,Symbol Tables,MIT Computer Language Engineering Lecture Notes,link,https://ocw.mit.edu/courses/6-035-computer-language-engineering-spring-2010/pages/lecture-notes/
+Compiler Construction,Symbol Tables,MIT Computer Language Engineering,link,https://ocw.mit.edu/courses/6-035-computer-language-engineering-spring-2010/
+Compiler Construction,Role of the Lexical Analyzer and Input Buffering,MIT Computer Language Engineering Lecture Notes,link,https://ocw.mit.edu/courses/6-035-computer-language-engineering-spring-2010/pages/lecture-notes/
+Compiler Construction,Role of the Lexical Analyzer and Input Buffering,MIT Computer Language Engineering,link,https://ocw.mit.edu/courses/6-035-computer-language-engineering-spring-2010/
+Compiler Construction,Specification and Recognition of Tokens,MIT Computer Language Engineering Lecture Notes,link,https://ocw.mit.edu/courses/6-035-computer-language-engineering-spring-2010/pages/lecture-notes/
+Compiler Construction,Specification and Recognition of Tokens,MIT Computer Language Engineering,link,https://ocw.mit.edu/courses/6-035-computer-language-engineering-spring-2010/
+Compiler Construction,Regular Expressions for Lexical Analysis,MIT Computer Language Engineering Lecture Notes,link,https://ocw.mit.edu/courses/6-035-computer-language-engineering-spring-2010/pages/lecture-notes/
+Compiler Construction,Regular Expressions for Lexical Analysis,MIT Computer Language Engineering,link,https://ocw.mit.edu/courses/6-035-computer-language-engineering-spring-2010/
+Compiler Construction,Finite Automata: NFA and DFA,MIT Computer Language Engineering Lecture Notes,link,https://ocw.mit.edu/courses/6-035-computer-language-engineering-spring-2010/pages/lecture-notes/
+Compiler Construction,Finite Automata: NFA and DFA,MIT Computer Language Engineering,link,https://ocw.mit.edu/courses/6-035-computer-language-engineering-spring-2010/
+Compiler Construction,From Regular Expressions to Automata,MIT Computer Language Engineering Lecture Notes,link,https://ocw.mit.edu/courses/6-035-computer-language-engineering-spring-2010/pages/lecture-notes/
+Compiler Construction,From Regular Expressions to Automata,MIT Computer Language Engineering,link,https://ocw.mit.edu/courses/6-035-computer-language-engineering-spring-2010/
+Compiler Construction,The Lex/Flex Lexical-Analyzer Generator,MIT Computer Language Engineering Lecture Notes,link,https://ocw.mit.edu/courses/6-035-computer-language-engineering-spring-2010/pages/lecture-notes/
+Compiler Construction,The Lex/Flex Lexical-Analyzer Generator,MIT Computer Language Engineering,link,https://ocw.mit.edu/courses/6-035-computer-language-engineering-spring-2010/
+Compiler Construction,Role of the Parser and Syntax Error Handling,MIT Computer Language Engineering Lecture Notes,link,https://ocw.mit.edu/courses/6-035-computer-language-engineering-spring-2010/pages/lecture-notes/
+Compiler Construction,Role of the Parser and Syntax Error Handling,MIT Computer Language Engineering,link,https://ocw.mit.edu/courses/6-035-computer-language-engineering-spring-2010/
+Compiler Construction,Top-Down Parsing and Recursive Descent,MIT Computer Language Engineering Lecture Notes,link,https://ocw.mit.edu/courses/6-035-computer-language-engineering-spring-2010/pages/lecture-notes/
+Compiler Construction,Top-Down Parsing and Recursive Descent,MIT Computer Language Engineering,link,https://ocw.mit.edu/courses/6-035-computer-language-engineering-spring-2010/
+Compiler Construction,Left Recursion and Left Factoring,MIT Computer Language Engineering Lecture Notes,link,https://ocw.mit.edu/courses/6-035-computer-language-engineering-spring-2010/pages/lecture-notes/
+Compiler Construction,Left Recursion and Left Factoring,MIT Computer Language Engineering,link,https://ocw.mit.edu/courses/6-035-computer-language-engineering-spring-2010/
+Compiler Construction,FIRST and FOLLOW Sets,MIT Computer Language Engineering Lecture Notes,link,https://ocw.mit.edu/courses/6-035-computer-language-engineering-spring-2010/pages/lecture-notes/
+Compiler Construction,FIRST and FOLLOW Sets,MIT Computer Language Engineering,link,https://ocw.mit.edu/courses/6-035-computer-language-engineering-spring-2010/
+Compiler Construction,LL(1) Grammars and Predictive Parsing,MIT Computer Language Engineering Lecture Notes,link,https://ocw.mit.edu/courses/6-035-computer-language-engineering-spring-2010/pages/lecture-notes/
+Compiler Construction,LL(1) Grammars and Predictive Parsing,MIT Computer Language Engineering,link,https://ocw.mit.edu/courses/6-035-computer-language-engineering-spring-2010/
+Compiler Construction,Bottom-Up Parsing and Shift-Reduce Parsing,MIT Computer Language Engineering Lecture Notes,link,https://ocw.mit.edu/courses/6-035-computer-language-engineering-spring-2010/pages/lecture-notes/
+Compiler Construction,Bottom-Up Parsing and Shift-Reduce Parsing,MIT Computer Language Engineering,link,https://ocw.mit.edu/courses/6-035-computer-language-engineering-spring-2010/
+Compiler Construction,LR(0) Items and the LR(0) Automaton,MIT Computer Language Engineering Lecture Notes,link,https://ocw.mit.edu/courses/6-035-computer-language-engineering-spring-2010/pages/lecture-notes/
+Compiler Construction,LR(0) Items and the LR(0) Automaton,MIT Computer Language Engineering,link,https://ocw.mit.edu/courses/6-035-computer-language-engineering-spring-2010/
+Compiler Construction,SLR Parsing Tables,MIT Computer Language Engineering Lecture Notes,link,https://ocw.mit.edu/courses/6-035-computer-language-engineering-spring-2010/pages/lecture-notes/
+Compiler Construction,SLR Parsing Tables,MIT Computer Language Engineering,link,https://ocw.mit.edu/courses/6-035-computer-language-engineering-spring-2010/
+Compiler Construction,Ambiguous Grammars and Resolving Conflicts,MIT Computer Language Engineering Lecture Notes,link,https://ocw.mit.edu/courses/6-035-computer-language-engineering-spring-2010/pages/lecture-notes/
+Compiler Construction,Ambiguous Grammars and Resolving Conflicts,MIT Computer Language Engineering,link,https://ocw.mit.edu/courses/6-035-computer-language-engineering-spring-2010/
+Compiler Construction,Error Recovery in LR Parsing and Building a Parser,MIT Computer Language Engineering Lecture Notes,link,https://ocw.mit.edu/courses/6-035-computer-language-engineering-spring-2010/pages/lecture-notes/
+Compiler Construction,Error Recovery in LR Parsing and Building a Parser,MIT Computer Language Engineering,link,https://ocw.mit.edu/courses/6-035-computer-language-engineering-spring-2010/
+Compiler Construction,Syntax-Directed Definitions: Synthesized and Inherited Attributes,MIT Computer Language Engineering Lecture Notes,link,https://ocw.mit.edu/courses/6-035-computer-language-engineering-spring-2010/pages/lecture-notes/
+Compiler Construction,Syntax-Directed Definitions: Synthesized and Inherited Attributes,MIT Computer Language Engineering,link,https://ocw.mit.edu/courses/6-035-computer-language-engineering-spring-2010/
+Compiler Construction,"Dependency Graphs, S-Attributed and L-Attributed Definitions",MIT Computer Language Engineering Lecture Notes,link,https://ocw.mit.edu/courses/6-035-computer-language-engineering-spring-2010/pages/lecture-notes/
+Compiler Construction,"Dependency Graphs, S-Attributed and L-Attributed Definitions",MIT Computer Language Engineering,link,https://ocw.mit.edu/courses/6-035-computer-language-engineering-spring-2010/
+Compiler Construction,Syntax-Directed Translation with Flex and Bison,MIT Computer Language Engineering Lecture Notes,link,https://ocw.mit.edu/courses/6-035-computer-language-engineering-spring-2010/pages/lecture-notes/
+Compiler Construction,Syntax-Directed Translation with Flex and Bison,MIT Computer Language Engineering,link,https://ocw.mit.edu/courses/6-035-computer-language-engineering-spring-2010/
+Compiler Construction,"Intermediate Code: Syntax Trees, DAGs and Three-Address Code",MIT Computer Language Engineering Lecture Notes,link,https://ocw.mit.edu/courses/6-035-computer-language-engineering-spring-2010/pages/lecture-notes/
+Compiler Construction,"Intermediate Code: Syntax Trees, DAGs and Three-Address Code",MIT Computer Language Engineering,link,https://ocw.mit.edu/courses/6-035-computer-language-engineering-spring-2010/
+Compiler Construction,Type Checking,MIT Computer Language Engineering Lecture Notes,link,https://ocw.mit.edu/courses/6-035-computer-language-engineering-spring-2010/pages/lecture-notes/
+Compiler Construction,Type Checking,MIT Computer Language Engineering,link,https://ocw.mit.edu/courses/6-035-computer-language-engineering-spring-2010/
+Compiler Construction,Control Flow and Implementing Three-Address Code,MIT Computer Language Engineering Lecture Notes,link,https://ocw.mit.edu/courses/6-035-computer-language-engineering-spring-2010/pages/lecture-notes/
+Compiler Construction,Control Flow and Implementing Three-Address Code,MIT Computer Language Engineering,link,https://ocw.mit.edu/courses/6-035-computer-language-engineering-spring-2010/
+Web Engineering,Introduction to Web Engineering,MDN Learn Web Development,link,https://developer.mozilla.org/en-US/docs/Learn_web_development
+Web Engineering,Introduction to Web Engineering,MDN Web Documentation,link,https://developer.mozilla.org/en-US/docs/Web
+Web Engineering,The Internet and the World Wide Web,MDN Learn Web Development,link,https://developer.mozilla.org/en-US/docs/Learn_web_development
+Web Engineering,The Internet and the World Wide Web,MDN Web Documentation,link,https://developer.mozilla.org/en-US/docs/Web
+Web Engineering,Web Browsers,MDN Learn Web Development,link,https://developer.mozilla.org/en-US/docs/Learn_web_development
+Web Engineering,Web Browsers,MDN Web Documentation,link,https://developer.mozilla.org/en-US/docs/Web
+Web Engineering,Web Servers and URLs,MDN Learn Web Development,link,https://developer.mozilla.org/en-US/docs/Learn_web_development
+Web Engineering,Web Servers and URLs,MDN Web Documentation,link,https://developer.mozilla.org/en-US/docs/Web
+Web Engineering,The HyperText Transfer Protocol (HTTP),MDN Learn Web Development,link,https://developer.mozilla.org/en-US/docs/Learn_web_development
+Web Engineering,The HyperText Transfer Protocol (HTTP),MDN Web Documentation,link,https://developer.mozilla.org/en-US/docs/Web
+Web Engineering,"IP Addresses, IPv4 and IPv6",MDN Learn Web Development,link,https://developer.mozilla.org/en-US/docs/Learn_web_development
+Web Engineering,"IP Addresses, IPv4 and IPv6",MDN Web Documentation,link,https://developer.mozilla.org/en-US/docs/Web
+Web Engineering,Domain Name System,MDN Learn Web Development,link,https://developer.mozilla.org/en-US/docs/Learn_web_development
+Web Engineering,Domain Name System,MDN Web Documentation,link,https://developer.mozilla.org/en-US/docs/Web
+Web Engineering,Web Request-Response Cycle,MDN Learn Web Development,link,https://developer.mozilla.org/en-US/docs/Learn_web_development
+Web Engineering,Web Request-Response Cycle,MDN Web Documentation,link,https://developer.mozilla.org/en-US/docs/Web
+Web Engineering,Website vs Web Application and Categories of Web Applications,MDN Learn Web Development,link,https://developer.mozilla.org/en-US/docs/Learn_web_development
+Web Engineering,Website vs Web Application and Categories of Web Applications,MDN Web Documentation,link,https://developer.mozilla.org/en-US/docs/Web
+Web Engineering,Web Application Architecture,MDN Learn Web Development,link,https://developer.mozilla.org/en-US/docs/Learn_web_development
+Web Engineering,Web Application Architecture,MDN Web Documentation,link,https://developer.mozilla.org/en-US/docs/Web
+Web Engineering,HTML Document Structure and Elements,MDN Learn Web Development,link,https://developer.mozilla.org/en-US/docs/Learn_web_development
+Web Engineering,HTML Document Structure and Elements,MDN Web Documentation,link,https://developer.mozilla.org/en-US/docs/Web
+Web Engineering,"HTML Text, Lists, Links and Tables",MDN Learn Web Development,link,https://developer.mozilla.org/en-US/docs/Learn_web_development
+Web Engineering,"HTML Text, Lists, Links and Tables",MDN Web Documentation,link,https://developer.mozilla.org/en-US/docs/Web
+Web Engineering,HTML Forms and Inputs,MDN Learn Web Development,link,https://developer.mozilla.org/en-US/docs/Learn_web_development
+Web Engineering,HTML Forms and Inputs,MDN Web Documentation,link,https://developer.mozilla.org/en-US/docs/Web
+Web Engineering,"HTML Layout, Multimedia and Inline vs Block Elements",MDN Learn Web Development,link,https://developer.mozilla.org/en-US/docs/Learn_web_development
+Web Engineering,"HTML Layout, Multimedia and Inline vs Block Elements",MDN Web Documentation,link,https://developer.mozilla.org/en-US/docs/Web
+Web Engineering,"CSS Basics: Selectors, the Cascade and Specificity",MDN Learn Web Development,link,https://developer.mozilla.org/en-US/docs/Learn_web_development
+Web Engineering,"CSS Basics: Selectors, the Cascade and Specificity",MDN Web Documentation,link,https://developer.mozilla.org/en-US/docs/Web
+Web Engineering,"CSS Box Model, Units and Colors",MDN Learn Web Development,link,https://developer.mozilla.org/en-US/docs/Learn_web_development
+Web Engineering,"CSS Box Model, Units and Colors",MDN Web Documentation,link,https://developer.mozilla.org/en-US/docs/Web
+Web Engineering,"CSS Fonts, Element Flow, Float and Position",MDN Learn Web Development,link,https://developer.mozilla.org/en-US/docs/Learn_web_development
+Web Engineering,"CSS Fonts, Element Flow, Float and Position",MDN Web Documentation,link,https://developer.mozilla.org/en-US/docs/Web
+Web Engineering,Bootstrap Introduction and Grid System,MDN Learn Web Development,link,https://developer.mozilla.org/en-US/docs/Learn_web_development
+Web Engineering,Bootstrap Introduction and Grid System,MDN Web Documentation,link,https://developer.mozilla.org/en-US/docs/Web
+Web Engineering,Bootstrap Components,MDN Learn Web Development,link,https://developer.mozilla.org/en-US/docs/Learn_web_development
+Web Engineering,Bootstrap Components,MDN Web Documentation,link,https://developer.mozilla.org/en-US/docs/Web
+Web Engineering,Bootstrap Styling Utilities,MDN Learn Web Development,link,https://developer.mozilla.org/en-US/docs/Learn_web_development
+Web Engineering,Bootstrap Styling Utilities,MDN Web Documentation,link,https://developer.mozilla.org/en-US/docs/Web
+Web Engineering,"JavaScript Variables, Data Types and Operators",MDN Learn Web Development,link,https://developer.mozilla.org/en-US/docs/Learn_web_development
+Web Engineering,"JavaScript Variables, Data Types and Operators",MDN Web Documentation,link,https://developer.mozilla.org/en-US/docs/Web
+Web Engineering,JavaScript Control Flow and Loops,MDN Learn Web Development,link,https://developer.mozilla.org/en-US/docs/Learn_web_development
+Web Engineering,JavaScript Control Flow and Loops,MDN Web Documentation,link,https://developer.mozilla.org/en-US/docs/Web
+Web Engineering,JavaScript Arrays and Objects,MDN Learn Web Development,link,https://developer.mozilla.org/en-US/docs/Learn_web_development
+Web Engineering,JavaScript Arrays and Objects,MDN Web Documentation,link,https://developer.mozilla.org/en-US/docs/Web
+Web Engineering,JavaScript Functions and Scope,MDN Learn Web Development,link,https://developer.mozilla.org/en-US/docs/Learn_web_development
+Web Engineering,JavaScript Functions and Scope,MDN Web Documentation,link,https://developer.mozilla.org/en-US/docs/Web
+Web Engineering,JavaScript Errors and Exception Handling,MDN Learn Web Development,link,https://developer.mozilla.org/en-US/docs/Learn_web_development
+Web Engineering,JavaScript Errors and Exception Handling,MDN Web Documentation,link,https://developer.mozilla.org/en-US/docs/Web
+Web Engineering,"Higher-Order Functions, Closures and Array Iterators",MDN Learn Web Development,link,https://developer.mozilla.org/en-US/docs/Learn_web_development
+Web Engineering,"Higher-Order Functions, Closures and Array Iterators",MDN Web Documentation,link,https://developer.mozilla.org/en-US/docs/Web
+Web Engineering,DOM Introduction and Selecting Elements,MDN Learn Web Development,link,https://developer.mozilla.org/en-US/docs/Learn_web_development
+Web Engineering,DOM Introduction and Selecting Elements,MDN Web Documentation,link,https://developer.mozilla.org/en-US/docs/Web
+Web Engineering,DOM Manipulation,MDN Learn Web Development,link,https://developer.mozilla.org/en-US/docs/Learn_web_development
+Web Engineering,DOM Manipulation,MDN Web Documentation,link,https://developer.mozilla.org/en-US/docs/Web
+Web Engineering,Working with Events,MDN Learn Web Development,link,https://developer.mozilla.org/en-US/docs/Learn_web_development
+Web Engineering,Working with Events,MDN Web Documentation,link,https://developer.mozilla.org/en-US/docs/Web
+Web Engineering,Local Storage and Cookies,MDN Learn Web Development,link,https://developer.mozilla.org/en-US/docs/Learn_web_development
+Web Engineering,Local Storage and Cookies,MDN Web Documentation,link,https://developer.mozilla.org/en-US/docs/Web
+Web Engineering,"ES6 Features: Template Literals, Arrow Functions and Destructuring",MDN Learn Web Development,link,https://developer.mozilla.org/en-US/docs/Learn_web_development
+Web Engineering,"ES6 Features: Template Literals, Arrow Functions and Destructuring",MDN Web Documentation,link,https://developer.mozilla.org/en-US/docs/Web
+Web Engineering,ES6 Modules,MDN Learn Web Development,link,https://developer.mozilla.org/en-US/docs/Learn_web_development
+Web Engineering,ES6 Modules,MDN Web Documentation,link,https://developer.mozilla.org/en-US/docs/Web
+Web Engineering,Promises and Asynchronous JavaScript,MDN Learn Web Development,link,https://developer.mozilla.org/en-US/docs/Learn_web_development
+Web Engineering,Promises and Asynchronous JavaScript,MDN Web Documentation,link,https://developer.mozilla.org/en-US/docs/Web
+Web Engineering,Introduction to React and JSX,MDN Learn Web Development,link,https://developer.mozilla.org/en-US/docs/Learn_web_development
+Web Engineering,Introduction to React and JSX,MDN Web Documentation,link,https://developer.mozilla.org/en-US/docs/Web
+Web Engineering,React Components and Props,MDN Learn Web Development,link,https://developer.mozilla.org/en-US/docs/Learn_web_development
+Web Engineering,React Components and Props,MDN Web Documentation,link,https://developer.mozilla.org/en-US/docs/Web
+Web Engineering,React State and Component Architecture,MDN Learn Web Development,link,https://developer.mozilla.org/en-US/docs/Learn_web_development
+Web Engineering,React State and Component Architecture,MDN Web Documentation,link,https://developer.mozilla.org/en-US/docs/Web
+Web Engineering,"React Events, Forms and Refs",MDN Learn Web Development,link,https://developer.mozilla.org/en-US/docs/Learn_web_development
+Web Engineering,"React Events, Forms and Refs",MDN Web Documentation,link,https://developer.mozilla.org/en-US/docs/Web
+Web Engineering,Fetching Data from an API in React,MDN Learn Web Development,link,https://developer.mozilla.org/en-US/docs/Learn_web_development
+Web Engineering,Fetching Data from an API in React,MDN Web Documentation,link,https://developer.mozilla.org/en-US/docs/Web
+Web Engineering,Component Life Cycle and Hooks,MDN Learn Web Development,link,https://developer.mozilla.org/en-US/docs/Learn_web_development
+Web Engineering,Component Life Cycle and Hooks,MDN Web Documentation,link,https://developer.mozilla.org/en-US/docs/Web
+Web Engineering,React Router and Single-Page Applications,MDN Learn Web Development,link,https://developer.mozilla.org/en-US/docs/Learn_web_development
+Web Engineering,React Router and Single-Page Applications,MDN Web Documentation,link,https://developer.mozilla.org/en-US/docs/Web
+Web Engineering,Introduction to Node.js,MDN Learn Web Development,link,https://developer.mozilla.org/en-US/docs/Learn_web_development
+Web Engineering,Introduction to Node.js,MDN Web Documentation,link,https://developer.mozilla.org/en-US/docs/Web
+Web Engineering,Node.js Modules and NPM,MDN Learn Web Development,link,https://developer.mozilla.org/en-US/docs/Learn_web_development
+Web Engineering,Node.js Modules and NPM,MDN Web Documentation,link,https://developer.mozilla.org/en-US/docs/Web
+Web Engineering,Creating a Web Server and Handling HTTP Requests,MDN Learn Web Development,link,https://developer.mozilla.org/en-US/docs/Learn_web_development
+Web Engineering,Creating a Web Server and Handling HTTP Requests,MDN Web Documentation,link,https://developer.mozilla.org/en-US/docs/Web
+Web Engineering,Node.js Events and the EventEmitter Class,MDN Learn Web Development,link,https://developer.mozilla.org/en-US/docs/Learn_web_development
+Web Engineering,Node.js Events and the EventEmitter Class,MDN Web Documentation,link,https://developer.mozilla.org/en-US/docs/Web
+Web Engineering,Debugging Node.js Applications,MDN Learn Web Development,link,https://developer.mozilla.org/en-US/docs/Learn_web_development
+Web Engineering,Debugging Node.js Applications,MDN Web Documentation,link,https://developer.mozilla.org/en-US/docs/Web
+Web Engineering,Express.js Routing,MDN Learn Web Development,link,https://developer.mozilla.org/en-US/docs/Learn_web_development
+Web Engineering,Express.js Routing,MDN Web Documentation,link,https://developer.mozilla.org/en-US/docs/Web
+Web Engineering,Database Connectivity and CRUD Operations,MDN Learn Web Development,link,https://developer.mozilla.org/en-US/docs/Learn_web_development
+Web Engineering,Database Connectivity and CRUD Operations,MDN Web Documentation,link,https://developer.mozilla.org/en-US/docs/Web
+Web Engineering,Template Engines (EJS),MDN Learn Web Development,link,https://developer.mozilla.org/en-US/docs/Learn_web_development
+Web Engineering,Template Engines (EJS),MDN Web Documentation,link,https://developer.mozilla.org/en-US/docs/Web
+Computer Architecture,Instruction Set Architecture and Instruction Formats,Nand2Tetris: The Elements of Computing Systems,link,https://www.nand2tetris.org/
+Computer Architecture,Instruction Set Architecture and Instruction Formats,MIT Computation Structures,link,https://ocw.mit.edu/courses/6-004-computation-structures-spring-2017/
+Computer Architecture,Pipelining and Processor Hazards,Nand2Tetris: The Elements of Computing Systems,link,https://www.nand2tetris.org/
+Computer Architecture,Pipelining and Processor Hazards,MIT Computation Structures,link,https://ocw.mit.edu/courses/6-004-computation-structures-spring-2017/
+Computer Architecture,Cache Memory and Locality,Nand2Tetris: The Elements of Computing Systems,link,https://www.nand2tetris.org/
+Computer Architecture,Cache Memory and Locality,MIT Computation Structures,link,https://ocw.mit.edu/courses/6-004-computation-structures-spring-2017/
+Linear Algebra,"Vectors, Span, and Linear Independence",MIT Linear Algebra,link,https://ocw.mit.edu/courses/18-06sc-linear-algebra-fall-2011/
+Linear Algebra,"Vectors, Span, and Linear Independence",Khan Academy Linear Algebra,link,https://www.khanacademy.org/math/linear-algebra
+Linear Algebra,Matrices and Linear Systems,MIT Linear Algebra,link,https://ocw.mit.edu/courses/18-06sc-linear-algebra-fall-2011/
+Linear Algebra,Matrices and Linear Systems,Khan Academy Linear Algebra,link,https://www.khanacademy.org/math/linear-algebra
+Linear Algebra,Eigenvalues and Eigenvectors,MIT Linear Algebra,link,https://ocw.mit.edu/courses/18-06sc-linear-algebra-fall-2011/
+Linear Algebra,Eigenvalues and Eigenvectors,Khan Academy Linear Algebra,link,https://www.khanacademy.org/math/linear-algebra

@@ -1260,6 +1260,49 @@ body {
     padding: 2.5rem 2rem;
 }
 
+.further-reading {
+    margin-top: 2rem;
+    padding-top: 1.5rem;
+    border-top: 1px solid var(--neutral-200);
+}
+
+.further-reading h2 {
+    margin: 0 0 0.75rem;
+    color: var(--neutral-900);
+    font-size: 1.25rem;
+}
+
+.further-reading ul {
+    display: grid;
+    gap: 0.75rem;
+    margin: 0;
+    padding: 0;
+    list-style: none;
+}
+
+.further-reading li {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: baseline;
+    gap: 0.25rem 0.6rem;
+}
+
+.further-reading a {
+    color: var(--primary);
+    font-weight: 600;
+    text-decoration: underline;
+    text-underline-offset: 3px;
+}
+
+.further-reading a:hover {
+    color: var(--primary-hover);
+}
+
+.further-reading small {
+    color: var(--neutral-600);
+    font-size: 0.8rem;
+}
+
 /* Markdown Body Typography */
 .markdown-body {
     font-family: var(--font-sans);

@@ -294,6 +294,37 @@ def load_notes_command(notes_dir: str, dry_run: bool, force: bool) -> None:
         sys.exit(1)
 
 
+@click.command("load-resources")
+@click.option(
+    "--data-dir",
+    default="data",
+    help="Directory containing resources.csv (default: data).",
+)
+@click.option(
+    "--dry-run",
+    is_flag=True,
+    default=False,
+    help="Validate resources without saving them.",
+)
+@with_appcontext
+def load_resources_command(data_dir: str, dry_run: bool) -> None:
+    """Idempotently load curated Semester 5 topic resource links."""
+    from app.services.resource_loader import (
+        ResourceLoader,
+        ResourceLoaderError,
+    )
+
+    try:
+        summary = ResourceLoader(data_dir=data_dir).load(dry_run=dry_run)
+    except ResourceLoaderError as err:
+        raise click.ClickException(str(err)) from err
+    status = "validated (dry run)" if dry_run else "committed"
+    click.echo(
+        f"Resources {status}: {summary.links_processed} links processed, "
+        f"{summary.links_added} added, {summary.links_unchanged} unchanged."
+    )
+
+
 @click.command("notes-status")
 @with_appcontext
 def notes_status_command() -> None:
@@ -679,6 +710,7 @@ def register_cli_commands(app: Flask) -> None:
     app.cli.add_command(db_check_command)
     app.cli.add_command(load_curriculum_command)
     app.cli.add_command(load_notes_command)
+    app.cli.add_command(load_resources_command)
     app.cli.add_command(notes_status_command)
     app.cli.add_command(setup_local_db_command)
     app.cli.add_command(load_questions_command)

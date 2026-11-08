@@ -96,6 +96,25 @@
                             </p>
                         </div>
                     {% endif %}
+
+                    {% set link_resources = topic.resources | selectattr('type.value', 'equalto', 'link') | list %}
+                    {% if link_resources %}
+                        <section class="further-reading" aria-labelledby="further-reading-title">
+                            <h2 id="further-reading-title">Further reading</h2>
+                            <ul>
+                                {% for resource in link_resources %}
+                                    <li>
+                                        <a
+                                            href="{{ resource.url }}"
+                                            target="_blank"
+                                            rel="noopener noreferrer"
+                                        >{{ resource.title }}</a>
+                                        <small>{{ resource.url.split('/')[2] | replace('www.', '') }}</small>
+                                    </li>
+                                {% endfor %}
+                            </ul>
+                        </section>
+                    {% endif %}
                 </div>
             </div>
         </div>

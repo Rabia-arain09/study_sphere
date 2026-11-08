@@ -44,6 +44,10 @@ class ImageValidationError(UploadValidationError):
     """Exception raised when an uploaded image fails signature or dimension checks."""
 
 
+class ImageOCRUnavailableError(ImageValidationError):
+    """Exception raised when image text extraction has no configured LLM provider."""
+
+
 class DocumentValidationError(UploadValidationError):
     """Exception raised when an uploaded document fails validation or extraction."""
 
@@ -1387,8 +1391,19 @@ def process_image_upload(
         tuple[Upload, bool]: (Upload entity, is_new_generation).
     """
     max_mb = int(current_app.config.get("UPLOAD_MAX_IMAGE_MB", 4))
-    mime_type, norm_ext = validate_image_file(file_bytes, filename, max_mb=max_mb)
+    mime_type, _ = validate_image_file(file_bytes, filename, max_mb=max_mb)
     norm_request = clean_user_request(user_request)
+
+    if (
+        llm_client is None
+        and current_app.config.get("LLM_PROVIDER") != "fake"
+        and not current_app.config.get("GEMINI_API_KEY")
+        and not current_app.config.get("LLM_API_KEY")
+    ):
+        raise ImageOCRUnavailableError(
+            "Image text extraction is unavailable because no LLM API key is "
+            "configured. Set GEMINI_API_KEY or LLM_API_KEY, or choose Paste Text."
+        )
 
     check_daily_limit(user_id)
 

@@ -550,26 +550,46 @@ def _coerce_feature_vector(features: Any) -> np.ndarray:
     raise ValueError(f"Unsupported features type: {type(features)}")
 
 
+def _fallback_label(features: np.ndarray) -> str:
+    """Classify a feature vector using mastery thresholds when no model is present."""
+    score_ratio, _, _, attempt_number, previous_score_ratio, _ = features[0]
+    if (
+        attempt_number >= 3
+        and 0.0 <= previous_score_ratio < 0.5
+        and 0.5 <= score_ratio < 0.55
+    ):
+        return "Weak"
+    if score_ratio < 0.5:
+        return "Weak"
+    if score_ratio < 0.7:
+        return "Good"
+    if score_ratio < 0.9:
+        return "Better"
+    return "Excellent"
+
+
 def predict_label(features: Any, model: DecisionTreeClassifier | None = None) -> str:
     """Predict one of the 4 mastery labels (Weak, Good, Better, Excellent).
 
     Args:
         features: Feature mapping, list/tuple, or ndarray containing:
             [score_ratio, wrong_ratio, total_questions, attempt_number, previous_score_ratio, improvement]
-        model: Trained DecisionTreeClassifier instance. If None, loads from DEFAULT_MODEL_PATH
-            or automatically triggers training if missing.
+        model: Trained DecisionTreeClassifier instance. If None, loads from
+            DEFAULT_MODEL_PATH or uses threshold-based inference when it is missing.
 
     Returns:
         str: Predicted mastery tier ('Weak', 'Good', 'Better', 'Excellent').
     """
-    if model is None:
-        if not DEFAULT_MODEL_PATH.exists():
-            train_result = train_model(seed=42)
-            model = train_result["model"]
-        else:
-            model = joblib.load(DEFAULT_MODEL_PATH)
-
     X_input = _coerce_feature_vector(features)
+    if model is None:
+        if not DEFAULT_MODEL_PATH.is_file():
+            logger.warning(
+                "Decision Tree artifact %s is missing; using threshold-based fallback.",
+                DEFAULT_MODEL_PATH,
+            )
+            return _fallback_label(X_input)
+        model = joblib.load(DEFAULT_MODEL_PATH)
+
     pred_label = model.predict(X_input)[0]
     return str(pred_label)
 

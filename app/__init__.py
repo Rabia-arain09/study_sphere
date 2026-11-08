@@ -10,7 +10,12 @@ from flask import Flask, jsonify, render_template, request
 from flask_login import current_user, login_required
 from werkzeug.exceptions import HTTPException
 
-from app.config import Config, config_by_name
+from app.config import (
+    Config,
+    config_by_name,
+    get_engine_options,
+    normalize_database_uri,
+)
 from app.extensions import db, migrate, login_manager, csrf
 from app.models.attempt import Attempt
 from app.models.course import Course
@@ -42,6 +47,28 @@ def create_app(config_name: str | None = None) -> Flask:
         env_name, config_by_name["default"]
     )
     app.config.from_object(config_class)
+
+    if env_name == "production":
+        secret_key = os.getenv("SECRET_KEY")
+        database_url = os.getenv("DATABASE_URL")
+        missing_settings = [
+            name
+            for name, value in (
+                ("SECRET_KEY", secret_key),
+                ("DATABASE_URL", database_url),
+            )
+            if not value
+        ]
+        if missing_settings:
+            missing = ", ".join(missing_settings)
+            raise RuntimeError(
+                f"Production configuration requires environment variables: {missing}."
+            )
+        app.config["SECRET_KEY"] = secret_key
+        app.config["SQLALCHEMY_DATABASE_URI"] = normalize_database_uri(database_url)
+        app.config["SQLALCHEMY_ENGINE_OPTIONS"] = get_engine_options(
+            app.config["SQLALCHEMY_DATABASE_URI"]
+        )
 
     # Normalize relative sqlite:///instance/ paths to prevent Flask-SQLAlchemy 3.x
     # from double-prepending instance_path (e.g. instance/instance/studysphere.db)

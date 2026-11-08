@@ -250,6 +250,30 @@ def test_image_upload_route(auth_client: FlaskClient, app: Flask) -> None:
     assert b"Corrupt or invalid PNG image" in resp_fake.data
 
 
+def test_image_upload_shows_message_when_text_extraction_is_unavailable(
+    auth_client: FlaskClient,
+    app: Flask,
+) -> None:
+    """Tell users how to proceed when no multimodal LLM key is configured."""
+    app.config.update(
+        LLM_PROVIDER="gemini",
+        GEMINI_API_KEY=None,
+        LLM_API_KEY=None,
+    )
+    response = auth_client.post(
+        "/upload/",
+        data={
+            "source_type": "image",
+            "image_file": (io.BytesIO(_make_valid_png()), "lecture.png"),
+        },
+        content_type="multipart/form-data",
+    )
+
+    assert response.status_code == 400
+    assert b"Image text extraction is unavailable" in response.data
+    assert b"choose Paste Text" in response.data
+
+
 @pytest.mark.parametrize(
     ("filename", "file_factory", "expected_text"),
     [

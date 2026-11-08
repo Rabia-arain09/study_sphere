@@ -1,6 +1,7 @@
 """Application configuration classes for StudySphere."""
 
 import os
+import secrets
 from pathlib import Path
 from typing import Any
 from urllib.parse import urlsplit, urlunsplit, parse_qsl, urlencode
@@ -173,7 +174,7 @@ def get_database_uri() -> str:
 class Config:
     """Base configuration class with common parameters."""
 
-    SECRET_KEY: str = os.getenv("SECRET_KEY", "dev-fallback-secret-key-studysphere")
+    SECRET_KEY: str | None = os.getenv("SECRET_KEY")
     SQLALCHEMY_TRACK_MODIFICATIONS: bool = False
     SQLALCHEMY_DATABASE_URI: str = get_database_uri()
     SQLALCHEMY_ENGINE_OPTIONS: dict[str, Any] = get_engine_options(
@@ -204,6 +205,7 @@ class Config:
 class DevelopmentConfig(Config):
     """Development environment configuration."""
 
+    SECRET_KEY: str = Config.SECRET_KEY or secrets.token_hex(32)
     DEBUG: bool = True
     TESTING: bool = False
 
@@ -211,6 +213,7 @@ class DevelopmentConfig(Config):
 class TestingConfig(Config):
     """Testing environment configuration."""
 
+    SECRET_KEY: str = Config.SECRET_KEY or secrets.token_hex(32)
     DEBUG: bool = False
     TESTING: bool = True
     SQLALCHEMY_DATABASE_URI: str = (
@@ -228,6 +231,9 @@ class ProductionConfig(Config):
 
     DEBUG: bool = False
     TESTING: bool = False
+    SESSION_COOKIE_SECURE: bool = True
+    SESSION_COOKIE_HTTPONLY: bool = True
+    SESSION_COOKIE_SAMESITE: str = "Lax"
 
 
 config_by_name: dict[str, type[Config]] = {

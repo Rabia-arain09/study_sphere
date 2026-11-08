@@ -286,6 +286,22 @@ def test_predict_label_edge_values(
     assert pred == expected_label
 
 
+def test_predict_label_uses_threshold_fallback_when_artifact_is_missing(
+    monkeypatch: pytest.MonkeyPatch,
+    tmp_path: Path,
+) -> None:
+    """Keep mastery prediction available if deployment lacks its model artifact."""
+    monkeypatch.setattr(
+        "ml.label_model.DEFAULT_MODEL_PATH",
+        tmp_path / "missing-label-model.joblib",
+    )
+
+    assert predict_label([0.2, 0.8, 5.0, 1.0, -1.0, 0.0]) == "Weak"
+    assert predict_label([0.6, 0.4, 5.0, 1.0, -1.0, 0.0]) == "Good"
+    assert predict_label([0.8, 0.2, 5.0, 1.0, -1.0, 0.0]) == "Better"
+    assert predict_label([1.0, 0.0, 5.0, 1.0, -1.0, 0.0]) == "Excellent"
+
+
 def test_repeated_weak_stays_weak_at_boundary() -> None:
     """Verify history rule: attempt >= 3 with previous Weak score stays Weak at 0.52."""
     features = [0.52, 0.48, 5.0, 4.0, 0.30, 0.22]

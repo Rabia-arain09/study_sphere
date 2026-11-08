@@ -1,0 +1,13 @@
+services:
+  - type: web
+    name: studysphere
+    runtime: python
+    buildCommand: pip install -r requirements.txt && python -m scripts.ensure_models
+    startCommand: gunicorn --bind 0.0.0.0:$PORT wsgi:app
+    envVars:
+      - key: SECRET_KEY
+        generateValue: true
+      - key: DATABASE_URL
+        sync: false
+      - key: GEMINI_API_KEY
+        sync: false

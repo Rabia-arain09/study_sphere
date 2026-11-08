@@ -129,7 +129,10 @@ study_sphere/
 ├── .env.example             # Environment variable template (no secrets)
 ├── .gitignore               # Strict ignore rules for Python, venv, caches, DBs, and models
 ├── requirements.txt         # Pinned production and development dependencies
-├── run.py                   # Application entry point for development and WSGI
+├── render.yaml              # Render build, start, and environment configuration
+├── scripts/ensure_models.py # Build-time trainer for missing Decision Tree artifacts
+├── run.py                   # Application entry point for local development
+├── wsgi.py                   # Production Gunicorn entry point
 └── README.md                # Project documentation and developer guide
 ```
 
@@ -178,6 +181,27 @@ Update `.env` as required:
   DATABASE_URL=postgresql+psycopg2://postgres.your-project-ref:your-url-encoded-password@aws-0-your-region.pooler.supabase.com:5432/postgres?sslmode=require
   ```
 - Configure `SECRET_KEY` and optional `LLM_API_KEY`.
+
+---
+
+## Deploy on Render
+
+Render uses [render.yaml](./render.yaml) to install dependencies, create any missing
+Decision Tree artifacts, and run the production WSGI application with Gunicorn. The
+production factory requires `SECRET_KEY` and `DATABASE_URL`; configure an LLM key to
+enable AI-powered uploads.
+
+Required environment variable names:
+- `SECRET_KEY`
+- `DATABASE_URL`
+- `GEMINI_API_KEY` or `LLM_API_KEY`
+
+After deployment, apply database migrations with:
+```bash
+flask --app wsgi db upgrade
+```
+
+The application health check remains available at `/health`.
 
 ---
 
@@ -999,3 +1023,4 @@ flowchart LR
 - Resource links are curated only for Semester 5; the source CSV contains 171 Semester 5 topics, including six in Computer Architecture and Linear Algebra beyond the 165 named in the request.
 - Homepage chat history groups saved messages by topic or upload, and deleting a conversation removes only the signed-in user's messages.
 - The sidebar collapse preference persists across visits; mobile keeps its drawer closed by default regardless of the desktop rail preference.
+- Image text extraction uses the configured multimodal LLM directly; EasyOCR and pytesseract are not imported or required, so local OCR dependencies cannot block application startup.

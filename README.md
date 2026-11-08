@@ -1,3 +1,9 @@
+---
+title: StudySphere
+sdk: docker
+app_port: 7860
+---
+
 # StudySphere 🎓
 
 StudySphere is a production-grade, adaptive ML-based personalized study platform. Students navigate through their curriculum hierarchically (**Semester &rarr; Course &rarr; Topic**), complete topic-specific quizzes, and receive automated mastery assessments powered by a **scikit-learn Decision Tree classifier** that categorizes topic mastery into four performance tiers: **Weak**, **Good**, **Better**, or **Excellent**.
@@ -202,6 +208,22 @@ flask --app wsgi db upgrade
 ```
 
 The application health check remains available at `/health`.
+
+---
+
+## Deploy on Hugging Face Spaces
+
+1. Create a new Space and select **Docker** as its SDK.
+2. Push this repository to the Space, including the root `Dockerfile` and this README.
+3. In the Space's **Settings**, add the following names under **Variables and secrets**
+   (store credentials as secrets):
+   - `SECRET_KEY`
+   - `DATABASE_URL`
+   - `GEMINI_API_KEY`
+   - `LLM_PROVIDER`
+   - `GEMINI_MODEL`
+4. Wait for the Docker image to build and the Space to start. The app listens on port
+   `7860`; check `/health` to verify it is responding.
 
 ---
 
@@ -1023,4 +1045,5 @@ flowchart LR
 - Resource links are curated only for Semester 5; the source CSV contains 171 Semester 5 topics, including six in Computer Architecture and Linear Algebra beyond the 165 named in the request.
 - Homepage chat history groups saved messages by topic or upload, and deleting a conversation removes only the signed-in user's messages.
 - The sidebar collapse preference persists across visits; mobile keeps its drawer closed by default regardless of the desktop rail preference.
+- Hugging Face Spaces is treated as a single trusted reverse-proxy hop; production alone applies ProxyFix so forwarded HTTPS and host headers work with secure cookies, CSRF, and generated URLs.
 - Image text extraction uses the configured multimodal LLM directly; EasyOCR and pytesseract are not imported or required, so local OCR dependencies cannot block application startup.

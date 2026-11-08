@@ -9,6 +9,7 @@ from typing import Any
 from flask import Flask, jsonify, render_template, request
 from flask_login import current_user, login_required
 from werkzeug.exceptions import HTTPException
+from werkzeug.middleware.proxy_fix import ProxyFix
 
 from app.config import (
     Config,
@@ -224,5 +225,15 @@ def create_app(config_name: str | None = None) -> Flask:
         except Exception as rollback_err:
             app.logger.warning("Database session rollback failed during 500 error handling: %s", rollback_err)
         return render_template("errors/500.html"), 500
+
+    if env_name == "production":
+        app.wsgi_app = ProxyFix(
+            app.wsgi_app,
+            x_for=1,
+            x_proto=1,
+            x_host=1,
+            x_port=1,
+            x_prefix=1,
+        )
 
     return app

@@ -5,12 +5,51 @@
 {% block content %}
 {% if current_user.is_authenticated %}
 <main
-    class="learning-home"
+    class="learning-home home-chat-shell"
     data-home-chat
     data-csrf-token="{{ csrf_token() }}"
     data-chat-history-url="{{ url_for('chat.chat_history') }}"
+    data-conversations-url="{{ url_for('chat.chat_conversations') }}"
+    data-default-semester="{{ current_user.semester }}"
 >
+    <aside class="home-chat-sidebar" id="home-chat-sidebar" aria-label="Chat history">
+        <button type="button" class="btn btn-primary home-new-chat" data-home-new-chat>
+            New chat
+        </button>
+        <label class="sr-only" for="home-chat-search">Search chat history</label>
+        <input
+            id="home-chat-search"
+            class="home-chat-search"
+            type="search"
+            placeholder="Search chats"
+            data-home-chat-search
+        >
+        <div
+            class="home-chat-list"
+            data-home-conversations
+            role="list"
+            aria-label="Saved conversations"
+        ></div>
+        <p class="home-chat-list-empty" data-home-conversations-empty>
+            No chats yet. Pick a topic and ask a question.
+        </p>
+    </aside>
+    <button
+        type="button"
+        class="home-sidebar-backdrop"
+        data-home-sidebar-backdrop
+        aria-label="Close chat history"
+    ></button>
+
+    <div class="home-main-content">
     <header class="learning-home-header">
+        <button
+            type="button"
+            class="btn btn-outline home-sidebar-toggle"
+            data-home-sidebar-toggle
+            aria-controls="home-chat-sidebar"
+            aria-expanded="false"
+        >Chat history</button>
         {% set first_name = current_user.name.strip().split()[0] if current_user.name.strip() else 'there' %}
         <p class="home-greeting">Welcome back, {{ first_name }}!</p>
         <p class="home-eyebrow">Your focused study space</p>
@@ -113,6 +152,7 @@
             {% endif %}
         </div>
     </section>
+    </div>
 </main>
 <script src="{{ url_for('static', filename='js/home.js') }}" defer></script>
 {% else %}

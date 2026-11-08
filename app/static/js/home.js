@@ -14,10 +14,29 @@
     var status = home.querySelector('[data-home-status]');
     var clearButton = home.querySelector('[data-home-clear]');
     var openNoteLink = home.querySelector('[data-home-open-note]');
+    var conversationList = home.querySelector('[data-home-conversations]');
+    var conversationEmpty = home.querySelector('[data-home-conversations-empty]');
+    var conversationSearch = home.querySelector('[data-home-chat-search]');
+    var newChatButton = home.querySelector('[data-home-new-chat]');
+    var sidebar = home.querySelector('#home-chat-sidebar');
+    var sidebarToggle = home.querySelector('[data-home-sidebar-toggle]');
+    var sidebarBackdrop = home.querySelector('[data-home-sidebar-backdrop]');
+    var mainContent = home.querySelector('.home-main-content');
+    var sidebarMedia = window.matchMedia('(max-width: 900px)');
     var selectedType = null;
     var selectedId = null;
     var dropdownRequest = 0;
     var historyRequest = 0;
+    var conversationRequest = 0;
+
+    function updateSidebarAccessibility() {
+        var closedOnMobile = sidebarMedia.matches &&
+            !home.classList.contains('sidebar-open');
+        sidebar.inert = closedOnMobile;
+        sidebar.setAttribute('aria-hidden', String(closedOnMobile));
+        mainContent.inert = sidebarMedia.matches &&
+            home.classList.contains('sidebar-open');
+    }
 
     function setStatus(message, isError) {
         status.textContent = message;
@@ -65,16 +84,128 @@
         });
     }
 
+    function renderConversations(conversations) {
+        conversationList.replaceChildren();
+        conversationEmpty.hidden = conversations.length > 0;
+        if (!conversations.length) {
+            conversationEmpty.textContent = conversationSearch.value.trim()
+                ? 'No matching chats.'
+                : 'No chats yet. Pick a topic and ask a question.';
+            return;
+        }
+
+        conversations.forEach(function (conversation) {
+            var item = document.createElement('div');
+            item.className = 'home-conversation-item';
+            item.setAttribute('role', 'listitem');
+            var isActive = selectedType === conversation.type &&
+                String(selectedId) === String(conversation.id);
+            if (isActive) item.classList.add('is-active');
+
+            var selectButton = document.createElement('button');
+            selectButton.type = 'button';
+            selectButton.className = 'home-conversation-select';
+            selectButton.dataset.conversationType = conversation.type;
+            selectButton.dataset.conversationId = String(conversation.id);
+            if (isActive) selectButton.setAttribute('aria-current', 'page');
+
+            var title = document.createElement('span');
+            title.className = 'home-conversation-title';
+            title.textContent = conversation.title;
+            selectButton.appendChild(title);
+
+            if (conversation.subject) {
+                var subject = document.createElement('span');
+                subject.className = 'home-conversation-subject';
+                subject.textContent = conversation.subject;
+                selectButton.appendChild(subject);
+            }
+
+            var preview = document.createElement('span');
+            preview.className = 'home-conversation-preview';
+            preview.textContent = conversation.preview;
+            selectButton.appendChild(preview);
+
+            var time = document.createElement('time');
+            time.className = 'home-conversation-time';
+            time.dateTime = conversation.last_activity;
+            var activityDate = new Date(conversation.last_activity);
+            time.textContent = Number.isNaN(activityDate.getTime())
+                ? conversation.last_activity
+                : activityDate.toLocaleString();
+            selectButton.appendChild(time);
+            selectButton.addEventListener('click', function () {
+                selectConversation(conversation);
+            });
+
+            var deleteButton = document.createElement('button');
+            deleteButton.type = 'button';
+            deleteButton.className = 'home-conversation-delete';
+            deleteButton.textContent = 'Delete';
+            deleteButton.setAttribute(
+                'aria-label',
+                'Delete chat: ' + conversation.title
+            );
+            deleteButton.addEventListener('click', function () {
+                deleteConversation(conversation);
+            });
+
+            item.appendChild(selectButton);
+            item.appendChild(deleteButton);
+            conversationList.appendChild(item);
+        });
+    }
+
+    function refreshConversations() {
+        var requestId = ++conversationRequest;
+        var url = home.dataset.conversationsUrl;
+        var search = conversationSearch.value.trim();
+        if (search) url += '?q=' + encodeURIComponent(search);
+        return requestJson(url).then(function (data) {
+            if (requestId === conversationRequest) {
+                renderConversations(data.conversations);
+            }
+        }).catch(function (error) {
+            if (requestId === conversationRequest) setStatus(error.message, true);
+        });
+    }
+
+    function closeSidebar() {
+        home.classList.remove('sidebar-open');
+        sidebarToggle.setAttribute('aria-expanded', 'false');
+        updateSidebarAccessibility();
+        sidebarToggle.focus();
+    }
+
     function resetConversation() {
         historyRequest += 1;
         selectedType = null;
         selectedId = null;
+        questionInput.value = '';
         messages.replaceChildren();
         hint.hidden = false;
         clearButton.hidden = true;
         openNoteLink.hidden = true;
         openNoteLink.removeAttribute('href');
         setStatus('', false);
+        renderConversationsFromCurrentState();
+    }
+
+    function renderConversationsFromCurrentState() {
+        var items = Array.from(conversationList.children);
+        items.forEach(function (item) {
+            var button = item.querySelector('.home-conversation-select');
+            var active = button &&
+                ((selectedType === 'topic' || selectedType === 'upload') &&
+                    button.dataset.conversationType === selectedType &&
+                    button.dataset.conversationId === String(selectedId));
+            item.classList.toggle('is-active', Boolean(active));
+            if (active) {
+                button.setAttribute('aria-current', 'page');
+            } else {
+                button.removeAttribute('aria-current');
+            }
+        });
     }
 
     function loadHistory() {
@@ -99,6 +230,7 @@
     function chooseContext(type, id, url) {
         selectedType = type;
         selectedId = id;
+        renderConversationsFromCurrentState();
         messages.replaceChildren();
         hint.hidden = true;
         clearButton.hidden = false;
@@ -120,9 +252,9 @@
         topicLabel.textContent = 'Topic';
         resetConversation();
 
-        requestJson('/home/courses?semester=' + encodeURIComponent(semesterSelect.value))
+        return requestJson('/home/courses?semester=' + encodeURIComponent(semesterSelect.value))
             .then(function (data) {
-                if (requestId !== dropdownRequest) return;
+                if (requestId !== dropdownRequest) return false;
                 data.courses.forEach(function (course) {
                     var option = document.createElement('option');
                     option.value = String(course.id);
@@ -130,9 +262,11 @@
                     subjectSelect.insertBefore(option, uploadsOption);
                 });
                 subjectSelect.disabled = false;
+                return true;
             })
             .catch(function (error) {
                 if (requestId === dropdownRequest) setStatus(error.message, true);
+                return false;
             });
     }
 
@@ -142,14 +276,16 @@
         topicSelect.disabled = true;
         fillSelect(topicSelect, 'Choose a topic', []);
         resetConversation();
-        requestJson('/home/topics?course_id=' + encodeURIComponent(courseId))
+        return requestJson('/home/topics?course_id=' + encodeURIComponent(courseId))
             .then(function (data) {
-                if (requestId !== dropdownRequest) return;
+                if (requestId !== dropdownRequest) return false;
                 fillSelect(topicSelect, 'Choose a topic', data.topics);
                 topicSelect.disabled = false;
+                return true;
             })
             .catch(function (error) {
                 if (requestId === dropdownRequest) setStatus(error.message, true);
+                return false;
             });
     }
 
@@ -159,15 +295,77 @@
         topicSelect.disabled = true;
         fillSelect(topicSelect, 'Choose your material', []);
         resetConversation();
-        requestJson('/home/uploads')
+        return requestJson('/home/uploads')
             .then(function (data) {
-                if (requestId !== dropdownRequest) return;
+                if (requestId !== dropdownRequest) return false;
                 fillSelect(topicSelect, 'Choose your material', data.uploads);
                 topicSelect.disabled = false;
+                return true;
             })
             .catch(function (error) {
                 if (requestId === dropdownRequest) setStatus(error.message, true);
+                return false;
             });
+    }
+
+    function selectConversation(conversation) {
+        closeSidebar();
+        semesterSelect.value = String(
+            conversation.semester || home.dataset.defaultSemester
+        );
+        loadCourses().then(function (coursesLoaded) {
+            if (!coursesLoaded) return false;
+            if (conversation.type === 'upload') {
+                subjectSelect.value = '__uploads__';
+                return loadUploads();
+            }
+            subjectSelect.value = String(conversation.course_id);
+            return loadTopics(conversation.course_id);
+        }).then(function (contextLoaded) {
+            if (!contextLoaded) return;
+            topicSelect.value = String(conversation.id);
+            if (!topicSelect.value) {
+                setStatus('This chat is no longer available.', true);
+                return;
+            }
+            chooseContext(
+                conversation.type,
+                conversation.id,
+                conversation.type === 'upload'
+                    ? '/upload/' + conversation.id
+                    : '/topics/' + conversation.id
+            );
+        }).catch(function (error) {
+            setStatus(error.message, true);
+        });
+    }
+
+    function startNewChat() {
+        semesterSelect.value = home.dataset.defaultSemester;
+        resetConversation();
+        subjectSelect.disabled = true;
+        topicSelect.disabled = true;
+        topicLabel.textContent = 'Topic';
+        loadCourses();
+    }
+
+    function deleteConversation(conversation) {
+        if (!window.confirm('Delete this saved chat and all its messages?')) return;
+        var url = home.dataset.conversationsUrl + '/' +
+            encodeURIComponent(conversation.type) + '/' +
+            encodeURIComponent(conversation.id);
+        requestJson(url, {
+            method: 'DELETE',
+            headers: { 'X-CSRFToken': home.dataset.csrfToken }
+        }).then(function () {
+            if (selectedType === conversation.type &&
+                String(selectedId) === String(conversation.id)) {
+                startNewChat();
+            }
+            return refreshConversations();
+        }).catch(function (error) {
+            setStatus(error.message, true);
+        });
     }
 
     semesterSelect.addEventListener('change', loadCourses);
@@ -235,6 +433,7 @@
             appendMessage('assistant', data.answer);
             questionInput.value = '';
             setStatus('', false);
+            refreshConversations();
         }).catch(function (error) {
             if (selectedType === submittedType && selectedId === submittedId) {
                 setStatus(error.message, true);
@@ -260,6 +459,7 @@
             if (selectedType !== clearedType || selectedId !== clearedId) return;
             messages.replaceChildren();
             setStatus('Chat cleared.', false);
+            refreshConversations();
         }).catch(function (error) {
             if (selectedType === clearedType && selectedId === clearedId) {
                 setStatus(error.message, true);
@@ -269,5 +469,48 @@
         });
     });
 
+    newChatButton.addEventListener('click', startNewChat);
+    conversationSearch.addEventListener('input', refreshConversations);
+    sidebarToggle.addEventListener('click', function () {
+        var isOpen = home.classList.toggle('sidebar-open');
+        sidebarToggle.setAttribute('aria-expanded', String(isOpen));
+        updateSidebarAccessibility();
+        if (isOpen) newChatButton.focus();
+    });
+    sidebarBackdrop.addEventListener('click', closeSidebar);
+    sidebarMedia.addEventListener('change', function () {
+        if (!sidebarMedia.matches) {
+            home.classList.remove('sidebar-open');
+            sidebarToggle.setAttribute('aria-expanded', 'false');
+        }
+        updateSidebarAccessibility();
+    });
+    document.addEventListener('keydown', function (event) {
+        if (event.key === 'Escape' && home.classList.contains('sidebar-open')) {
+            closeSidebar();
+            return;
+        }
+        if (event.key === 'Tab' && sidebarMedia.matches &&
+            home.classList.contains('sidebar-open')) {
+            var focusable = sidebar.querySelectorAll(
+                'button:not([disabled]), input:not([disabled])'
+            );
+            var first = focusable[0];
+            var last = focusable[focusable.length - 1];
+            if (!sidebar.contains(document.activeElement)) {
+                event.preventDefault();
+                (event.shiftKey ? last : first).focus();
+            } else if (event.shiftKey && document.activeElement === first) {
+                event.preventDefault();
+                last.focus();
+            } else if (!event.shiftKey && document.activeElement === last) {
+                event.preventDefault();
+                first.focus();
+            }
+        }
+    });
+
+    updateSidebarAccessibility();
+    refreshConversations();
     loadCourses();
 })();

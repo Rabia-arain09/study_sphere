@@ -84,6 +84,11 @@ def test_home_page_html_authenticated(auth_client: FlaskClient) -> None:
     assert b'data-home-semester' in response.data
     assert b'data-home-subject' in response.data
     assert b'data-home-topic' in response.data
+    assert b'data-home-conversations' in response.data
+    assert b'data-home-chat-search' in response.data
+    assert b'data-home-new-chat' in response.data
+    assert b'data-home-sidebar-toggle' in response.data
+    assert b"No chats yet. Pick a topic and ask a question." in response.data
     assert b"My uploaded material" in response.data
     assert b"Choose a topic or your uploaded material above" in response.data
     assert b"Dashboard" in response.data

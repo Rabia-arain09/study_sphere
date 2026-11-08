@@ -1,6 +1,7 @@
 """Tests for private, source-grounded study chat."""
 
 from __future__ import annotations
+from datetime import datetime, timezone
 import json
 import re
 from pathlib import Path
@@ -79,6 +80,24 @@ def _create_upload(user_id: int) -> int:
         "Mitochondria are a main site of this process.",
     )
     return upload.id
+
+
+def _saved_upload(user_id: int, title: str) -> Upload:
+    """Create an upload record directly for conversation-list tests."""
+    upload = Upload(
+        user_id=user_id,
+        source_type="text",
+        title=title,
+        content_hash=(f"{user_id}-{title}").encode().hex().ljust(64, "0")[:64],
+        extracted_text="Saved upload text.",
+        summary=[],
+        simple_explanation="",
+        key_terms=[],
+        questions=[],
+    )
+    db.session.add(upload)
+    db.session.flush()
+    return upload
 
 
 def test_topic_chat_saves_history_and_renders_escaped_messages(
@@ -603,7 +622,9 @@ def test_chat_history_and_upload_are_private_to_the_owner(
 
 
 def test_chat_endpoints_require_login(client: FlaskClient) -> None:
-    """Require authentication for chat and clear operations."""
+    """Require authentication for chat history, listing, and clear operations."""
+    assert client.get("/chat/conversations").status_code == 302
+    assert client.delete("/chat/conversations/topic/1").status_code == 302
     assert (
         client.post("/chat/topic/1", json={"question": "Question"}).status_code
         == 302
@@ -614,6 +635,214 @@ def test_chat_endpoints_require_login(client: FlaskClient) -> None:
         == 302
     )
     assert client.post("/chat/upload/1/clear", json={}).status_code == 302
+
+
+def test_conversation_endpoint_scopes_orders_searches_and_truncates(
+    app: Flask,
+    auth_client: FlaskClient,
+    test_user: User,
+    chat_topic: int,
+) -> None:
+    """List only owned chats, sorted by activity, searchable, with short previews."""
+    with app.app_context():
+        upload = _saved_upload(test_user.id, "My uploaded lecture")
+        other_user = User(
+            name="Other Student",
+            email="other-conversation@example.com",
+            semester=1,
+        )
+        other_user.set_password("SecurePassword123")
+        db.session.add(other_user)
+        db.session.flush()
+
+        db.session.add_all(
+            [
+                ChatMessage(
+                    user_id=test_user.id,
+                    topic_id=chat_topic,
+                    role="user",
+                    content="An older searchable phrase in this conversation.",
+                    created_at=datetime(2026, 1, 1, tzinfo=timezone.utc),
+                ),
+                ChatMessage(
+                    user_id=test_user.id,
+                    topic_id=chat_topic,
+                    role="assistant",
+                    content="Recent topic answer " + ("x" * 100),
+                    created_at=datetime(2026, 1, 2, tzinfo=timezone.utc),
+                ),
+                ChatMessage(
+                    user_id=test_user.id,
+                    upload_id=upload.id,
+                    role="user",
+                    content="Newest upload question.",
+                    created_at=datetime(2026, 1, 3, tzinfo=timezone.utc),
+                ),
+                ChatMessage(
+                    user_id=other_user.id,
+                    topic_id=chat_topic,
+                    role="user",
+                    content="Other user's private conversation marker.",
+                    created_at=datetime(2026, 1, 4, tzinfo=timezone.utc),
+                ),
+            ]
+        )
+        db.session.commit()
+        upload_id = upload.id
+
+    response = auth_client.get("/chat/conversations")
+
+    assert response.status_code == 200
+    conversations = response.json["conversations"]
+    assert [item["type"] for item in conversations] == ["upload", "topic"]
+    assert [item["id"] for item in conversations] == [upload_id, chat_topic]
+    assert conversations[0]["title"] == "My uploaded lecture"
+    assert conversations[0]["subject"] is None
+    assert conversations[0]["preview"] == "Newest upload question."
+    assert conversations[1]["title"] == "Photosynthesis"
+    assert conversations[1]["subject"] == "Study Chat Testing"
+    assert len(conversations[1]["preview"]) == 80
+    assert conversations[1]["preview"].endswith("...")
+    assert conversations[0]["last_activity"] > conversations[1]["last_activity"]
+
+    title_match = auth_client.get("/chat/conversations?q=Photosynthesis")
+    assert [item["type"] for item in title_match.json["conversations"]] == ["topic"]
+    message_match = auth_client.get(
+        "/chat/conversations?q=searchable%20phrase"
+    )
+    assert [item["type"] for item in message_match.json["conversations"]] == [
+        "topic"
+    ]
+    assert auth_client.get(
+        "/chat/conversations?q=private%20conversation%20marker"
+    ).json["conversations"] == []
+
+
+def test_conversation_delete_only_removes_current_users_messages(
+    app: Flask,
+    auth_client: FlaskClient,
+    test_user: User,
+    chat_topic: int,
+) -> None:
+    """Delete an owned chat through shared clear logic without touching others."""
+    with app.app_context():
+        other_user = User(
+            name="Other Student",
+            email="other-delete@example.com",
+            semester=1,
+        )
+        other_user.set_password("SecurePassword123")
+        db.session.add(other_user)
+        db.session.flush()
+        db.session.add_all(
+            [
+                ChatMessage(
+                    user_id=test_user.id,
+                    topic_id=chat_topic,
+                    role="user",
+                    content="My message.",
+                ),
+                ChatMessage(
+                    user_id=test_user.id,
+                    topic_id=chat_topic,
+                    role="assistant",
+                    content="My answer.",
+                ),
+                ChatMessage(
+                    user_id=other_user.id,
+                    topic_id=chat_topic,
+                    role="user",
+                    content="Another student's message.",
+                ),
+            ]
+        )
+        db.session.commit()
+        other_user_id = other_user.id
+
+    response = auth_client.delete(
+        f"/chat/conversations/topic/{chat_topic}",
+    )
+    assert response.status_code == 200
+    assert response.json == {"success": True, "deleted": 2}
+
+    assert auth_client.delete(
+        f"/chat/conversations/topic/{chat_topic}"
+    ).status_code == 404
+    with app.app_context():
+        assert ChatMessage.query.filter_by(
+            user_id=other_user_id,
+            topic_id=chat_topic,
+        ).count() == 1
+
+
+def test_conversation_delete_handles_owned_upload_and_rejects_foreign_upload(
+    app: Flask,
+    auth_client: FlaskClient,
+    test_user: User,
+) -> None:
+    """Delete an owned upload chat while keeping another student's chat private."""
+    with app.app_context():
+        other_user = User(
+            name="Upload Owner",
+            email="upload-owner@example.com",
+            semester=1,
+        )
+        other_user.set_password("SecurePassword123")
+        db.session.add(other_user)
+        db.session.flush()
+        upload = _saved_upload(other_user.id, "Private upload")
+        owned_upload = _saved_upload(test_user.id, "My upload")
+        db.session.add(
+            ChatMessage(
+                user_id=other_user.id,
+                upload_id=upload.id,
+                role="user",
+                content="Private upload chat.",
+            )
+        )
+        db.session.add(
+            ChatMessage(
+                user_id=test_user.id,
+                upload_id=owned_upload.id,
+                role="user",
+                content="My upload chat.",
+            )
+        )
+        db.session.commit()
+        upload_id = upload.id
+        owned_upload_id = owned_upload.id
+
+    owned_response = auth_client.delete(
+        f"/chat/conversations/upload/{owned_upload_id}"
+    )
+    assert owned_response.status_code == 200
+    assert owned_response.json == {"success": True, "deleted": 1}
+    response = auth_client.delete(f"/chat/conversations/upload/{upload_id}")
+    assert response.status_code == 404
+    with app.app_context():
+        assert ChatMessage.query.filter_by(upload_id=upload_id).count() == 1
+
+
+def test_new_chat_appears_in_conversation_list_after_sending(
+    auth_client: FlaskClient,
+    chat_topic: int,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """A mocked chat turn is immediately available to the homepage sidebar API."""
+    _mock_llm(monkeypatch, answer="Chlorophyll absorbs light.")
+    sent = auth_client.post(
+        f"/chat/topic/{chat_topic}",
+        json={"question": "What does chlorophyll absorb?"},
+    )
+    assert sent.status_code == 200
+
+    listed = auth_client.get("/chat/conversations")
+
+    assert listed.status_code == 200
+    assert listed.json["conversations"][0]["title"] == "Photosynthesis"
+    assert listed.json["conversations"][0]["preview"] == (
+        "Chlorophyll absorbs light."
+    )
 
 
 def test_chat_endpoints_enforce_csrf(monkeypatch: pytest.MonkeyPatch) -> None:
@@ -680,8 +909,17 @@ def test_chat_endpoints_enforce_csrf(monkeypatch: pytest.MonkeyPatch) -> None:
         headers={"X-CSRFToken": token_match.group(1)},
     )
     assert accepted.status_code == 200
+    rejected_delete = test_client.delete(
+        f"/chat/conversations/topic/{topic_id}"
+    )
+    assert rejected_delete.status_code == 400
+    accepted_delete = test_client.delete(
+        f"/chat/conversations/topic/{topic_id}",
+        headers={"X-CSRFToken": token_match.group(1)},
+    )
+    assert accepted_delete.status_code == 200
     with app.app_context():
-        assert ChatMessage.query.filter_by(topic_id=topic_id).count() == 2
+        assert ChatMessage.query.filter_by(topic_id=topic_id).count() == 0
         db.session.remove()
         db.drop_all()
 

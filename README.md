@@ -997,3 +997,4 @@ flowchart LR
 
 - The request specified three commits but only two implementation tasks and commit messages; the third commit records this scope gap rather than inventing product work.
 - Resource links are curated only for Semester 5; the source CSV contains 171 Semester 5 topics, including six in Computer Architecture and Linear Algebra beyond the 165 named in the request.
+- Homepage chat history groups saved messages by topic or upload, and deleting a conversation removes only the signed-in user's messages.

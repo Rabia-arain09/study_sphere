@@ -19,19 +19,77 @@
     var conversationSearch = home.querySelector('[data-home-chat-search]');
     var newChatButton = home.querySelector('[data-home-new-chat]');
     var sidebar = home.querySelector('#home-chat-sidebar');
+    var sidebarCollapseButton = home.querySelector('[data-home-sidebar-collapse]');
     var sidebarToggle = home.querySelector('[data-home-sidebar-toggle]');
     var sidebarBackdrop = home.querySelector('[data-home-sidebar-backdrop]');
+    var greeting = home.querySelector('[data-home-greeting]');
+    var greetingText = home.querySelector('[data-home-greeting-text]');
     var mainContent = home.querySelector('.home-main-content');
     var sidebarMedia = window.matchMedia('(max-width: 900px)');
+    var sidebarCollapsed = document.documentElement.getAttribute(
+        'data-home-sidebar-collapsed'
+    ) === 'true';
     var selectedType = null;
     var selectedId = null;
     var dropdownRequest = 0;
     var historyRequest = 0;
     var conversationRequest = 0;
 
+    function updateGreeting() {
+        var hour = new Date().getHours();
+        var greetingForTime = hour < 12
+            ? 'Good morning'
+            : hour <= 17 ? 'Good afternoon' : 'Good evening';
+        greetingText.textContent = greetingForTime + ', ' +
+            greeting.dataset.firstName;
+    }
+
+    function updateSidebarCollapseState(persist) {
+        document.documentElement.setAttribute(
+            'data-home-sidebar-collapsed',
+            String(sidebarCollapsed)
+        );
+        if (persist) {
+            try {
+                localStorage.setItem(
+                    'studysphere.sidebarCollapsed',
+                    String(sidebarCollapsed)
+                );
+            } catch (error) {
+                setStatus('Could not save the sidebar preference.', true);
+            }
+        }
+
+        if (!sidebarMedia.matches) {
+            var expanded = !sidebarCollapsed;
+            sidebarCollapseButton.setAttribute(
+                'aria-expanded',
+                String(expanded)
+            );
+            var desktopLabel = sidebarCollapsed
+                ? 'Expand chat history sidebar'
+                : 'Collapse chat history sidebar';
+            sidebarCollapseButton.setAttribute('aria-label', desktopLabel);
+            sidebarCollapseButton.title = desktopLabel;
+        }
+    }
+
     function updateSidebarAccessibility() {
         var closedOnMobile = sidebarMedia.matches &&
             !home.classList.contains('sidebar-open');
+        if (sidebarMedia.matches) {
+            var drawerOpen = home.classList.contains('sidebar-open');
+            var mobileLabel = drawerOpen
+                ? 'Close chat history sidebar'
+                : 'Open chat history sidebar';
+            sidebarCollapseButton.setAttribute(
+                'aria-expanded',
+                String(drawerOpen)
+            );
+            sidebarCollapseButton.setAttribute('aria-label', mobileLabel);
+            sidebarCollapseButton.title = mobileLabel;
+            sidebarToggle.setAttribute('aria-expanded', String(drawerOpen));
+        }
         sidebar.inert = closedOnMobile;
         sidebar.setAttribute('aria-hidden', String(closedOnMobile));
         mainContent.inert = sidebarMedia.matches &&
@@ -173,6 +231,12 @@
     function closeSidebar() {
         home.classList.remove('sidebar-open');
         sidebarToggle.setAttribute('aria-expanded', 'false');
+        sidebarCollapseButton.setAttribute('aria-expanded', 'false');
+        sidebarCollapseButton.setAttribute(
+            'aria-label',
+            'Close chat history sidebar'
+        );
+        sidebarCollapseButton.title = 'Close chat history sidebar';
         updateSidebarAccessibility();
         sidebarToggle.focus();
     }
@@ -474,14 +538,39 @@
     sidebarToggle.addEventListener('click', function () {
         var isOpen = home.classList.toggle('sidebar-open');
         sidebarToggle.setAttribute('aria-expanded', String(isOpen));
+        sidebarCollapseButton.setAttribute('aria-expanded', String(isOpen));
+        sidebarCollapseButton.setAttribute(
+            'aria-label',
+            isOpen ? 'Close chat history sidebar' : 'Open chat history sidebar'
+        );
+        sidebarCollapseButton.title = isOpen
+            ? 'Close chat history sidebar'
+            : 'Open chat history sidebar';
         updateSidebarAccessibility();
         if (isOpen) newChatButton.focus();
+    });
+    sidebarCollapseButton.addEventListener('click', function () {
+        if (sidebarMedia.matches) {
+            closeSidebar();
+            return;
+        }
+        sidebarCollapsed = !sidebarCollapsed;
+        updateSidebarCollapseState(true);
+        updateSidebarAccessibility();
     });
     sidebarBackdrop.addEventListener('click', closeSidebar);
     sidebarMedia.addEventListener('change', function () {
         if (!sidebarMedia.matches) {
             home.classList.remove('sidebar-open');
             sidebarToggle.setAttribute('aria-expanded', 'false');
+            updateSidebarCollapseState(false);
+        } else {
+            sidebarCollapseButton.setAttribute('aria-expanded', 'false');
+            sidebarCollapseButton.setAttribute(
+                'aria-label',
+                'Open chat history sidebar'
+            );
+            sidebarCollapseButton.title = 'Open chat history sidebar';
         }
         updateSidebarAccessibility();
     });
@@ -510,6 +599,8 @@
         }
     });
 
+    updateGreeting();
+    updateSidebarCollapseState(false);
     updateSidebarAccessibility();
     refreshConversations();
     loadCourses();

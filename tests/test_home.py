@@ -78,7 +78,9 @@ def test_home_page_html_authenticated(auth_client: FlaskClient) -> None:
     """Show the linked learning selectors, chat, and student shortcuts."""
     response = auth_client.get("/", headers={"Accept": "text/html"})
     assert response.status_code == 200
-    assert b"Welcome back, Test!" in response.data
+    assert b'data-home-greeting' in response.data
+    assert b'data-first-name="Test"' in response.data
+    assert b"Your focused study space" not in response.data
     assert b"What do you want to learn today?" in response.data
     assert b"Other answers are marked 'Not in your note'." in response.data
     assert b'data-home-semester' in response.data
@@ -88,6 +90,10 @@ def test_home_page_html_authenticated(auth_client: FlaskClient) -> None:
     assert b'data-home-chat-search' in response.data
     assert b'data-home-new-chat' in response.data
     assert b'data-home-sidebar-toggle' in response.data
+    assert b'data-home-sidebar-collapse' in response.data
+    assert b"studysphere.sidebarCollapsed" in response.data
+    assert b'aria-controls="home-chat-sidebar"' in response.data
+    assert b"<svg" in response.data
     assert b"No chats yet. Pick a topic and ask a question." in response.data
     assert b"My uploaded material" in response.data
     assert b"Choose a topic or your uploaded material above" in response.data
@@ -116,8 +122,9 @@ def test_home_greeting_escapes_the_users_first_name(
     response = client.get("/")
 
     assert response.status_code == 200
-    assert b"Welcome back, &lt;Rabia&gt;!" in response.data
-    assert b"Welcome back, <Rabia>!" not in response.data
+    assert b'data-first-name="&lt;Rabia&gt;"' in response.data
+    assert b'data-first-name="<Rabia>"' not in response.data
+    assert b"<Rabia>" not in response.data
 
 
 def test_home_page_shows_continue_topic_for_latest_attempt(

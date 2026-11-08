@@ -2,6 +2,26 @@
 
 {% block title %}StudySphere - Learn with focus{% endblock %}
 
+{% block homepage_sidebar_preference %}
+{% if current_user.is_authenticated %}
+<script>
+    (function () {
+        var root = document.documentElement;
+        var collapsed = window.matchMedia('(max-width: 900px)').matches;
+        try {
+            var preference = localStorage.getItem('studysphere.sidebarCollapsed');
+            if (preference === 'true' || preference === 'false') {
+                collapsed = preference === 'true';
+            }
+        } catch (error) {
+            // Use the responsive default when storage is unavailable.
+        }
+        root.setAttribute('data-home-sidebar-collapsed', String(collapsed));
+    })();
+</script>
+{% endif %}
+{% endblock %}
+
 {% block content %}
 {% if current_user.is_authenticated %}
 <main
@@ -13,7 +33,30 @@
     data-default-semester="{{ current_user.semester }}"
 >
     <aside class="home-chat-sidebar" id="home-chat-sidebar" aria-label="Chat history">
-        <button type="button" class="btn btn-primary home-new-chat" data-home-new-chat>
+        <button
+            type="button"
+            class="home-sidebar-collapse"
+            data-home-sidebar-collapse
+            aria-controls="home-chat-sidebar"
+            aria-expanded="true"
+            aria-label="Collapse chat history sidebar"
+            title="Collapse chat history sidebar"
+        >
+            <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+                <path d="M4 5h16v14H4zM10 5v14" />
+                <path d="m14 9 3 3-3 3" />
+            </svg>
+        </button>
+        <button
+            type="button"
+            class="btn btn-primary home-new-chat"
+            data-home-new-chat
+            aria-label="New chat"
+            title="New chat"
+        >
+            <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+                <path d="M12 5v14M5 12h14" />
+            </svg>
             New chat
         </button>
         <label class="sr-only" for="home-chat-search">Search chat history</label>
@@ -47,12 +90,28 @@
             type="button"
             class="btn btn-outline home-sidebar-toggle"
             data-home-sidebar-toggle
+            aria-label="Open chat history sidebar"
             aria-controls="home-chat-sidebar"
             aria-expanded="false"
-        >Chat history</button>
+        >
+            <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+                <path d="M4 5h16v14H4zM10 5v14" />
+                <path d="m14 9 3 3-3 3" />
+            </svg>
+            Chat history
+        </button>
         {% set first_name = current_user.name.strip().split()[0] if current_user.name.strip() else 'there' %}
-        <p class="home-greeting">Welcome back, {{ first_name }}!</p>
-        <p class="home-eyebrow">Your focused study space</p>
+        <p
+            class="home-greeting"
+            data-home-greeting
+            data-first-name="{{ first_name }}"
+        >
+            <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+                <path d="m12 2 1.65 6.35L20 10l-6.35 1.65L12 18l-1.65-6.35L4 10l6.35-1.65L12 2Z" />
+                <path d="m19 15 .8 2.2L22 18l-2.2.8L19 21l-.8-2.2L16 18l2.2-.8L19 15Z" />
+            </svg>
+            <span data-home-greeting-text>Good day, {{ first_name }}</span>
+        </p>
         <h1>What do you want to learn today?</h1>
         <p>Choose a topic or your own material to start a study chat grounded in your notes.</p>
     </header>
